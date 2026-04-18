@@ -1,1 +1,15 @@
-dotenv
+# Core
+python-dotenv>=1.0.0
+
+# PDF parsing
+pypdf>=3.17.0
+
+# PowerPoint parsing
+python-pptx>=0.6.23
+
+# Sprint 2: Embeddings and RAG
+openai>=1.0.0
+chromadb>=0.4.0
+
+# Testing
+pytest>=7.4.0
