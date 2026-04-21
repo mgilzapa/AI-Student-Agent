@@ -6,3 +6,4 @@ data/
 docs/
 notebooks/
 .worktrees/
+chroma/

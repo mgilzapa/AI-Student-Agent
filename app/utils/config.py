@@ -18,4 +18,5 @@ def load_config():
         "openai_model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
         "embedding_model": os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"),
         "top_k": int(os.getenv("RAG_TOP_K", "5")),
+        "vault_path": Path(os.getenv("OBSIDIAN_VAULT")) if os.getenv("OBSIDIAN_VAULT") else None,
     }

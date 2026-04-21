@@ -1,14 +1,8 @@
 """
 Raw file intake workflow.
 
-Scans the raw data folder for supported files and returns
-a list of unique, supported files ready for processing.
-
-Handles:
-- Recursive folder scanning
-- Duplicate file detection (by filename)
-- Unsupported file filtering
-- Logging of all decisions
+Scans the raw data folder and optionally an Obsidian vault
+for supported files ready for processing.
 """
 import logging
 from pathlib import Path
@@ -20,47 +14,27 @@ from app.ingestion.file_scanner import is_supported
 logger = logging.getLogger(__name__)
 
 
-def get_all_supported_files(raw_dir: Path) -> List[Path]:
-    """
-    Recursively scan raw_dir for supported files.
-
-    Args:
-        raw_dir: Directory to scan
-
-    Returns:
-        List of paths to supported files
-    """
+def get_all_supported_files(directory: Path) -> List[Path]:
+    """Recursively scan directory for supported files."""
     supported_files = []
 
-    if not raw_dir.exists():
-        logger.error(f"Raw directory does not exist: {raw_dir}")
+    if not directory.exists():
+        logger.error(f"Directory does not exist: {directory}")
         return supported_files
 
-    for file_path in raw_dir.rglob("*"):
+    for file_path in directory.rglob("*"):
         if file_path.is_file():
             if is_supported(file_path):
                 supported_files.append(file_path)
-                logger.debug(f"Found supported file: {file_path}")
             else:
-                logger.info(f"Skipping unsupported file: {file_path}")
+                logger.debug(f"Skipping unsupported file: {file_path}")
 
-    logger.info(f"Intake scan: {len(supported_files)} supported file(s) found in {raw_dir}")
+    logger.info(f"Found {len(supported_files)} supported file(s) in {directory}")
     return supported_files
 
 
 def remove_duplicates(file_list: List[Path]) -> List[Path]:
-    """
-    Remove duplicate files based on filename.
-
-    When two files have the same name but different paths,
-    the first one encountered is kept.
-
-    Args:
-        file_list: List of file paths
-
-    Returns:
-        List of unique file paths
-    """
+    """Remove duplicate files based on filename."""
     seen: Set[str] = set()
     unique = []
 
@@ -69,36 +43,38 @@ def remove_duplicates(file_list: List[Path]) -> List[Path]:
             seen.add(f.name)
             unique.append(f)
         else:
-            logger.warning(f"Duplicate filename skipped: {f} (already have: {f.name})")
-
-    duplicates_removed = len(file_list) - len(unique)
-    if duplicates_removed > 0:
-        logger.info(f"Removed {duplicates_removed} duplicate(s)")
+            logger.warning(f"Duplicate skipped: {f.name}")
 
     return unique
 
 
 def scan_intake() -> List[Path]:
     """
-    Main intake function: scans data/raw for supported files
-    and returns a deduplicated list ready for processing.
-
-    Returns:
-        List of unique, supported file paths
+    Scan data/raw/ and optionally the Obsidian vault.
+    Returns a deduplicated list of supported files.
     """
     config = load_config()
+    all_files = []
+
+    # Scan data/raw/
     raw_path = config["raw_path"]
+    if raw_path.exists():
+        all_files.extend(get_all_supported_files(raw_path))
+    else:
+        logger.warning(f"Raw folder does not exist: {raw_path}")
 
-    logger.info(f"Starting intake scan from: {raw_path}")
+    # Scan Obsidian vault if configured
+    vault_path = config.get("vault_path")
+    if vault_path:
+        if vault_path.exists():
+            logger.info(f"Scanning Obsidian vault: {vault_path}")
+            all_files.extend(get_all_supported_files(vault_path))
+        else:
+            logger.warning(f"Obsidian vault path not found: {vault_path}")
+    else:
+        logger.info("No Obsidian vault configured (OBSIDIAN_VAULT not set)")
 
-    if not raw_path.exists():
-        logger.error(f"Raw folder does not exist: {raw_path}")
-        logger.info(f"Please create the folder: mkdir {raw_path}")
-        return []
-
-    all_files = get_all_supported_files(raw_path)
     unique_files = remove_duplicates(all_files)
-
     logger.info(f"Intake complete: {len(unique_files)} unique file(s) ready for processing")
     return unique_files
 

@@ -5,6 +5,20 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+try:
+    import ftfy
+    HAS_FTFY = True
+except ImportError:
+    HAS_FTFY = False
+    logger.warning("ftfy not installed — encoding fixes disabled. Run: pip install ftfy")
+
+
+def fix_text(text: str) -> str:
+    """Fix encoding issues like Ã¤ → ä."""
+    if HAS_FTFY and text:
+        return ftfy.fix_text(text)
+    return text
+
 
 class ParseResult:
     """Standardized result of parsing a document."""
@@ -50,7 +64,7 @@ def parse_pdf(file_path: Path) -> ParseResult:
         for page_num, page in enumerate(reader.pages, 1):
             page_text = page.extract_text()
             if page_text:
-                text_parts.append(f"[Page {page_num}]\n{page_text}")
+                text_parts.append(f"[Page {page_num}]\n{fix_text(page_text)}")
 
         extracted_text = "\n\n".join(text_parts)
 
@@ -89,7 +103,7 @@ def parse_pptx(file_path: Path) -> ParseResult:
             slide_text = []
             for shape in slide.shapes:
                 if hasattr(shape, "text") and shape.text.strip():
-                    slide_text.append(shape.text.strip())
+                    slide_text.append(fix_text(shape.text.strip()))
 
             if slide_text:
                 text_parts.append(f"[Slide {slide_num}]\n" + "\n".join(slide_text))

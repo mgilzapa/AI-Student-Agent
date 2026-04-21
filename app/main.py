@@ -1,23 +1,15 @@
 """
 AI Student Agent - Sprint 2 RAG Pipeline Runner
 
-This script runs the full ingestion and RAG pipeline:
-1. Scans raw inputs
-2. Parses eligible files
-3. Creates standardized outputs
-4. Generates chunks
-5. Generates OpenAI embeddings
-6. Stores in ChromaDB
-7. Enables grounded Q&A
-
 Usage:
-    python app/main.py                        # Run full pipeline (ingest + index)
-    python app/main.py --index-only           # Only index existing chunks
-    python app/main.py --query "deine Frage"  # Ask a question
+    python -m app.main                        # Run full pipeline (ingest + index)
+    python -m app.main --index-only           # Only index existing chunks
+    python -m app.main --query "deine Frage"  # Ask a question
 """
+import hashlib
 import logging
-import uuid
 import argparse
+import json
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -34,15 +26,36 @@ from app.rag.query_service import create_query_service
 logger = setup_logger("study_agent")
 
 
+def document_id_for(file_path: Path) -> str:
+    """Deterministic document ID based on file path — same file always gets same ID."""
+    return hashlib.md5(str(file_path).encode()).hexdigest()
+
+
+def already_processed(document_id: str, chunks_dir: Path) -> bool:
+    """Check if chunks for this document already exist."""
+    return len(list(chunks_dir.glob(f"chunks_{document_id[:8]}_*.jsonl"))) > 0
+
+
 def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
     """Process a single document through the full pipeline."""
     result = {
         "file": str(file_path),
-        "parse_success": False,
+        "parseSuccess": False,
         "chunkCount": 0,
         "outputPath": None,
-        "error": None
+        "error": None,
+        "skipped": False,
     }
+
+    document_id = document_id_for(file_path)
+    chunks_dir = processed_dir / "chunks"
+
+    # Skip if already processed
+    if already_processed(document_id, chunks_dir):
+        logger.info(f"Skipping (already processed): {file_path.name}")
+        result["parseSuccess"] = True
+        result["skipped"] = True
+        return result
 
     logger.info(f"Processing: {file_path.name}")
 
@@ -55,7 +68,6 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
 
     logger.info(f"Parsed {file_path.name}: {len(parsed.extracted_text)} chars")
 
-    document_id = str(uuid.uuid4())
     parsed_data = parsed.to_dict()
     parsed_data["document_id"] = document_id
     parsed_data["module_name"] = ""
@@ -64,20 +76,18 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
     saved_path = save_parsed_document(parsed_data, processed_dir / "parsed")
     if saved_path:
         result["outputPath"] = str(saved_path)
-    else:
-        logger.warning(f"Skipped saving (already exists): {file_path.name}")
 
     chunks: List[Chunk] = chunk_document(
-        text=parsed.extracted_text,
-        document_id=document_id,
-        file_type=parsed.file_type,
-        metadata=parsed.metadata
-    )
+    text=parsed.extracted_text,
+    document_id=document_id,
+    file_type=parsed.file_type,
+    metadata={**parsed.metadata, "source": str(file_path)}  
+)
     result["chunkCount"] = len(chunks)
     logger.info(f"Generated {len(chunks)} chunks from {file_path.name}")
 
     if chunks:
-        chunk_path = save_chunks(chunks, processed_dir / "chunks", document_id)
+        chunk_path = save_chunks(chunks, chunks_dir, document_id)
         if chunk_path:
             logger.info(f"Saved chunks to: {chunk_path}")
 
@@ -86,8 +96,7 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
 
 
 def load_chunks_for_indexing(processed_dir: Path) -> List[Dict[str, Any]]:
-    """Load all chunks from JSON files for indexing."""
-    import json
+    """Load all chunks from .jsonl files."""
     chunks_dir = processed_dir / "chunks"
     chunks = []
 
@@ -102,7 +111,6 @@ def load_chunks_for_indexing(processed_dir: Path) -> List[Dict[str, Any]]:
                 chunks.append(json.loads(line))
 
     return [c for c in chunks if c.get("chunk_text", "").strip()]
-    
 
 
 def index_chunks(config: Dict[str, Any]) -> None:
@@ -122,25 +130,38 @@ def index_chunks(config: Dict[str, Any]) -> None:
         collection_name="study_chunks"
     )
 
-    logger.info(f"Generating embeddings for {len(chunks)} chunks...")
-    texts = [c["chunk_text"] for c in chunks]
+    # Only index chunks not already in Chroma
+    existing_ids = set(vector_store.collection.get()["ids"])
+    new_chunks = [c for c in chunks if c["chunk_id"] not in existing_ids]
+
+    if not new_chunks:
+        logger.info("All chunks already indexed — nothing to do.")
+        return
+
+    logger.info(f"Generating embeddings for {len(new_chunks)} new chunks...")
+    texts = [c["chunk_text"] for c in new_chunks]
     embeddings = embedder.embed_batch(texts)
 
-    vector_store.add(
-        ids=[c["chunk_id"] for c in chunks],
-        embeddings=embeddings,
-        documents=texts,
-        metadatas=[
-            {
-                "document_id": c.get("document_id", ""),
-                "source": c.get("source", ""),
-                "chunk_index": str(c.get("chunk_index", "")),
-            }
-            for c in chunks
-        ],
-    )
+    BATCH_SIZE = 500
+    for i in range(0, len(new_chunks), BATCH_SIZE):
+        batch_chunks = new_chunks[i:i+BATCH_SIZE]
+        batch_embeddings = embeddings[i:i+BATCH_SIZE]
+        vector_store.add(
+            ids=[c["chunk_id"] for c in batch_chunks],
+            embeddings=batch_embeddings,
+            documents=[c["chunk_text"] for c in batch_chunks],
+            metadatas=[
+                {
+                    "document_id": c.get("document_id", ""),
+                    "source": c.get("metadata", {}).get("source", c.get("source", "")),
+                    "chunk_index": str(c.get("chunk_index", "")),
+                }
+                for c in batch_chunks
+            ],
+        )
+        logger.info(f"Indexed batch {i//BATCH_SIZE + 1} ({min(i+BATCH_SIZE, len(new_chunks))}/{len(new_chunks)})")
 
-    logger.info(f"Indexed {vector_store.count()} documents into ChromaDB")
+    logger.info(f"Done — {vector_store.count()} total documents in ChromaDB")
 
 
 def run_pipeline(config: Dict[str, Any]) -> None:
@@ -149,24 +170,22 @@ def run_pipeline(config: Dict[str, Any]) -> None:
     logger.info("AI Student Agent - Sprint 2 RAG Pipeline")
     logger.info("=" * 50)
 
-    if not config["raw_path"].exists():
-        logger.error(f"Raw folder does not exist: {config['raw_path']}")
-        return
-
     logger.info("Scanning for supported files...")
     files = scan_intake()
 
     if not files:
-        logger.info("No supported files found. Add PDF, PPTX, or TXT files to data/raw/")
+        logger.info("No supported files found.")
         return
 
     logger.info(f"Found {len(files)} file(s) — processing...")
     results = [process_document(f, config["processed_path"]) for f in files]
 
-    successful  = sum(1 for r in results if r["parseSuccess"])
+    successful   = sum(1 for r in results if r.get("parseSuccess"))
+    skipped      = sum(1 for r in results if r.get("skipped"))
+    new          = successful - skipped
     total_chunks = sum(r["chunkCount"] for r in results)
 
-    logger.info(f"Processed: {len(results)} | OK: {successful} | Chunks: {total_chunks}")
+    logger.info(f"Total: {len(results)} | Neu: {new} | Übersprungen: {skipped} | Chunks: {total_chunks}")
 
     index_chunks(config)
 
