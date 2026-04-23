@@ -68,9 +68,18 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
 
     logger.info(f"Parsed {file_path.name}: {len(parsed.extracted_text)} chars")
 
+    module_name = ""
+    try:
+        raw_root = load_config()["raw_path"].resolve()
+        relative_path = file_path.resolve().relative_to(raw_root)
+        if len(relative_path.parts) > 1:
+            module_name = relative_path.parts[0]
+    except Exception:
+        module_name = file_path.parent.name if file_path.parent.name else ""
+
     parsed_data = parsed.to_dict()
     parsed_data["document_id"] = document_id
-    parsed_data["module_name"] = ""
+    parsed_data["module_name"] = module_name
     parsed_data["document_type"] = ""
 
     saved_path = save_parsed_document(parsed_data, processed_dir / "parsed")
@@ -81,7 +90,11 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
     text=parsed.extracted_text,
     document_id=document_id,
     file_type=parsed.file_type,
-    metadata={**parsed.metadata, "source": str(file_path)}  
+    metadata={
+        **parsed.metadata,
+        "source": str(file_path),
+        "module_name": module_name,
+    }
 )
     result["chunkCount"] = len(chunks)
     logger.info(f"Generated {len(chunks)} chunks from {file_path.name}")
@@ -154,6 +167,7 @@ def index_chunks(config: Dict[str, Any]) -> None:
                 {
                     "document_id": c.get("document_id", ""),
                     "source": c.get("metadata", {}).get("source", c.get("source", "")),
+                    "module_name": c.get("metadata", {}).get("module_name", ""),
                     "chunk_index": str(c.get("chunk_index", "")),
                 }
                 for c in batch_chunks

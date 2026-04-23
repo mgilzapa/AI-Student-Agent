@@ -69,7 +69,12 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
             self._client = OpenAI()
         return self._client
 
-    def retrieve(self, query: str, top_k: Optional[int] = None) -> List[Dict[str, Any]]:
+    def retrieve(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        module_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve relevant chunks for a query.
 
@@ -88,9 +93,11 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
             logger.warning("Failed to generate query embedding")
             return []
 
+        where = {"module_name": module_name} if module_name else None
         results = self.vector_store.search(
             query_embedding=query_embedding,
-            n_results=top_k
+            n_results=top_k,
+            where=where
         )
 
         hits = []
@@ -109,7 +116,12 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
         logger.info(f"Retrieved {len(hits)} chunks for query: {query[:50]}...")
         return hits
 
-    def ask(self, question: str, top_k: Optional[int] = None) -> Dict[str, Any]:
+    def ask(
+        self,
+        question: str,
+        top_k: Optional[int] = None,
+        module_name: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Answer a question using retrieval-augmented generation.
 
@@ -120,7 +132,7 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
         Returns:
             Dict with answer and sources
         """
-        hits = self.retrieve(question, top_k=top_k)
+        hits = self.retrieve(question, top_k=top_k, module_name=module_name)
 
         if not hits:
             return {

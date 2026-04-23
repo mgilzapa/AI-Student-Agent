@@ -7,625 +7,1081 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #0e0e0f;
-    --surface:   #161618;
-    --border:    #2a2a2d;
-    --text:      #e8e6e0;
-    --muted:     #6b6b72;
-    --accent:    #c9a96e;
-    --accent-dim:#7a5f35;
-    --user-bg:   #1e1e21;
-    --agent-bg:  #131315;
-    --radius:    12px;
-    --green:     #6dbf8a;
-    --green-dim: #2d5c3d;
+    --bg: #0d1014;
+    --panel: #141920;
+    --panel-soft: #1a212b;
+    --border: #29313d;
+    --text: #edf1e7;
+    --muted: #8b95a7;
+    --accent: #d8b36a;
+    --accent-soft: rgba(216, 179, 106, 0.12);
+    --accent-border: #7f6432;
+    --user-bg: #1d2430;
+    --agent-bg: #121720;
+    --success: #79c590;
+    --danger: #d88484;
+    --radius: 18px;
+    --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
   }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--bg);
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at top left, rgba(216, 179, 106, 0.12), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(121, 197, 144, 0.09), transparent 22%),
+      var(--bg);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
+    overflow: auto;
+  }
+
+  .app-shell {
     height: 100dvh;
     display: flex;
     flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    background: rgba(13, 16, 20, 0.78);
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .brand h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.55rem;
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .brand p,
+  .header-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  main {
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
   }
 
-  /* ── Header ── */
-  header {
-    padding: 16px 32px;
+  .screen {
+    display: none;
+    height: 100%;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  #setup-screen {
+    align-items: flex-start;
+    justify-content: center;
+    padding: 36px;
+    overflow-y: auto;
+  }
+
+  .setup-card {
+    width: min(960px, 100%);
+    background: rgba(20, 25, 32, 0.88);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    padding: 34px;
+    display: grid;
+    gap: 24px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .setup-top {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .setup-top h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.08;
+    max-width: 16ch;
+    margin-inline: auto;
+  }
+
+  .setup-top p {
+    color: var(--muted);
+    max-width: 60ch;
+    line-height: 1.7;
+    font-size: 1rem;
+    margin-inline: auto;
+  }
+
+  .setup-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    gap: 22px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 22px;
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  #module-name {
+    width: 100%;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    padding: 14px 16px;
+    font-size: 0.98rem;
+    outline: none;
+  }
+
+  #module-name:focus {
+    border-color: var(--accent-border);
+  }
+
+  #drop-zone {
+    margin-top: 18px;
+    border: 1.5px dashed var(--accent-border);
+    background: linear-gradient(180deg, rgba(216, 179, 106, 0.09), rgba(216, 179, 106, 0.02));
+    border-radius: 20px;
+    min-height: 240px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    position: relative;
+    padding: 24px;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+
+  #drop-zone.dragover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    background: linear-gradient(180deg, rgba(216, 179, 106, 0.16), rgba(216, 179, 106, 0.04));
+  }
+
+  #drop-zone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .drop-copy {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    text-align: center;
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+
+  .drop-icon {
+    font-size: 2.4rem;
+    color: var(--accent);
+  }
+
+  .drop-title {
+    font-size: 1.08rem;
+    font-weight: 500;
+  }
+
+  .drop-subtitle {
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 34ch;
+  }
+
+  .drop-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .selected-files {
+    margin-top: 18px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .selected-file {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+  }
+
+  .selected-file small {
+    color: var(--muted);
+  }
+
+  .sidebar-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .side-copy {
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 18px;
+    max-width: 34ch;
+  }
+
+  .existing-modules {
+    display: grid;
+    gap: 10px;
+  }
+
+  .existing-module {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .existing-module span {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .empty-modules {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+  }
+
+  button:hover {
+    opacity: 0.92;
+  }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 14px;
+    font-weight: 500;
+    font-size: 0.94rem;
+  }
+
+  .primary-btn {
+    background: var(--accent);
+    color: #14110d;
+  }
+
+  .secondary-btn {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .status-line {
+    min-height: 1.2em;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .status-line.error {
+    color: var(--danger);
+  }
+
+  .status-line.success {
+    color: var(--success);
+  }
+
+  .processing-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    background: rgba(13, 16, 20, 0.76);
+    backdrop-filter: blur(8px);
+    border-radius: 28px;
+    z-index: 5;
+  }
+
+  .processing-overlay.active {
+    display: flex;
+  }
+
+  .processing-card {
+    width: min(420px, 100%);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: rgba(20, 25, 32, 0.96);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    display: grid;
+    gap: 14px;
+    text-align: center;
+  }
+
+  .processing-spinner {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 3px solid rgba(216, 179, 106, 0.2);
+    border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite;
+  }
+
+  .processing-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    color: var(--accent);
+  }
+
+  .processing-text {
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .processing-steps {
+    display: grid;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .processing-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-size: 0.93rem;
+  }
+
+  .processing-step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 6px rgba(216, 179, 106, 0.12);
+    flex-shrink: 0;
+  }
+
+  #workspace-screen {
+    min-height: 0;
+  }
+
+  .workspace {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: rgba(20, 25, 32, 0.78);
+    padding: 22px 18px;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 18px;
+    min-height: 0;
+  }
+
+  .module-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    padding: 7px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--accent);
+  }
+
+  .files-panel {
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+
+  .file-item {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 14px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .file-item strong {
+    font-weight: 500;
+  }
+
+  .file-item small {
+    color: var(--muted);
+  }
+
+  .sidebar-actions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .chat-area {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .chat-topbar {
+    padding: 18px 24px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 24px;
-    flex-shrink: 0;
+    justify-content: space-between;
+    gap: 16px;
   }
-  header h1 {
+
+  .chat-topbar h3 {
     font-family: 'DM Serif Display', serif;
-    font-size: 1.4rem;
-    color: var(--accent);
-    letter-spacing: 0.01em;
-    margin-right: 8px;
+    font-size: 1.3rem;
+    font-weight: 400;
+    line-height: 1.2;
   }
 
-  /* ── Tabs ── */
-  .tabs {
-    display: flex;
-    gap: 4px;
-  }
-  .tab {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 6px 14px;
-    border-radius: 6px;
-    border: 1px solid transparent;
+  .chat-topbar p {
     color: var(--muted);
-    cursor: pointer;
-    transition: all 0.18s;
-    background: none;
-  }
-  .tab:hover { color: var(--text); border-color: var(--border); }
-  .tab.active {
-    color: var(--accent);
-    border-color: var(--accent-dim);
-    background: rgba(201,169,110,0.06);
+    font-size: 0.92rem;
+    max-width: 52ch;
+    margin-top: 4px;
   }
 
-  header .sprint {
-    margin-left: auto;
-    font-size: 0.72rem;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* ── Panels ── */
-  .panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
-  .panel.active { display: flex; }
-
-  /* ══════════════════════════════
-     CHAT PANEL
-  ══════════════════════════════ */
   #chat {
-    flex: 1;
     overflow-y: auto;
-    padding: 32px;
+    overflow-x: hidden;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    scroll-behavior: smooth;
+    gap: 22px;
+    min-height: 0;
   }
-  #chat::-webkit-scrollbar { width: 4px; }
-  #chat::-webkit-scrollbar-track { background: transparent; }
-  #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .empty-state {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .empty-state div {
+    display: grid;
+    gap: 12px;
+    max-width: 420px;
+  }
+
+  .empty-state strong {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: rgba(216, 179, 106, 0.38);
+    font-weight: 400;
+  }
 
   .msg {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-width: 760px;
-    animation: fadeUp 0.25s ease both;
+    max-width: 860px;
+    animation: fadeUp 0.2s ease both;
   }
-  .msg.user { align-self: flex-end; align-items: flex-end; }
-  .msg.agent { align-self: flex-start; align-items: flex-start; }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .msg.user {
+    align-self: flex-end;
+    align-items: flex-end;
   }
 
   .label {
-    font-size: 0.68rem;
     font-family: 'DM Mono', monospace;
-    color: var(--muted);
+    font-size: 0.68rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    color: var(--muted);
   }
 
   .bubble {
-    padding: 14px 18px;
-    border-radius: var(--radius);
-    line-height: 1.7;
-    font-size: 0.92rem;
+    padding: 16px 18px;
+    border-radius: 18px;
+    line-height: 1.72;
+    font-size: 0.95rem;
     word-break: break-word;
+    border: 1px solid var(--border);
   }
-  .msg.user .bubble { background: var(--user-bg); border: 1px solid var(--border); }
-  .msg.agent .bubble { background: var(--agent-bg); border: 1px solid var(--border); }
-  .msg.agent .bubble > * + * { margin-top: 0.9rem; }
+
+  .msg.user .bubble {
+    background: var(--user-bg);
+  }
+
+  .msg.agent .bubble {
+    background: var(--agent-bg);
+  }
+
+  .msg.agent .bubble > * + * {
+    margin-top: 0.9rem;
+  }
+
   .msg.agent .bubble h1,
   .msg.agent .bubble h2,
   .msg.agent .bubble h3 {
     font-family: 'DM Serif Display', serif;
     color: var(--accent);
-    line-height: 1.25;
-    margin: 0;
+    line-height: 1.2;
   }
-  .msg.agent .bubble h1 { font-size: 1.2rem; }
-  .msg.agent .bubble h2 { font-size: 1.08rem; }
+
+  .msg.agent .bubble h1 { font-size: 1.18rem; }
+  .msg.agent .bubble h2 { font-size: 1.05rem; }
   .msg.agent .bubble h3 { font-size: 0.98rem; }
-  .msg.agent .bubble p {
-    margin: 0;
-    color: var(--text);
-  }
+  .msg.agent .bubble p { margin: 0; }
   .msg.agent .bubble ul {
     margin: 0;
     padding-left: 1.2rem;
     display: grid;
-    gap: 0.42rem;
+    gap: 0.38rem;
   }
-  .msg.agent .bubble li {
-    margin: 0;
-  }
-  .msg.agent .bubble strong {
-    color: #f3ddae;
-    font-weight: 500;
-  }
+  .msg.agent .bubble strong { color: #f1deb6; font-weight: 500; }
   .msg.agent .bubble code {
     font-family: 'DM Mono', monospace;
     font-size: 0.84em;
+    background: rgba(216, 179, 106, 0.12);
     padding: 0.08rem 0.35rem;
     border-radius: 4px;
-    background: rgba(201,169,110,0.12);
-    color: #f3ddae;
+    color: #f1deb6;
   }
 
-  .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
   .source-tag {
     font-family: 'DM Mono', monospace;
     font-size: 0.68rem;
     color: var(--accent);
-    background: rgba(201,169,110,0.08);
-    border: 1px solid var(--accent-dim);
-    padding: 2px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    padding: 3px 8px;
+    border-radius: 999px;
+    max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 260px;
+    white-space: nowrap;
   }
 
-  .thinking .bubble { display: flex; gap: 6px; align-items: center; }
+  .thinking .bubble {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
   .dot {
-    width: 6px; height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--accent);
-    animation: pulse 1.2s ease-in-out infinite;
-  }
-  .dot:nth-child(2) { animation-delay: 0.2s; }
-  .dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes pulse {
-    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-    40%           { opacity: 1;   transform: scale(1); }
+    animation: pulse 1.15s ease-in-out infinite;
   }
 
-  #empty {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: var(--muted);
-    pointer-events: none;
-    user-select: none;
-  }
-  #empty .big { font-family: 'DM Serif Display', serif; font-size: 2.5rem; color: var(--border); }
-  #empty p { font-size: 0.85rem; }
+  .dot:nth-child(2) { animation-delay: 0.18s; }
+  .dot:nth-child(3) { animation-delay: 0.36s; }
 
-  #chat-footer {
-    padding: 20px 32px;
+  .chat-footer {
     border-top: 1px solid var(--border);
-    flex-shrink: 0;
+    padding: 18px 24px 22px;
   }
-  #form { display: flex; gap: 10px; max-width: 760px; margin: 0 auto; }
+
+  .chat-form {
+    display: flex;
+    gap: 12px;
+  }
+
   #input {
     flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.92rem;
-    padding: 12px 16px;
-    outline: none;
-    transition: border-color 0.2s;
     resize: none;
-    height: 48px;
-    line-height: 1.5;
-  }
-  #input:focus { border-color: var(--accent-dim); }
-  #input::placeholder { color: var(--muted); }
-  #send {
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius);
-    color: #0e0e0f;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    font-size: 0.88rem;
-    padding: 0 20px;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    height: 48px;
-  }
-  #send:hover { opacity: 0.85; }
-  #send:disabled { opacity: 0.3; cursor: default; }
-
-  /* ══════════════════════════════
-     VORLESUNG PANEL
-  ══════════════════════════════ */
-  #vl-panel {
-    overflow-y: auto;
-    padding: 32px;
-    gap: 28px;
-  }
-  #vl-panel::-webkit-scrollbar { width: 4px; }
-  #vl-panel::-webkit-scrollbar-track { background: transparent; }
-  #vl-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  /* Upload zone */
-  #drop-zone {
-    max-width: 600px;
-    margin: 0 auto;
-    border: 1.5px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 48px 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    position: relative;
-  }
-  #drop-zone:hover, #drop-zone.dragover {
-    border-color: var(--accent-dim);
-    background: rgba(201,169,110,0.04);
-  }
-  #drop-zone input[type=file] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  #drop-zone .icon {
-    font-size: 2rem;
-    margin-bottom: 12px;
-    color: var(--muted);
-  }
-  #drop-zone p {
-    font-size: 0.88rem;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  #drop-zone .hint {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--accent-dim);
-    margin-top: 8px;
-  }
-
-  #process-btn {
-    display: block;
-    max-width: 600px;
-    width: 100%;
-    margin: 0 auto;
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius);
-    color: #0e0e0f;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    font-size: 0.92rem;
-    padding: 14px;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  #process-btn:hover { opacity: 0.85; }
-  #process-btn:disabled { opacity: 0.3; cursor: default; }
-
-  /* Progress */
-  #vl-progress {
-    max-width: 600px;
-    margin: 0 auto;
-    display: none;
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-  }
-  #vl-progress.show { display: flex; }
-  .progress-bar-wrap {
-    width: 100%;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    width: 0%;
-    transition: width 0.4s ease;
-    animation: indeterminate 1.4s ease infinite;
-  }
-  @keyframes indeterminate {
-    0%   { transform: translateX(-100%) scaleX(0.5); }
-    50%  { transform: translateX(25%) scaleX(0.8); }
-    100% { transform: translateX(100%) scaleX(0.5); }
-  }
-  #vl-progress p {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-  }
-
-  /* Results */
-  #vl-results { display: none; flex-direction: column; gap: 28px; max-width: 760px; margin: 0 auto; width: 100%; }
-  #vl-results.show { display: flex; }
-
-  .result-section {
-    background: var(--surface);
+    min-height: 54px;
+    max-height: 180px;
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    animation: fadeUp 0.3s ease both;
-  }
-  .result-header {
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .result-header .badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 3px 8px;
-    border-radius: 4px;
-  }
-  .badge-summary { background: rgba(201,169,110,0.12); color: var(--accent); border: 1px solid var(--accent-dim); }
-  .badge-cards   { background: rgba(109,191,138,0.1);  color: var(--green);  border: 1px solid var(--green-dim); }
-  .badge-quiz    { background: rgba(120,120,200,0.1);  color: #9b9bdf;       border: 1px solid #4a4a8a; }
-  .result-header .count {
-    margin-left: auto;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-  }
-
-  /* Summary */
-  .summary-body {
-    padding: 20px;
-    font-size: 0.92rem;
-    line-height: 1.8;
+    border-radius: 16px;
     color: var(--text);
+    padding: 14px 16px;
+    font: inherit;
+    outline: none;
   }
 
-  /* Karteikarten */
-  .cards-grid {
-    padding: 16px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
+  #input:focus {
+    border-color: var(--accent-border);
   }
-  .karte {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    min-height: 90px;
-    position: relative;
-  }
-  .karte:hover { border-color: var(--green-dim); }
-  .karte .frage {
-    font-size: 0.88rem;
-    color: var(--text);
-    line-height: 1.5;
-    font-weight: 400;
-  }
-  .karte .antwort {
-    font-size: 0.85rem;
-    color: var(--green);
-    line-height: 1.5;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    display: none;
-  }
-  .karte.flipped .antwort { display: block; }
-  .karte .flip-hint {
-    position: absolute;
-    bottom: 8px;
-    right: 10px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.62rem;
-    color: var(--muted);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .karte:hover .flip-hint { opacity: 1; }
 
-  /* Quiz */
-  .quiz-list { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-  .quiz-item {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1); }
   }
-  .quiz-q {
-    font-size: 0.9rem;
-    font-weight: 400;
-    margin-bottom: 12px;
-    line-height: 1.5;
-  }
-  .quiz-q .q-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-right: 8px;
-  }
-  .quiz-options { display: flex; flex-direction: column; gap: 6px; }
-  .quiz-opt {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    text-align: left;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.15s, background 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .quiz-opt .opt-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-    flex-shrink: 0;
-  }
-  .quiz-opt:hover:not(:disabled) { border-color: #9b9bdf; background: rgba(120,120,200,0.05); }
-  .quiz-opt.correct  { border-color: var(--green); background: rgba(109,191,138,0.08); color: var(--green); }
-  .quiz-opt.wrong    { border-color: #bf6d6d; background: rgba(191,109,109,0.08); color: #bf6d6d; }
-  .quiz-opt:disabled { cursor: default; }
-  .quiz-explanation {
-    margin-top: 10px;
-    font-size: 0.8rem;
-    color: var(--muted);
-    font-style: italic;
-    display: none;
-  }
-  .quiz-item.answered .quiz-explanation { display: block; }
 
-  /* Reset btn */
-  #reset-btn {
-    max-width: 760px;
-    width: 100%;
-    margin: 0 auto;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    padding: 10px;
-    cursor: pointer;
-    transition: border-color 0.2s, color 0.2s;
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
-  #reset-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 980px) {
+    .setup-grid,
+    .workspace {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      grid-template-rows: auto auto minmax(180px, auto) auto;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .side-copy,
+    .drop-subtitle,
+    .chat-topbar p {
+      max-width: none;
+    }
+  }
 </style>
 </head>
 <body>
-
-<header>
-  <h1>Study Agent</h1>
-  <div class="tabs">
-    <button class="tab active" data-tab="chat">Chat</button>
-    <button class="tab" data-tab="vl">Vorlesung</button>
-  </div>
-  <span class="sprint">RAG · Sprint 2</span>
-</header>
-
-<!-- ── CHAT PANEL ── -->
-<div class="panel active" id="panel-chat">
-  <div id="chat">
-    <div id="empty">
-      <div class="big">∎</div>
-      <p>Stelle eine Frage zu deinen Lernmaterialien.</p>
-    </div>
-  </div>
-  <footer id="chat-footer">
-    <div id="form">
-      <textarea id="input" placeholder="Frage stellen…" rows="1"></textarea>
-      <button id="send">Senden</button>
-    </div>
-  </footer>
-</div>
-
-<!-- ── VORLESUNG PANEL ── -->
-<div class="panel" id="panel-vl">
-  <div id="vl-panel">
-
-    <!-- Upload -->
-    <div id="drop-zone">
-      <input type="file" id="file-input" accept=".pdf,.txt,.md,.docx">
-      <div class="icon">⬆</div>
-      <p>Vorlesung hier ablegen oder klicken zum Auswählen</p>
-      <div class="hint">PDF · TXT · MD · DOCX</div>
-    </div>
-
-    <button id="process-btn" disabled>Analysieren</button>
-
-    <!-- Progress -->
-    <div id="vl-progress">
-      <div class="progress-bar-wrap"><div class="progress-bar-fill"></div></div>
-      <p>GPT-4o-mini analysiert…</p>
-    </div>
-
-    <!-- Results -->
-    <div id="vl-results">
-
-      <!-- Zusammenfassung -->
-      <div class="result-section" id="sec-summary">
-        <div class="result-header">
-          <span class="badge badge-summary">Zusammenfassung</span>
-        </div>
-        <div class="summary-body" id="summary-text"></div>
+  <div class="app-shell">
+    <header>
+      <div class="brand">
+        <h1>Study Agent</h1>
+        <p>Lernassistent</p>
       </div>
+      <div class="header-status" id="header-status">Noch kein Kurs geöffnet</div>
+    </header>
 
-      <!-- Karteikarten -->
-      <div class="result-section" id="sec-cards">
-        <div class="result-header">
-          <span class="badge badge-cards">Karteikarten</span>
-          <span class="count" id="cards-count"></span>
+    <main>
+      <section class="screen active" id="setup-screen">
+        <div class="setup-card">
+          <div class="processing-overlay" id="processing-overlay" aria-live="polite">
+            <div class="processing-card">
+              <div class="processing-spinner"></div>
+              <div class="processing-title" id="processing-title">Dein Kurs wird vorbereitet</div>
+              <div class="processing-text" id="processing-text">
+                Das kann einen Moment dauern. Deine Dateien werden gespeichert, verarbeitet und für den Chat vorbereitet.
+              </div>
+              <div class="processing-steps">
+                <div class="processing-step"><span class="processing-step-dot"></span><span>Dateien werden hochgeladen</span></div>
+                <div class="processing-step"><span class="processing-step-dot"></span><span>Texte werden eingelesen und in Abschnitte zerlegt</span></div>
+                <div class="processing-step"><span class="processing-step-dot"></span><span>Inhalte werden für den Chat durchsuchbar gemacht</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="setup-top">
+            <div class="eyebrow">Los geht's</div>
+            <h2>Lade zuerst die Unterlagen für deinen Kurs hoch.</h2>
+            <p>
+              Danach bereitet die App alles für dich vor und du kannst direkt Fragen zu deinen
+              Materialien stellen.
+            </p>
+          </div>
+
+          <div class="setup-grid">
+            <section class="card">
+              <label class="field-label" for="module-name">Kursname</label>
+              <input id="module-name" type="text" placeholder="Zum Beispiel: Lineare Algebra">
+
+              <div id="drop-zone">
+                <input id="file-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple>
+                <div class="drop-copy">
+                  <div class="drop-icon">↑</div>
+                  <div class="drop-title">Dateien hier ablegen oder auswählen</div>
+                  <div class="drop-subtitle">
+                    Lade alle Folien, Skripte oder Notizen zu einem Kurs gesammelt hoch.
+                    Mehrere Dateien auf einmal sind kein Problem.
+                  </div>
+                  <div class="drop-hint">PDF · PPTX · MD · TXT</div>
+                </div>
+              </div>
+
+              <div class="selected-files" id="selected-files"></div>
+
+              <div class="actions" style="margin-top: 18px;">
+                <button class="primary-btn" id="upload-btn" disabled>Kurs vorbereiten</button>
+                <button class="secondary-btn" id="clear-btn" type="button">Auswahl leeren</button>
+              </div>
+              <div class="status-line" id="upload-status"></div>
+            </section>
+
+            <aside class="card">
+              <div class="sidebar-title">Vorhandene Kurse</div>
+              <p class="side-copy">
+                Wenn du schon Materialien hochgeladen hast, kannst du den Kurs direkt öffnen
+                und sofort weiterlernen.
+              </p>
+              <div class="existing-modules" id="existing-modules"></div>
+              <div class="empty-modules" id="empty-modules" hidden>
+                Noch keine Kurse gefunden.
+              </div>
+            </aside>
+          </div>
         </div>
-        <div class="cards-grid" id="cards-grid"></div>
-      </div>
+      </section>
 
-      <!-- Quiz -->
-      <div class="result-section" id="sec-quiz">
-        <div class="result-header">
-          <span class="badge badge-quiz">Quiz</span>
-          <span class="count" id="quiz-count"></span>
+      <section class="screen" id="workspace-screen">
+        <div class="workspace">
+          <aside class="sidebar">
+            <div>
+              <div class="module-chip" id="module-chip">Kein Kurs</div>
+            </div>
+
+            <div>
+              <div class="field-label">Materialien</div>
+              <div class="side-copy" id="sidebar-copy">
+                Diese Unterlagen nutzt der Chat, um dir passende Antworten zu deinem Kurs zu geben.
+              </div>
+            </div>
+
+            <div class="files-panel" id="files-panel"></div>
+
+            <div class="sidebar-actions">
+              <button class="secondary-btn" id="new-module-btn" type="button">Anderen Kurs öffnen</button>
+            </div>
+          </aside>
+
+          <section class="chat-area">
+            <div class="chat-topbar">
+              <div>
+                <h3>Stell Fragen zu deinem Kurs</h3>
+                <p id="chat-subtitle">Die Antworten basieren auf den Materialien, die du links siehst.</p>
+              </div>
+            </div>
+
+            <div id="chat">
+              <div class="empty-state" id="empty">
+                <div>
+                  <strong>∮</strong>
+                  <p>Frag nach Zusammenfassungen, klausurrelevanten Themen, Erklärungen oder Beispielen aus deinen Unterlagen.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-footer">
+              <div class="chat-form">
+                <textarea id="input" placeholder="Zum Beispiel: Welche Themen sind klausurrelevant?" rows="1"></textarea>
+                <button class="primary-btn" id="send">Senden</button>
+              </div>
+            </div>
+          </section>
         </div>
-        <div class="quiz-list" id="quiz-list"></div>
-      </div>
-
-    </div>
-
-    <button id="reset-btn" style="display:none">Neue Vorlesung laden</button>
-
+      </section>
+    </main>
   </div>
-</div>
 
 <script>
-// ── Tab switching ──
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-  });
-});
+const state = {
+  moduleName: '',
+  selectedFiles: [],
+  isUploading: false,
+};
 
-// ══════════════════════════════
-// CHAT
-// ══════════════════════════════
-const chat    = document.getElementById('chat');
-const empty   = document.getElementById('empty');
-const input   = document.getElementById('input');
+const setupScreen = document.getElementById('setup-screen');
+const workspaceScreen = document.getElementById('workspace-screen');
+const moduleNameInput = document.getElementById('module-name');
+const fileInput = document.getElementById('file-input');
+const dropZone = document.getElementById('drop-zone');
+const selectedFilesEl = document.getElementById('selected-files');
+const uploadBtn = document.getElementById('upload-btn');
+const clearBtn = document.getElementById('clear-btn');
+const uploadStatus = document.getElementById('upload-status');
+const processingOverlay = document.getElementById('processing-overlay');
+const processingTitle = document.getElementById('processing-title');
+const processingText = document.getElementById('processing-text');
+const existingModulesEl = document.getElementById('existing-modules');
+const emptyModulesEl = document.getElementById('empty-modules');
+const filesPanel = document.getElementById('files-panel');
+const moduleChip = document.getElementById('module-chip');
+const headerStatus = document.getElementById('header-status');
+const newModuleBtn = document.getElementById('new-module-btn');
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 
+function setStatus(message, type = '') {
+  uploadStatus.textContent = message;
+  uploadStatus.className = `status-line ${type}`.trim();
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function updateUploadButton() {
+  const hasName = moduleNameInput.value.trim().length > 0;
+  uploadBtn.disabled = state.isUploading || !(hasName && state.selectedFiles.length);
+  clearBtn.disabled = state.isUploading;
+  moduleNameInput.disabled = state.isUploading;
+  fileInput.disabled = state.isUploading;
+}
+
+function setProcessingState(active, title = '', text = '') {
+  state.isUploading = active;
+  processingOverlay.classList.toggle('active', active);
+  if (title) processingTitle.textContent = title;
+  if (text) processingText.textContent = text;
+  }
+
+function renderSelectedFiles() {
+  selectedFilesEl.innerHTML = '';
+  state.selectedFiles.forEach(file => {
+    const row = document.createElement('div');
+    row.className = 'selected-file';
+    row.innerHTML = `
+      <div>
+        <div>${escHtml(file.name)}</div>
+        <small>${escHtml(file.type || 'Datei')}</small>
+      </div>
+      <small>${formatBytes(file.size)}</small>
+    `;
+    selectedFilesEl.appendChild(row);
+  });
+}
+
+function applySelectedFiles(fileList) {
+  state.selectedFiles = Array.from(fileList || []);
+  renderSelectedFiles();
+  updateUploadButton();
+}
+
+function resetUploadForm() {
+  state.selectedFiles = [];
+  fileInput.value = '';
+  renderSelectedFiles();
+  updateUploadButton();
+  setStatus('');
+}
+
+function openWorkspace(moduleName, files) {
+  state.moduleName = moduleName;
+  setupScreen.classList.remove('active');
+  workspaceScreen.classList.add('active');
+  moduleChip.textContent = moduleName;
+  headerStatus.textContent = `Aktueller Kurs: ${moduleName}`;
+  renderWorkspaceFiles(files || []);
+  resetChat();
+  input.focus();
+}
+
+function showSetup() {
+  workspaceScreen.classList.remove('active');
+  setupScreen.classList.add('active');
+  headerStatus.textContent = 'Noch kein Kurs geöffnet';
+}
+
+function resetChat() {
+  chat.innerHTML = `
+    <div class="empty-state" id="empty">
+      <div>
+        <strong>∮</strong>
+        <p>Frag nach Zusammenfassungen, klausurrelevanten Themen, Erklärungen oder Beispielen aus deinen Unterlagen.</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderWorkspaceFiles(files) {
+  filesPanel.innerHTML = '';
+  if (!files.length) {
+    const emptyCard = document.createElement('div');
+    emptyCard.className = 'file-item';
+    emptyCard.innerHTML = '<strong>Noch keine Materialien</strong><small>Für diesen Kurs wurden bisher keine Dateien gefunden.</small>';
+    filesPanel.appendChild(emptyCard);
+    return;
+  }
+
+  files.forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = `
+      <strong>${escHtml(file.name)}</strong>
+      <small>${escHtml(file.relative_path || file.name)}</small>
+      <small>${escHtml((file.file_type || '').toUpperCase())} · ${formatBytes(file.size)}</small>
+    `;
+    filesPanel.appendChild(item);
+  });
+}
+
+async function loadModules() {
+  try {
+    const res = await fetch('/modules');
+    const data = await res.json();
+    const modules = data.modules || [];
+    existingModulesEl.innerHTML = '';
+    emptyModulesEl.hidden = modules.length > 0;
+
+    modules.forEach(moduleName => {
+      const btn = document.createElement('button');
+      btn.className = 'existing-module';
+      btn.type = 'button';
+      btn.innerHTML = `<strong>${escHtml(moduleName)}</strong><span>Öffnen</span>`;
+      btn.addEventListener('click', () => loadModuleWorkspace(moduleName));
+      existingModulesEl.appendChild(btn);
+    });
+  } catch (error) {
+    emptyModulesEl.hidden = false;
+    emptyModulesEl.textContent = 'Die Kurse konnten gerade nicht geladen werden.';
+  }
+}
+
+async function loadModuleWorkspace(moduleName) {
+  try {
+    const res = await fetch(`/modules/${encodeURIComponent(moduleName)}/files`);
+    if (!res.ok) throw new Error('Der Kurs konnte nicht geladen werden.');
+    const data = await res.json();
+    openWorkspace(data.module_name, data.files || []);
+  } catch (error) {
+    setStatus(error.message, 'error');
+  }
+}
+
+async function uploadModule() {
+  const moduleName = moduleNameInput.value.trim();
+  if (!moduleName || !state.selectedFiles.length) return;
+
+  setProcessingState(
+    true,
+    'Dein Kurs wird vorbereitet',
+    'Deine Dateien werden gerade hochgeladen, verarbeitet und für den Chat bereitgemacht.'
+  );
+  updateUploadButton();
+  setStatus('Deine Dateien werden vorbereitet ...');
+
+  const formData = new FormData();
+  formData.append('module_name', moduleName);
+  state.selectedFiles.forEach(file => formData.append('files', file));
+
+  try {
+    const res = await fetch('/modules/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Upload fehlgeschlagen.');
+
+    setProcessingState(
+      true,
+      'Fast geschafft',
+      'Die Unterlagen sind hochgeladen. Jetzt wird alles abgeschlossen und dein Kurs gleich geöffnet.'
+    );
+
+    const notes = [];
+    notes.push(`${data.saved_count || 0} Datei(en) hinzugefügt.`);
+    if (data.skipped_count) notes.push(`${data.skipped_count} Datei(en) waren schon vorhanden.`);
+    if (data.unsupported_files?.length) notes.push(`${data.unsupported_files.length} Datei(en) werden nicht unterstützt.`);
+    if (data.failed_files?.length) notes.push(`${data.failed_files.length} Datei(en) konnten nicht verarbeitet werden.`);
+    setStatus(notes.join(' '), data.failed_files?.length ? 'error' : 'success');
+
+    await loadModules();
+    openWorkspace(data.module_name, data.files || []);
+    resetUploadForm();
+  } catch (error) {
+    setStatus(error.message || 'Upload fehlgeschlagen.', 'error');
+  } finally {
+    setProcessingState(false);
+    updateUploadButton();
+  }
+}
+
 function addMsg(role, content, sources) {
-  if (empty.parentNode) empty.remove();
+  const emptyState = document.getElementById('empty');
+  if (emptyState?.parentNode) emptyState.remove();
   const wrap = document.createElement('div');
   wrap.className = `msg ${role}`;
   const label = document.createElement('div');
@@ -635,27 +1091,29 @@ function addMsg(role, content, sources) {
   bubble.className = 'bubble';
   if (role === 'agent') bubble.innerHTML = renderMarkdown(content);
   else bubble.textContent = content;
-  wrap.appendChild(label);
-  wrap.appendChild(bubble);
+  wrap.append(label, bubble);
+
   if (sources && sources.length) {
     const srcRow = document.createElement('div');
     srcRow.className = 'sources';
-    sources.forEach(s => {
+    sources.forEach(source => {
       const tag = document.createElement('div');
       tag.className = 'source-tag';
-      const name = s.source.split(/[\\/]/).pop() || s.source;
-      tag.textContent = `${name}  ${s.score}`;
-      tag.title = s.source;
+      const name = source.source.split(/[\\/]/).pop() || source.source;
+      tag.textContent = `${name} ${source.score}`;
+      tag.title = source.source;
       srcRow.appendChild(tag);
     });
     wrap.appendChild(srcRow);
   }
+
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
 }
 
 function addThinking() {
-  if (empty.parentNode) empty.remove();
+  const emptyState = document.getElementById('empty');
+  if (emptyState?.parentNode) emptyState.remove();
   const wrap = document.createElement('div');
   wrap.className = 'msg agent thinking';
   const label = document.createElement('div');
@@ -664,171 +1122,40 @@ function addThinking() {
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-  wrap.appendChild(label);
-  wrap.appendChild(bubble);
+  wrap.append(label, bubble);
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
   return wrap;
 }
 
-async function send() {
-  const q = input.value.trim();
-  if (!q) return;
+async function sendQuestion() {
+  const question = input.value.trim();
+  if (!question || !state.moduleName) return;
+
   input.value = '';
   sendBtn.disabled = true;
-  addMsg('user', q);
+  addMsg('user', question);
   const thinking = addThinking();
+
   try {
     const res = await fetch('/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q })
+      body: JSON.stringify({
+        question,
+        module_name: state.moduleName,
+      }),
     });
     const data = await res.json();
     thinking.remove();
-    addMsg('agent', data.answer, data.sources);
-  } catch (e) {
+    addMsg('agent', data.answer || 'Ich konnte gerade keine Antwort erzeugen.', data.sources || []);
+  } catch (error) {
     thinking.remove();
     addMsg('agent', 'Fehler beim Verbinden mit dem Server.');
   } finally {
     sendBtn.disabled = false;
     input.focus();
   }
-}
-
-sendBtn.addEventListener('click', send);
-input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-});
-
-// ══════════════════════════════
-// VORLESUNG PIPELINE
-// ══════════════════════════════
-const fileInput   = document.getElementById('file-input');
-const dropZone    = document.getElementById('drop-zone');
-const processBtn  = document.getElementById('process-btn');
-const vlProgress  = document.getElementById('vl-progress');
-const vlResults   = document.getElementById('vl-results');
-const resetBtn    = document.getElementById('reset-btn');
-
-let selectedFile = null;
-
-fileInput.addEventListener('change', () => {
-  selectedFile = fileInput.files[0];
-  if (selectedFile) {
-    dropZone.querySelector('p').textContent = selectedFile.name;
-    dropZone.style.borderColor = 'var(--accent-dim)';
-    processBtn.disabled = false;
-  }
-});
-
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const f = e.dataTransfer.files[0];
-  if (f) {
-    selectedFile = f;
-    dropZone.querySelector('p').textContent = f.name;
-    dropZone.style.borderColor = 'var(--accent-dim)';
-    processBtn.disabled = false;
-  }
-});
-
-processBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
-
-  processBtn.disabled = true;
-  dropZone.style.display = 'none';
-  vlProgress.classList.add('show');
-  vlResults.classList.remove('show');
-  resetBtn.style.display = 'none';
-
-  const formData = new FormData();
-  formData.append('file', selectedFile);
-
-  try {
-    const res = await fetch('/process', { method: 'POST', body: formData });
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    renderResults(data);
-  } catch (e) {
-    alert('Fehler: ' + e.message);
-    resetView();
-  } finally {
-    vlProgress.classList.remove('show');
-  }
-});
-
-resetBtn.addEventListener('click', resetView);
-
-function resetView() {
-  selectedFile = null;
-  fileInput.value = '';
-  dropZone.querySelector('p').textContent = 'Vorlesung hier ablegen oder klicken zum Auswählen';
-  dropZone.style.borderColor = '';
-  dropZone.style.display = '';
-  vlResults.classList.remove('show');
-  resetBtn.style.display = 'none';
-  processBtn.disabled = true;
-}
-
-function renderResults(data) {
-  // Zusammenfassung
-  document.getElementById('summary-text').textContent = data.zusammenfassung || '—';
-
-  // Karteikarten
-  const grid = document.getElementById('cards-grid');
-  grid.innerHTML = '';
-  const cards = data.karteikarten || [];
-  document.getElementById('cards-count').textContent = cards.length + ' Karten';
-  cards.forEach(k => {
-    const el = document.createElement('div');
-    el.className = 'karte';
-    el.innerHTML = `
-      <div class="frage">${escHtml(k.frage)}</div>
-      <div class="antwort">${escHtml(k.antwort)}</div>
-      <div class="flip-hint">klicken zum umdrehen</div>`;
-    el.addEventListener('click', () => el.classList.toggle('flipped'));
-    grid.appendChild(el);
-  });
-
-  // Quiz
-  const list = document.getElementById('quiz-list');
-  list.innerHTML = '';
-  const questions = data.quiz || [];
-  document.getElementById('quiz-count').textContent = questions.length + ' Fragen';
-  questions.forEach((q, qi) => {
-    const item = document.createElement('div');
-    item.className = 'quiz-item';
-    const labels = ['A', 'B', 'C', 'D'];
-    const optsHtml = (q.optionen || []).map((o, i) => `
-      <button class="quiz-opt" data-idx="${i}">
-        <span class="opt-label">${labels[i] || i}</span>
-        ${escHtml(o)}
-      </button>`).join('');
-    item.innerHTML = `
-      <div class="quiz-q"><span class="q-num">${qi + 1}.</span>${escHtml(q.frage)}</div>
-      <div class="quiz-options">${optsHtml}</div>
-      <div class="quiz-explanation">Richtige Antwort: ${escHtml((q.optionen || [])[q.richtig] || '')}</div>`;
-    item.querySelectorAll('.quiz-opt').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (item.classList.contains('answered')) return;
-        item.classList.add('answered');
-        const chosen = parseInt(btn.dataset.idx);
-        item.querySelectorAll('.quiz-opt').forEach((b, i) => {
-          b.disabled = true;
-          if (i === q.richtig) b.classList.add('correct');
-          else if (i === chosen) b.classList.add('wrong');
-        });
-      });
-    });
-    list.appendChild(item);
-  });
-
-  vlResults.classList.add('show');
-  resetBtn.style.display = 'block';
 }
 
 function escHtml(str) {
@@ -924,9 +1251,40 @@ function renderMarkdown(text) {
 
   flushParagraph();
   closeLists();
-
   return html.join('');
 }
+
+moduleNameInput.addEventListener('input', updateUploadButton);
+fileInput.addEventListener('change', event => applySelectedFiles(event.target.files));
+clearBtn.addEventListener('click', resetUploadForm);
+uploadBtn.addEventListener('click', uploadModule);
+newModuleBtn.addEventListener('click', showSetup);
+sendBtn.addEventListener('click', sendQuestion);
+input.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendQuestion();
+  }
+});
+
+dropZone.addEventListener('dragover', event => {
+  if (state.isUploading) return;
+  event.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', event => {
+  if (state.isUploading) return;
+  event.preventDefault();
+  dropZone.classList.remove('dragover');
+  applySelectedFiles(event.dataTransfer.files);
+});
+
+loadModules();
 </script>
 </body>
 </html>
