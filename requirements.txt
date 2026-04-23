@@ -1,13 +1,17 @@
 # Core
 python-dotenv>=1.0.0
+ftfy>=6.2.0
 
-# PDF parsing
+# Document parsing
 pypdf>=3.17.0
-
-# PowerPoint parsing
 python-pptx>=0.6.23
 
-# Sprint 2: Embeddings and RAG
+# API and server
+fastapi>=0.110.0
+python-multipart>=0.0.9
+uvicorn>=0.29.0
+
+# AI and vector store
 openai>=1.0.0
 chromadb>=0.4.0
 

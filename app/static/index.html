@@ -131,9 +131,47 @@
     border-radius: var(--radius);
     line-height: 1.7;
     font-size: 0.92rem;
+    word-break: break-word;
   }
   .msg.user .bubble { background: var(--user-bg); border: 1px solid var(--border); }
   .msg.agent .bubble { background: var(--agent-bg); border: 1px solid var(--border); }
+  .msg.agent .bubble > * + * { margin-top: 0.9rem; }
+  .msg.agent .bubble h1,
+  .msg.agent .bubble h2,
+  .msg.agent .bubble h3 {
+    font-family: 'DM Serif Display', serif;
+    color: var(--accent);
+    line-height: 1.25;
+    margin: 0;
+  }
+  .msg.agent .bubble h1 { font-size: 1.2rem; }
+  .msg.agent .bubble h2 { font-size: 1.08rem; }
+  .msg.agent .bubble h3 { font-size: 0.98rem; }
+  .msg.agent .bubble p {
+    margin: 0;
+    color: var(--text);
+  }
+  .msg.agent .bubble ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.42rem;
+  }
+  .msg.agent .bubble li {
+    margin: 0;
+  }
+  .msg.agent .bubble strong {
+    color: #f3ddae;
+    font-weight: 500;
+  }
+  .msg.agent .bubble code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.84em;
+    padding: 0.08rem 0.35rem;
+    border-radius: 4px;
+    background: rgba(201,169,110,0.12);
+    color: #f3ddae;
+  }
 
   .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   .source-tag {
@@ -595,7 +633,8 @@ function addMsg(role, content, sources) {
   label.textContent = role === 'user' ? 'Du' : 'Agent';
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
-  bubble.textContent = content;
+  if (role === 'agent') bubble.innerHTML = renderMarkdown(content);
+  else bubble.textContent = content;
   wrap.appendChild(label);
   wrap.appendChild(bubble);
   if (sources && sources.length) {
@@ -798,6 +837,95 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function renderInlineMarkdown(text) {
+  return escHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+function renderMarkdown(text) {
+  const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  const html = [];
+  let paragraph = [];
+  let listLevel1Open = false;
+  let listLevel2Open = false;
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    html.push(`<p>${renderInlineMarkdown(paragraph.join('<br>'))}</p>`);
+    paragraph = [];
+  }
+
+  function closeLists() {
+    if (listLevel2Open) {
+      html.push('</ul>');
+      listLevel2Open = false;
+    }
+    if (listLevel1Open) {
+      html.push('</ul>');
+      listLevel1Open = false;
+    }
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushParagraph();
+      closeLists();
+      continue;
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.*)$/);
+    if (headingMatch) {
+      flushParagraph();
+      closeLists();
+      const level = headingMatch[1].length;
+      html.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    const nestedBulletMatch = line.match(/^\s{2,}-\s+(.*)$/);
+    if (nestedBulletMatch) {
+      flushParagraph();
+      if (!listLevel1Open) {
+        html.push('<ul>');
+        listLevel1Open = true;
+      }
+      if (!listLevel2Open) {
+        html.push('<ul>');
+        listLevel2Open = true;
+      }
+      html.push(`<li>${renderInlineMarkdown(nestedBulletMatch[1])}</li>`);
+      continue;
+    }
+
+    const bulletMatch = trimmed.match(/^-\s+(.*)$/);
+    if (bulletMatch) {
+      flushParagraph();
+      if (listLevel2Open) {
+        html.push('</ul>');
+        listLevel2Open = false;
+      }
+      if (!listLevel1Open) {
+        html.push('<ul>');
+        listLevel1Open = true;
+      }
+      html.push(`<li>${renderInlineMarkdown(bulletMatch[1])}</li>`);
+      continue;
+    }
+
+    closeLists();
+    paragraph.push(trimmed);
+  }
+
+  flushParagraph();
+  closeLists();
+
+  return html.join('');
 }
 </script>
 </body>

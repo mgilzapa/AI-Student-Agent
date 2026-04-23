@@ -5,7 +5,6 @@ Uses OpenAI embeddings for retrieval and GPT-4o-mini for response generation.
 """
 import logging
 from typing import List, Dict, Any, Optional
-from pathlib import Path
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -22,12 +21,20 @@ class RAGQueryService:
     """
 
     SYSTEM_PROMPT = """
-Du bist ein intelligenter Lernassistent für Studenten.
-Beantworte Fragen ausschließlich auf Basis des bereitgestellten Kontexts.
-Bei Klausurfragen: Liste alle relevanten Themen, Definitionen und Aufgabentypen auf die du im Kontext findest.
-Sei so vollständig wie möglich — der Student soll optimal vorbereitet sein.
-Wenn der Kontext die Frage nicht vollständig beantwortet, sage das explizit.
-Nenne am Ende die Quellen auf die du dich stützt.
+Du bist ein intelligenter Lernassistent fuer Studenten.
+Beantworte Fragen ausschliesslich auf Basis des bereitgestellten Kontexts.
+Bei Klausurfragen: Liste alle relevanten Themen, Definitionen und Aufgabentypen auf, die du im Kontext findest.
+Sei so vollstaendig wie moeglich, damit der Student optimal vorbereitet ist.
+Wenn der Kontext die Frage nicht vollstaendig beantwortet, sage das explizit.
+
+Formatiere jede Antwort klar und gut lesbar:
+- Nutze kurze Absaetze mit sichtbaren Zeilenumbruechen.
+- Wenn sinnvoll, nutze Abschnitte wie "Kurzantwort", "Wichtige Punkte", "Pruefungsrelevant" und "Quellen".
+- Verwende fuer Aufzaehlungen Bindestriche.
+- Vermeide lange Textbloecke.
+- Gib lieber mehrere kurze Punkte als einen einzigen langen Absatz.
+
+Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
 """.strip()
 
     def __init__(
@@ -75,25 +82,23 @@ Nenne am Ende die Quellen auf die du dich stützt.
         """
         top_k = top_k or self.top_k
 
-        # Generate query embedding
         query_embedding = self.embedder.embed(query)
 
         if not query_embedding:
             logger.warning("Failed to generate query embedding")
             return []
 
-        # Search vector store
         results = self.vector_store.search(
             query_embedding=query_embedding,
             n_results=top_k
         )
 
         hits = []
-        for i, (doc, dist, meta) in enumerate(zip(
+        for doc, dist, meta in zip(
             results.get("documents", []),
             results.get("distances", []),
             results.get("metadatas", [])
-        )):
+        ):
             hits.append({
                 "text": doc,
                 "source": meta.get("source", "unknown") if meta else "unknown",
@@ -115,7 +120,6 @@ Nenne am Ende die Quellen auf die du dich stützt.
         Returns:
             Dict with answer and sources
         """
-        # Retrieve relevant chunks
         hits = self.retrieve(question, top_k=top_k)
 
         if not hits:
@@ -124,15 +128,13 @@ Nenne am Ende die Quellen auf die du dich stützt.
                 "sources": []
             }
 
-        # Build context from retrieved chunks
         context_block = "\n\n".join(
-            f"[Quelle {i+1}: {h['source']}]\n{h['text']}"
-            for i, h in enumerate(hits)
+            f"[Quelle {i + 1}: {hit['source']}]\n{hit['text']}"
+            for i, hit in enumerate(hits)
         )
 
         user_message = f"Kontext:\n{context_block}\n\nFrage: {question}"
 
-        # Generate response
         response = self.client.chat.completions.create(
             model=self.chat_model,
             messages=[
@@ -144,7 +146,7 @@ Nenne am Ende die Quellen auf die du dich stützt.
 
         return {
             "answer": response.choices[0].message.content,
-            "sources": [{"source": h["source"], "score": h["score"]} for h in hits],
+            "sources": [{"source": hit["source"], "score": hit["score"]} for hit in hits],
         }
 
     def evaluate(
@@ -163,10 +165,10 @@ Nenne am Ende die Quellen auf die du dich stützt.
             List of results with question, answer, and sources
         """
         results = []
-        for q in questions:
-            logger.info(f"Evaluating: {q}")
-            result = self.ask(q, top_k=top_k)
-            result["question"] = q
+        for question in questions:
+            logger.info(f"Evaluating: {question}")
+            result = self.ask(question, top_k=top_k)
+            result["question"] = question
             results.append(result)
         return results
 
