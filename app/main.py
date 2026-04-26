@@ -22,6 +22,7 @@ from app.storage.persister import save_parsed_document, save_chunks
 from app.embeddings.embedder import Embedder
 from app.vectorstore.chroma_db import ChromaVectorStore
 from app.rag.query_service import create_query_service
+from app.lecture.pipeline import process_lecture
 
 logger = setup_logger("study_agent")
 
@@ -76,6 +77,15 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
             module_name = relative_path.parts[0]
     except Exception:
         module_name = file_path.parent.name if file_path.parent.name else ""
+
+    lecture_result = process_lecture(
+    filename=file_path.name,
+    text=parsed.extracted_text,
+    modul_name=module_name or None,
+)
+    if lecture_result:
+        logger.info(f"Vorlesungszusammenfassung erstellt: {lecture_result['saved_to']}")
+        result["lecture_summary"] = lecture_result["saved_to"]
 
     parsed_data = parsed.to_dict()
     parsed_data["document_id"] = document_id
