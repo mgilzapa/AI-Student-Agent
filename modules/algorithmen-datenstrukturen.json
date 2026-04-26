@@ -1,0 +1,14 @@
+{
+  "name": "Algorithmen & Datenstrukturen",
+  "slug": "algorithmen-datenstrukturen",
+  "aliases": ["AlgoDat", "AuD", "algo"],
+  "schwerpunkte": ["Laufzeitanalyse", "Rekursion", "Sortieralgorithmen", "Graphen"],
+  "pruefungsrelevant": ["O-Notation", "Dijkstra", "Dynamic Programming", "Heap"],
+  "stil": "informatik",
+  "prompt_hint": "Immer zuerst Intuition, dann formale Definition. O-Notation bei jedem Algorithmus. Pseudocode zeigen.",
+  "extra": "Prof. legt Wert auf Korrektheitsbeweise. Vergleiche zwischen Algorithmen werden gerne geprüft.",
+  "exam_profile": "modules/algorithmen-datenstrukturen-exam-profile.md",
+  "history": "modules/algorithmen-datenstrukturen-history.md",
+  "created_at": "2025-01-01",
+  "updated_at": "2025-01-01"
+}
