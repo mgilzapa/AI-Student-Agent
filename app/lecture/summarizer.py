@@ -68,17 +68,17 @@ Erstelle die Zusammenfassung nach diesem exakten Template:
 
 ---
 
-## 🎯 Lernziele
+## Lernziele
 [3-5 konkrete Lernziele aus dem Inhalt ableiten]
 
 ---
 
-## 🧭 Überblick
+## Überblick
 [2-3 Sätze roter Faden + Verbindung zur letzten Vorlesung: {verbindung_vorherige}]
 
 ---
 
-## 📖 Hauptinhalt
+## Hauptinhalt
 
 [Für jedes Konzept aus der Struktur:]
 
@@ -94,32 +94,32 @@ WENN hoch:
 WENN mittel:
 - Erklärung (3-4 Sätze)
 - Konkretes Beispiel
-- > 💡 Merke: [Kernaussage]
+- > Merke: [Kernaussage]
 
 WENN niedrig:
 - 2-3 Sätze Überblick
 
 ---
 
-## 🔗 Konzeptübersicht
+## Konzeptübersicht
 [ASCII-Diagramm oder Tabelle mit Zusammenhängen zwischen den Konzepten]
 
 ---
 
-## ❓ Verständnisfragen
+## Verständnisfragen
 [3 Fragen die Verständnis testen, nicht Auswendiglernen.
 Bei hoher Prüfungsrelevanz: prüfungsnahe Formulierung nutzen]
 
 ---
 
-## 🗝️ Schlüsselbegriffe
+## Schlüsselbegriffe
 | Begriff | Bedeutung |
 |--------|-----------|
 [Alle Konzepte + wichtige Fachbegriffe]
 
 ---
 
-## 📝 TL;DR
+## TL;DR
 [3-5 Sätze: das Wesentliche. Jemand der nur das liest soll den Kern verstehen.]
 
 STILREGELN:
