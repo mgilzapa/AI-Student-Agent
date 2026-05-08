@@ -37,7 +37,7 @@ def already_processed(document_id: str, chunks_dir: Path) -> bool:
     return len(list(chunks_dir.glob(f"chunks_{document_id[:8]}_*.jsonl"))) > 0
 
 
-def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
+def process_document(file_path: Path, processed_dir: Path, skip_lecture_processing: bool = False) -> Dict[str, Any]:
     """Process a single document through the full pipeline."""
     result = {
         "file": str(file_path),
@@ -78,14 +78,15 @@ def process_document(file_path: Path, processed_dir: Path) -> Dict[str, Any]:
     except Exception:
         module_name = file_path.parent.name if file_path.parent.name else ""
 
-    lecture_result = process_lecture(
-    filename=file_path.name,
-    text=parsed.extracted_text,
-    modul_name=module_name or None,
-)
-    if lecture_result:
-        logger.info(f"Vorlesungszusammenfassung erstellt: {lecture_result['saved_to']}")
-        result["lecture_summary"] = lecture_result["saved_to"]
+    if not skip_lecture_processing:
+        lecture_result = process_lecture(
+            filename=file_path.name,
+            text=parsed.extracted_text,
+            modul_name=module_name or None,
+        )
+        if lecture_result:
+            logger.info(f"Vorlesungszusammenfassung erstellt: {lecture_result['saved_to']}")
+            result["lecture_summary"] = lecture_result["saved_to"]
 
     parsed_data = parsed.to_dict()
     parsed_data["document_id"] = document_id

@@ -127,6 +127,11 @@ STILREGELN:
 - Fachbegriffe beim ersten Auftreten **fett**
 - Explizite Übergänge zwischen Abschnitten ("Aufbauend darauf...", "Das führt uns zu...")
 - Ton: wie ein guter Dozent der wirklich erklären will
+- Mathematische Formeln IMMER in LaTeX-Syntax setzen:
+  * `$...$` für inline (z.B. "die Wahrscheinlichkeit $P(X=k)$")
+  * `$$...$$` für eigenständige Formelzeilen / Gleichungen
+  * Niemals Pseudo-ASCII wie `sum_i^n` oder `f'(x) = lim h->0 ...` schreiben — immer korrektes LaTeX (`\\sum_{i=1}^{n}`, `\\lim_{h \\to 0}`, `\\frac{a}{b}`, `\\sqrt{x}`, griechische Buchstaben mit `\\alpha`, `\\beta`, `\\sigma` usw.).
+  * Auch Inequalities, Indizes, Exponenten, Mengen und Vektoren in LaTeX, nicht in Plain-Text.
 """
 
 

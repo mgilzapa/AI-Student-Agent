@@ -4,6 +4,7 @@ RAG Query Service for grounded Q&A.
 Uses OpenAI embeddings for retrieval and GPT-4o-mini for response generation.
 """
 import logging
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
 
@@ -21,20 +22,21 @@ class RAGQueryService:
     """
 
     SYSTEM_PROMPT = """
-Du bist ein intelligenter Lernassistent fuer Studenten.
-Beantworte Fragen ausschliesslich auf Basis des bereitgestellten Kontexts.
-Bei Klausurfragen: Liste alle relevanten Themen, Definitionen und Aufgabentypen auf, die du im Kontext findest.
-Sei so vollstaendig wie moeglich, damit der Student optimal vorbereitet ist.
-Wenn der Kontext die Frage nicht vollstaendig beantwortet, sage das explizit.
+Du bist ein praeziser Lernassistent fuer Studenten.
+Beantworte die Frage des Studenten direkt auf Basis des unten gelieferten Kontexts.
 
-Formatiere jede Antwort klar und gut lesbar:
-- Nutze kurze Absaetze mit sichtbaren Zeilenumbruechen.
-- Wenn sinnvoll, nutze Abschnitte wie "Kurzantwort", "Wichtige Punkte", "Pruefungsrelevant" und "Quellen".
-- Verwende fuer Aufzaehlungen Bindestriche.
-- Vermeide lange Textbloecke.
-- Gib lieber mehrere kurze Punkte als einen einzigen langen Absatz.
+Regeln:
+- Beantworte zuerst genau das, was gefragt wurde. Schweife nicht ab.
+- Nutze ausschliesslich Informationen aus dem Kontext. Erfinde nichts.
+- Wenn der Kontext die Frage nicht beantwortet, sage das explizit ("Im Lernmaterial finde ich dazu nichts").
+- Bei Ueberblicks- oder Klausurfragen ("Welche Themen...", "Was kommt dran...") liste die im Kontext gefundenen Punkte sauber auf.
+- Bei spezifischen Fragen (Definition, Beispiel, Berechnung): kurze, fokussierte Antwort, kein Abschweifen in andere Themen.
 
-Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
+Format:
+- Schreibe auf Deutsch, sachlich.
+- Verwende kurze Absaetze und Bindestrich-Listen.
+- Verweise auf Quellen nur ueber den Dateinamen (z.B. "siehe Exercise 2.pdf"). Niemals vollstaendige Dateipfade ausgeben.
+- Mathematische Formeln IMMER in LaTeX: $...$ inline, $$...$$ fuer eigenstaendige Formeln. Kein Pseudo-ASCII (kein `sum`, kein `^2` ohne Klammern, kein `->`); nutze \\sum, \\frac, \\sqrt, \\alpha, \\to usw.
 """.strip()
 
     def __init__(
@@ -43,7 +45,7 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
         embedder,
         chat_model: str = "gpt-4o-mini",
         embed_model: str = "text-embedding-3-small",
-        top_k: int = 5
+        top_k: int = 8
     ):
         """
         Initialize the RAG service.
@@ -78,42 +80,72 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
         """
         Retrieve relevant chunks for a query.
 
-        Args:
-            query: Search query
-            top_k: Number of results (overrides default if provided)
-
-        Returns:
-            List of dicts with text, source, and score
+        Module filter is forgiving: exact match first, then case-insensitive
+        fallback over a broader candidate set, then a source-path containment
+        fallback so legacy chunks (indexed before module_name was tracked) are
+        still reachable.
         """
         top_k = top_k or self.top_k
 
         query_embedding = self.embedder.embed(query)
-
         if not query_embedding:
             logger.warning("Failed to generate query embedding")
             return []
 
-        where = {"module_name": module_name} if module_name else None
-        results = self.vector_store.search(
-            query_embedding=query_embedding,
-            n_results=top_k,
-            where=where
+        def _format(results: Dict[str, Any]) -> List[Dict[str, Any]]:
+            out = []
+            for doc, dist, meta in zip(
+                results.get("documents", []),
+                results.get("distances", []),
+                results.get("metadatas", []),
+            ):
+                meta = meta or {}
+                out.append({
+                    "text": doc,
+                    "source": meta.get("source", "unknown"),
+                    "module_name": meta.get("module_name", ""),
+                    "distance": float(dist) if dist is not None else None,
+                    "document_id": meta.get("document_id", ""),
+                })
+            return out
+
+        hits: List[Dict[str, Any]] = []
+
+        if module_name:
+            # 1) Strict exact-match filter (fast path).
+            strict = _format(self.vector_store.search(
+                query_embedding=query_embedding,
+                n_results=top_k,
+                where={"module_name": module_name},
+            ))
+            hits = strict
+
+            # 2) Fallback: broaden the candidate pool and match by either
+            #    case-insensitive module_name OR module name appearing in the
+            #    source path (covers legacy chunks with empty module_name).
+            if not hits:
+                mod_norm = module_name.lower()
+                broad = _format(self.vector_store.search(
+                    query_embedding=query_embedding,
+                    n_results=top_k * 4,
+                    where=None,
+                ))
+                hits = [
+                    h for h in broad
+                    if h["module_name"].lower() == mod_norm
+                    or mod_norm in (h["source"] or "").lower()
+                ][:top_k]
+        else:
+            hits = _format(self.vector_store.search(
+                query_embedding=query_embedding,
+                n_results=top_k,
+                where=None,
+            ))
+
+        logger.info(
+            "Retrieved %d chunks for query=%r module=%r",
+            len(hits), query[:60], module_name,
         )
-
-        hits = []
-        for doc, dist, meta in zip(
-            results.get("documents", []),
-            results.get("distances", []),
-            results.get("metadatas", [])
-        ):
-            hits.append({
-                "text": doc,
-                "source": meta.get("source", "unknown") if meta else "unknown",
-                "score": round(1 - dist, 3) if dist is not None else 0.0,
-                "document_id": meta.get("document_id", "") if meta else "",
-            })
-
-        logger.info(f"Retrieved {len(hits)} chunks for query: {query[:50]}...")
         return hits
 
     def ask(
@@ -141,11 +173,19 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
             }
 
         context_block = "\n\n".join(
-            f"[Quelle {i + 1}: {hit['source']}]\n{hit['text']}"
+            f"[Quelle {i + 1}: {Path(hit['source']).name or 'unbekannt'}]\n{hit['text'].strip()}"
             for i, hit in enumerate(hits)
         )
 
-        user_message = f"Kontext:\n{context_block}\n\nFrage: {question}"
+        user_message = (
+            f"Frage des Studenten:\n{question.strip()}\n\n"
+            f"Lernmaterial-Kontext (nur diese Quellen verwenden):\n"
+            f"{context_block}\n\n"
+            f"Aufgabe: Beantworte die obige Frage praezise und ausschliesslich auf Basis des Kontexts. "
+            f"Wenn die Frage eine Auflistung verlangt, liste auf; sonst gib eine fokussierte Antwort. "
+            f"Wenn der Kontext nicht reicht, sage das ehrlich. "
+            f"Verweise auf Quellen nur ueber den Dateinamen, nicht ueber Pfade."
+        )
 
         response = self.client.chat.completions.create(
             model=self.chat_model,
@@ -158,7 +198,16 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
 
         return {
             "answer": response.choices[0].message.content,
-            "sources": [{"source": hit["source"], "score": hit["score"]} for hit in hits],
+            "sources": [
+                {
+                    "source": Path(hit["source"]).name or "unbekannt",
+                    "score": (
+                        round(max(0.0, 1.0 - (hit["distance"] / 2.0)), 3)
+                        if hit["distance"] is not None else 0.0
+                    ),
+                }
+                for hit in hits
+            ],
         }
 
     def evaluate(
@@ -188,7 +237,7 @@ Schreibe auf Deutsch und bleibe sachlich, hilfreich und uebersichtlich.
 def create_query_service(
     vector_store,
     embedder,
-    top_k: int = 5
+    top_k: int = 8
 ) -> RAGQueryService:
     """
     Factory function to create a RAG query service.
