@@ -345,29 +345,41 @@ async def roadmap_generate(body: RoadmapGenerateRequest):
     Generate a fresh roadmap. If an old one exists, smart-merge status across.
     Returns preview_md + diff WITHOUT writing — call /roadmap/{m}/accept to commit.
     """
-    # 1) Course context via RAG.
+    # 1) Course context via RAG — use higher top_k to cover more files.
     rag_result = rag.ask(
         "Liste alle wichtigen Themen, Konzepte und Aufgaben aus den Materialien dieses Kurses auf.",
         module_name=body.module_name,
+        top_k=20,
     )
     course_context = rag_result.get("answer", "") or "Keine Kursinhalte gefunden."
+
+    # Collect all actual file names for the module so the LLM cannot invent names.
+    all_module_files = list_module_files(body.module_name)
+    module_files = [f["name"] for f in all_module_files]
+    exam_file_names = [f["name"] for f in all_module_files if f.get("is_exam")]
 
     # 2) Run exam_analyzer on marked exam files (best-effort — never fatal).
     exam_profile_md = ""
     profile = mp.load(body.module_name)
+    if not profile and exam_file_names:
+        # Auto-create a minimal profile so exam analysis can run even without onboarding.
+        profile = mp.create_from_onboarding({
+            "name": body.module_name,
+            "schwerpunkte": [],
+            "stil": "mixed",
+            "pruefungsrelevant": [],
+        })
     if profile:
         exam_texts = _collect_exam_text(body.module_name)
         if exam_texts:
             try:
                 ea.analyze(body.module_name, exam_texts)
+                profile = mp.load(body.module_name) or profile
             except Exception as exc:
                 print(f"[roadmap] exam_analyzer failed: {exc}")
         exam_profile_md = mp.load_exam_profile(profile)
 
-    # 3) Old roadmap (for smart-merge).
-    old_md = rm.load_roadmap_md(body.module_name) or ""
-
-    # 4) Generate.
+    # 3) Generate fresh — no smart-merge, every generation is a clean slate.
     try:
         data = rm.generate(
             body.module_name,
@@ -375,21 +387,18 @@ async def roadmap_generate(body: RoadmapGenerateRequest):
             focus=body.focus or "",
             course_context=course_context,
             exam_profile=exam_profile_md,
-            old_md=old_md,
+            available_files=module_files,
+            exam_files=exam_file_names,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Roadmap-Generation fehlgeschlagen: {exc}")
 
     new_md = rm.render_md(body.module_name, data)
-    diff = None
-    if old_md:
-        new_md, diff = rm.merge_status(old_md, new_md)
-
     _PENDING_ROADMAPS[body.module_name] = new_md
     return {
         "success": True,
-        "is_first_generation": not bool(old_md),
-        "diff": diff,
+        "is_first_generation": True,
+        "diff": None,
         "preview_md": new_md,
     }
 
@@ -701,5 +710,10 @@ def delete_module(module_name: str):
         f = modules_dir / fname
         if f.exists():
             f.unlink()
+
+    # 8. Roadmap löschen
+    roadmap_dir = Path("data/processed/roadmaps") / slug
+    if roadmap_dir.exists():
+        shutil.rmtree(roadmap_dir)
 
     return {"success": True, "deleted": clean_name}

@@ -744,6 +744,16 @@
       4px
       var(--w-right, 360px);
     background: transparent;
+    transition: grid-template-columns 0.26s var(--ease-out);
+  }
+  .ws-grid.left-collapsed {
+    grid-template-columns: 32px 0px minmax(0, 1fr) 4px var(--w-right, 360px);
+  }
+  .ws-grid.right-collapsed {
+    grid-template-columns: var(--w-left, 280px) 4px minmax(0, 1fr) 0px 32px;
+  }
+  .ws-grid.left-collapsed.right-collapsed {
+    grid-template-columns: 32px 0px minmax(0, 1fr) 0px 32px;
   }
 
   /* Splitter handles */
@@ -764,6 +774,31 @@
   body.ws-resizing { cursor: col-resize; user-select: none; }
   body.ws-resizing iframe { pointer-events: none; }
 
+  /* ── Panel collapse toggle buttons ── */
+  .ws-panel-toggle {
+    position: absolute;
+    top: 13px;
+    width: 22px; height: 22px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.78rem; line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    z-index: 10;
+    flex-shrink: 0;
+    padding: 0;
+  }
+  .ws-panel-toggle:hover {
+    background: rgba(124,58,237,0.15);
+    border-color: rgba(124,58,237,0.35);
+    color: var(--text);
+  }
+  .ws-left .ws-panel-toggle { right: 6px; }
+  .ws-right .ws-panel-toggle { left: 6px; }
+
   /* ── Left panel (files) ── */
   .ws-left {
     border-right: 1px solid rgba(255,255,255,0.05);
@@ -775,6 +810,7 @@
     padding: 16px 14px;
     min-height: 0; min-width: 0;
     overflow: hidden;
+    position: relative;
   }
   .ws-left-header { display: grid; gap: 8px; }
   .ws-left-header .module-chip { max-width: 100%; }
@@ -1370,6 +1406,7 @@
     grid-template-rows: auto minmax(0,1fr) auto;
     min-height: 0; min-width: 0;
     overflow: hidden;
+    position: relative;
   }
   .ws-right .chat-topbar {
     padding: 13px 18px;
@@ -1761,6 +1798,7 @@
 
         <!-- LEFT: Files panel -->
         <aside class="ws-left">
+          <button class="ws-panel-toggle" id="toggle-left" title="Dateien zuklappen" aria-label="Dateien zuklappen">‹</button>
           <div class="ws-left-header">
             <div class="module-chip" id="module-chip">Kein Kurs</div>
             <button class="roadmap-trigger-btn" id="roadmap-btn" type="button">
@@ -1789,6 +1827,7 @@
 
         <!-- RIGHT: Chat -->
         <aside class="ws-right">
+          <button class="ws-panel-toggle" id="toggle-right" title="Chat zuklappen" aria-label="Chat zuklappen">›</button>
           <div class="chat-topbar">
             <div>
               <h3>Chat</h3>
@@ -2087,6 +2126,7 @@ const state = {
   summaryContentCache: {},    // {summaryPath: markdown}
   summariesByModule: {},      // {moduleName: [summary,...]}
   moduleFiles: [],
+  pdfFrames: {},              // {path: iframeElement} — kept alive across pane re-renders so PDF page/scroll persist
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────────
@@ -2285,6 +2325,8 @@ async function uploadModule() {
 
 // ── Navigation ─────────────────────────────────────────────────────────────────
 function openWorkspace(moduleName, files) {
+  // Drop iframes from any previously opened module — paths can collide across modules.
+  if (state.moduleName && state.moduleName !== moduleName) disposeAllPdfFrames();
   state.moduleName = moduleName;
   state.moduleFiles = files || [];
   state.parsedTextCache = {};
@@ -2903,6 +2945,7 @@ async function refreshModuleFiles() {
   }
   // Drop any tabs whose underlying file no longer exists.
   const validPaths = new Set(state.moduleFiles.map(f => f.relative_path || f.name));
+  Object.keys(state.pdfFrames).forEach(p => { if (!validPaths.has(p)) disposePdfFrame(p); });
   state.panes.forEach((pane, i) => {
     if (!pane) return;
     pane.tabs = pane.tabs.filter(t => t.kind !== 'file' || validPaths.has(t.path));
@@ -2950,6 +2993,7 @@ async function deleteModuleFile(file) {
     if (!res.ok) throw new Error(data.detail || 'Löschen fehlgeschlagen.');
     // Drop caches for this file.
     delete state.parsedTextCache[path];
+    disposePdfFrame(path);
     // Close tabs for this file in every pane.
     state.panes.forEach((pane, i) => {
       if (!pane) return;
@@ -3069,6 +3113,9 @@ function closeTab(path, paneIdx, ev) {
     state.panes[1] = null;
     state.focusedPane = 0;
   }
+  // Drop the cached PDF iframe only if no other pane still has this path open.
+  const stillOpen = state.panes.some(p => p && p.tabs.some(t => t.path === path));
+  if (!stillOpen) disposePdfFrame(path);
   persistWorkspace();
   renderPanes();
 }
@@ -3170,6 +3217,34 @@ function restoreWorkspace(moduleName) {
 }
 
 // ── Pane rendering ─────────────────────────────────────────────────────────────
+function getPdfFrameHost() {
+  let host = document.getElementById('pdf-frame-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'pdf-frame-host';
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+// Re-position every cached iframe over the placeholder of its active pane,
+// or hide it if no pane currently shows that PDF. Avoids any DOM reparenting,
+// which would otherwise reset the embedded PDF viewer's page.
+function syncPdfFramePositions() {
+  Object.values(state.pdfFrames).forEach(f => { f.style.display = 'none'; });
+  state.panes.forEach((pane, i) => {
+    if (!pane) return;
+    const tab = pane.tabs.find(t => t.path === pane.activeTab);
+    if (!tab || tab.kind !== 'file' || tab.view !== 'pdf') return;
+    const frame = state.pdfFrames[tab.path];
+    if (!frame) return;
+    const slot = wsCenter.querySelector(`.pane[data-pane-idx="${i}"] .pdf-frame-slot`);
+    if (!slot) return;
+    const r = slot.getBoundingClientRect();
+    frame.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:0;background:#1a1a1a;display:block;z-index:5;`;
+  });
+}
+
 function renderPanes() {
   wsCenter.innerHTML = '';
   const split = state.panes[1] != null;
@@ -3195,6 +3270,8 @@ function renderPanes() {
 
   attachDropZones(split);
   highlightActiveFileRow();
+  // Position PDF overlays AFTER layout is committed (rect math needs final sizes).
+  requestAnimationFrame(syncPdfFramePositions);
 }
 
 function buildTabBar(pane, paneIdx) {
@@ -3331,11 +3408,36 @@ function buildViewport(pane, paneIdx) {
 }
 
 function renderPdfView(vp, tab) {
+  // Render an empty slot — the actual iframe is overlaid via syncPdfFramePositions.
   const p = document.createElement('div');
   p.className = 'view-pane view-pdf active';
-  const url = `/modules/${encodeURIComponent(state.moduleName)}/raw?path=${encodeURIComponent(tab.path)}`;
-  p.innerHTML = `<iframe src="${url}#toolbar=1&navpanes=0&view=FitH" title="${escHtml(tab.name)}"></iframe>`;
+  const slot = document.createElement('div');
+  slot.className = 'pdf-frame-slot';
+  slot.style.cssText = 'flex:1;width:100%;height:100%;background:#1a1a1a;';
+  p.appendChild(slot);
   vp.appendChild(p);
+
+  if (!state.pdfFrames[tab.path]) {
+    const iframe = document.createElement('iframe');
+    iframe.title = tab.name;
+    const url = `/modules/${encodeURIComponent(state.moduleName)}/raw?path=${encodeURIComponent(tab.path)}`;
+    iframe.src = `${url}#toolbar=1&navpanes=0&view=FitH`;
+    iframe.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:0;height:0;border:0;display:none;';
+    getPdfFrameHost().appendChild(iframe);
+    state.pdfFrames[tab.path] = iframe;
+  }
+}
+
+function disposePdfFrame(path) {
+  const frame = state.pdfFrames[path];
+  if (frame) {
+    if (frame.parentElement) frame.parentElement.removeChild(frame);
+    delete state.pdfFrames[path];
+  }
+}
+
+function disposeAllPdfFrames() {
+  Object.keys(state.pdfFrames).forEach(disposePdfFrame);
 }
 
 async function renderTextView(vp, tab) {
@@ -3453,6 +3555,51 @@ function attachDropZones(splitActive) {
   });
 }
 
+// ── Panel collapse toggles ─────────────────────────────────────────────────────
+function initPanelToggles() {
+  const grid = document.getElementById('ws-grid');
+  const btnLeft  = document.getElementById('toggle-left');
+  const btnRight = document.getElementById('toggle-right');
+
+  function applyCollapsed(side, collapsed) {
+    grid.classList.toggle(side === 'left' ? 'left-collapsed' : 'right-collapsed', collapsed);
+    if (side === 'left') {
+      btnLeft.textContent = collapsed ? '›' : '‹';
+      btnLeft.title = collapsed ? 'Dateien aufklappen' : 'Dateien zuklappen';
+    } else {
+      btnRight.textContent = collapsed ? '‹' : '›';
+      btnRight.title = collapsed ? 'Chat aufklappen' : 'Chat zuklappen';
+    }
+  }
+
+  // Restore persisted state
+  try {
+    const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
+    if (s.left)  applyCollapsed('left',  true);
+    if (s.right) applyCollapsed('right', true);
+  } catch {}
+
+  btnLeft.addEventListener('click', () => {
+    const collapsed = !grid.classList.contains('left-collapsed');
+    applyCollapsed('left', collapsed);
+    try {
+      const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
+      s.left = collapsed || undefined;
+      localStorage.setItem('studyAgent.collapsed', JSON.stringify(s));
+    } catch {}
+  });
+
+  btnRight.addEventListener('click', () => {
+    const collapsed = !grid.classList.contains('right-collapsed');
+    applyCollapsed('right', collapsed);
+    try {
+      const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
+      s.right = collapsed || undefined;
+      localStorage.setItem('studyAgent.collapsed', JSON.stringify(s));
+    } catch {}
+  });
+}
+
 // ── Splitter drag ──────────────────────────────────────────────────────────────
 function initSplitters() {
   // Restore widths
@@ -3468,12 +3615,14 @@ function initSplitters() {
 }
 
 function startSplitDrag(e, handle) {
-  e.preventDefault();
+  const grid = document.getElementById('ws-grid');
   const side = handle.dataset.split;
+  if (side === 'left'  && grid.classList.contains('left-collapsed'))  return;
+  if (side === 'right' && grid.classList.contains('right-collapsed')) return;
+  e.preventDefault();
   handle.classList.add('dragging');
   document.body.classList.add('ws-resizing');
 
-  const grid = document.getElementById('ws-grid');
   const rect = grid.getBoundingClientRect();
 
   const onMove = ev => {
@@ -4247,6 +4396,7 @@ document.getElementById('roadmap-btn').addEventListener('click', () => {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 initSplitters();
+initPanelToggles();
 loadModules();
 
 // If KaTeX loads after some markdown has already been painted, re-render the
@@ -4255,6 +4405,11 @@ window.addEventListener('load', () => {
   if (typeof window.renderMathInElement !== 'function') return;
   document.querySelectorAll('.view-summary-inner, .msg.agent .bubble').forEach(renderMathIn);
 });
+
+// Keep PDF iframe overlays aligned when window resizes or panel splitters drag.
+window.addEventListener('resize', () => requestAnimationFrame(syncPdfFramePositions));
+const _pdfPositionSync = new ResizeObserver(() => requestAnimationFrame(syncPdfFramePositions));
+_pdfPositionSync.observe(wsCenter);
 </script>
 </body>
 </html>

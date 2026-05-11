@@ -42,15 +42,13 @@ ROADMAPS_DIR = Path("data/processed/roadmaps")
 
 _GENERATE_PROMPT = """Du bist ein erfahrener universitärer Lerncoach.
 Erstelle eine systematische, hierarchische Lern-Roadmap als JSON für Modul "{modul}".
-
+{user_focus_section}
 KONTEXT
 {context}
-{old_roadmap_section}
+{exam_files_section}{available_files_section}{old_roadmap_section}
 
 PHASEN-REIHENFOLGE (lass weg was nicht passt):
 voraussetzungen → grundlagen → kernkonzepte → methoden → uebung → klausurtraining → typische_fehler → wiederholung
-
-Themen aus dem PRÜFUNGSPROFIL und der PRÜFUNGSRELEVANTE-Liste haben automatisch hohe Priorität.
 
 ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
 
@@ -83,10 +81,16 @@ ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
 REGELN:
 - Topic-IDs sind eindeutig: t1, t2, t3, ... über alle Phasen hinweg.
 - Wenn alte Roadmap existiert: behalte vorhandene Topic-Namen + IDs wo möglich, damit Status mitwandert.
-- "dateien" sollen REALE Dateinamen aus dem Kontext sein (Skript, Übung, Klausur, …).
+- "dateien" darf NUR Dateinamen aus der VERFÜGBARE-DATEIEN-Liste enthalten. Erfinde keine Dateinamen.
+  Wenn keine passende Datei vorhanden ist, lasse "dateien" leer ([]).
 - "aufgaben" referenzieren konkrete Übungsblätter / Aufgaben aus dem Kontext.
 - mermaid_edges definiert die Lernreihenfolge — Pfeile von Voraussetzungen zu darauf aufbauenden Topics.
   Mindestens jede Phase mit der nächsten verknüpfen, plus topic-spezifische Bezüge wenn sinnvoll.
+- Wenn NUTZER-FOKUS angegeben: Topics und Phasen müssen sich direkt auf diesen Fokus konzentrieren.
+  Nicht-fokussierte Themen nur aufnehmen, wenn sie zwingende Voraussetzung sind.
+- Wenn KLAUSUR-DATEIEN vorhanden: Die Roadmap bereitet gezielt auf eine ähnliche Prüfung vor.
+  Themen aus den Klausuren erhalten pruefungsrelevanz "hoch". Die Phase "klausurtraining" muss
+  die Klausur-Dateien in "dateien" referenzieren und typische Aufgabentypen aus dem PRÜFUNGSPROFIL üben.
 - 4-7 Phasen, 3-7 Topics pro Phase, je nach Materialumfang.
 - Antworte NUR mit dem JSON-Objekt."""
 
@@ -101,6 +105,8 @@ def generate(
     course_context: str = "",
     exam_profile: str = "",
     old_md: str = "",
+    available_files: Optional[List[str]] = None,
+    exam_files: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """Call the LLM and return the parsed JSON roadmap structure."""
     profile = mp.load(module_name) or {}
@@ -108,8 +114,6 @@ def generate(
     sections: List[str] = [f"MODUL: {module_name}"]
     if exam_date:
         sections.append(f"PRÜFUNGSDATUM: {exam_date}")
-    if focus:
-        sections.append(f"FOKUS / WORAUF VORBEREITEN: {focus}")
     if profile.get("schwerpunkte"):
         sections.append("SCHWERPUNKTE: " + ", ".join(profile["schwerpunkte"]))
     if profile.get("pruefungsrelevant"):
@@ -118,6 +122,29 @@ def generate(
     if exam_profile:
         sections.append("PRÜFUNGSPROFIL (Aufgabentypen, Häufigkeiten):\n" + exam_profile[:3000])
     sections.append("KURSINHALTE (aus den hochgeladenen Materialien):\n" + course_context[:6000])
+
+    focus_section = ""
+    if focus:
+        focus_section = (
+            f"\n⚠ NUTZER-FOKUS (höchste Priorität — Roadmap muss sich darauf konzentrieren):\n"
+            f"{focus}\n"
+        )
+
+    exam_files_section = ""
+    if exam_files:
+        exam_list = "\n".join(f"  - {f}" for f in exam_files)
+        exam_files_section = (
+            "\n\nKLAUSUR-DATEIEN (vom Nutzer als Altklausuren markiert — "
+            "Roadmap bereitet auf ähnliche Prüfung vor):\n" + exam_list + "\n"
+        )
+
+    files_section = ""
+    if available_files:
+        files_list = "\n".join(f"  - {f}" for f in available_files)
+        files_section = (
+            "\n\nVERFÜGBARE DATEIEN (NUR diese Namen dürfen in 'dateien' verwendet werden — "
+            "keine anderen, keine erfundenen):\n" + files_list
+        )
 
     old_section = ""
     if old_md:
@@ -128,7 +155,10 @@ def generate(
 
     prompt = _GENERATE_PROMPT.format(
         modul=module_name,
+        user_focus_section=focus_section,
         context="\n\n".join(sections),
+        exam_files_section=exam_files_section,
+        available_files_section=files_section,
         old_roadmap_section=old_section,
     )
 
