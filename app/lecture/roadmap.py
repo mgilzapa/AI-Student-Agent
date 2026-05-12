@@ -41,7 +41,7 @@ ROADMAPS_DIR = Path("data/processed/roadmaps")
 # ─────────────────────────── Generation prompt ──────────────────────────────
 
 _GENERATE_PROMPT = """Du bist ein erfahrener universitärer Lerncoach.
-Erstelle eine systematische, hierarchische Lern-Roadmap als JSON für Modul "{modul}".
+Erstelle eine Lern-Roadmap als visuell darstellbarer Skill-Graph (roadmap.sh-Stil) für Modul "{modul}".
 {user_focus_section}
 KONTEXT
 {context}
@@ -53,15 +53,19 @@ prerequisites → basics → core_concepts → methods → practice → exam_tra
 ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
 
 {{
+  "module": "{modul}",
   "exam_date": "YYYY-MM-DD oder leer",
+  "layout": "top-down",
   "phases": [
     {{
-      "title": "Phase 1 · Prerequisites",
+      "id": "ph1",
+      "title": "Voraussetzungen",
       "topics": [
         {{
           "id": "t1",
           "name": "Logik-Grundlagen",
           "relevance": "high|medium|low",
+          "status": "done|in_progress|open",
           "hours": 1.5,
           "summary": "Was das Thema ist (1 Satz)",
           "exam_relevance_reason": "Warum prüfungsrelevant (1 Satz)",
@@ -72,57 +76,59 @@ ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
       ]
     }}
   ],
-  "mermaid_edges": [
-    ["t1", "t2"],
-    ["t1", "t3"],
-    ["t2", "t5"],
-    ["t4", "t7"]
+  "edges": [
+    {{"from": "t1", "to": "t2"}},
+    {{"from": "t1", "to": "t3"}},
+    {{"from": "t2", "to": "t5"}}
   ]
 }}
 
 REGELN:
 
 IDs & Konsistenz:
-- Topic-IDs sind global eindeutig: t1, t2, t3, ... über alle Phasen. Keine ID wird je wiederverwendet.
-- Wenn alte Roadmap existiert: behalte vorhandene Topic-Namen + IDs. Neue Topics erhalten neue IDs
-  (höher als die höchste vorhandene ID). Lösche keine vorhandenen Topics ohne explizite Anweisung.
+- Topic-IDs global eindeutig: t1, t2, t3, ... über alle Phasen. Nie wiederverwenden.
+- Phase-IDs: ph1, ph2, ph3, ...
+- Wenn alte Roadmap existiert: behalte vorhandene IDs und status-Werte.
+  Neue Topics erhalten neue IDs (höher als die höchste vorhandene).
 
-Dateien & Aufgaben:
-- "files" darf NUR Dateinamen aus der VERFÜGBARE-DATEIEN-Liste enthalten. Erfinde keine Dateinamen.
-  Wenn keine passende Datei vorhanden ist, setze "files": [].
-- "exercises" referenzieren konkrete Übungsblätter / Aufgaben aus dem Kontext.
+Status ("status"):
+- "done": Thema wurde bereits erarbeitet (nur setzen wenn alte Roadmap diesen Status hat)
+- "in_progress": Aktuell in Bearbeitung
+- "open": Noch nicht begonnen (Default für neue Roadmaps)
+- Status darf NUR aus alter Roadmap übernommen werden — erfinde keinen Fortschritt.
 
 Zeitschätzung ("hours"):
 - Einfaches Faktenwissen / Definition: 0.5–1h
 - Konzept mit Anwendung: 1.5–3h
 - Komplexes Thema mit Beweisen / Implementierung: 3–6h
-- Schätze realistisch für einen durchschnittlichen Studierenden.
 
 Prüfungsrelevanz ("relevance"):
 - "high": direkt klausurrelevant laut Materialien, Klausurdateien oder typischem Prüfungsprofil
 - "medium": notwendige Verständnisgrundlage für high-Topics
 - "low": Hintergrundwissen / Kontext, selten direkt geprüft
 
-Abhängigkeiten (mermaid_edges):
-- Pfeile zeigen Lernreihenfolge: [Voraussetzung, aufbauendes Topic].
-- Verknüpfe nicht nur Phasen linear. Bilde echte topic-spezifische Abhängigkeiten ab,
-  auch phasenübergreifend (z.B. t2 → t7 wenn t7 direkt auf t2 aufbaut).
-- Mindestens 1 Edge pro Topic das eine Voraussetzung hat.
+Abhängigkeiten ("edges"):
+- Jede Edge: {{"from": "tX", "to": "tY"}} — Pfeil von Voraussetzung zu aufbauendem Topic.
+- Bilde echte topic-spezifische Abhängigkeiten ab, auch phasenübergreifend.
+- Mindestens 1 eingehende Edge pro Topic das eine Voraussetzung hat.
+- Keine Zyklen (DAG).
+- Nicht alle Phasen müssen linear verbunden sein — cross-phase-Edges erlaubt.
 
-Fokus & Klausuren:
-- Wenn NUTZER-FOKUS angegeben: Topics und Phasen direkt auf diesen Fokus ausrichten.
-  Nicht-fokussierte Themen nur aufnehmen wenn sie eine direkte, unverzichtbare Voraussetzung sind
-  (d.h. ohne dieses Topic ist ein high-relevance Topic nicht verstehbar).
-- Wenn KLAUSUR-DATEIEN vorhanden: Die Roadmap bereitet gezielt auf eine ähnliche Prüfung vor.
-  Topics aus den Klausuren erhalten relevance "high". Die Phase "exam_training" muss
-  die Klausur-Dateien in "files" referenzieren und typische Aufgabentypen aus dem PRÜFUNGSPROFIL üben.
+Dateien & Aufgaben:
+- "files": NUR Dateinamen aus VERFÜGBARE-DATEIEN-Liste. Erfinde keine. Kein Match → [].
+- "exercises": konkrete Übungsblätter / Aufgaben aus dem Kontext.
 
-Kein Kontext vorhanden:
-- Wenn KONTEXT leer ist: Generiere eine allgemeine Hochschul-Roadmap für "{modul}" basierend
-  auf typischen Curricula für dieses Fachgebiet. Kennzeichne "files": [] und "exercises": []
-  überall — erfinde keine Materialien.
+Fokus:
+- Wenn NUTZER-FOKUS angegeben: Direkt auf diesen Fokus ausrichten.
+  Nicht-fokussierte Themen nur wenn sie direkte, unverzichtbare Voraussetzung eines high-Topics sind.
+- Wenn KLAUSUR-DATEIEN vorhanden: Topics aus Klausuren → relevance "high".
+  Phase "exam_training" referenziert Klausur-Dateien in "files".
 
-Umfang: 4–7 Phasen, 3–7 Topics pro Phase, je nach Materialumfang.
+Kein Kontext:
+- Wenn KONTEXT leer: Generiere allgemeine Hochschul-Roadmap für "{modul}".
+  "files": [] und "exercises": [] überall.
+
+Umfang: 4–7 Phasen, 3–7 Topics pro Phase.
 
 Antworte NUR mit dem JSON-Objekt."""
 
@@ -174,7 +180,7 @@ def generate(
     if available_files:
         files_list = "\n".join(f"  - {f}" for f in available_files)
         files_section = (
-            "\n\nVERFÜGBARE DATEIEN (NUR diese Namen dürfen in 'files' verwendet werden — "
+            "\n\nVERFÜGBARE DATEIEN (NUR diese Namen dürfen in 'dateien' verwendet werden — "
             "keine anderen, keine erfundenen):\n" + files_list
         )
 
@@ -185,16 +191,13 @@ def generate(
             + old_md[:4000] + "\n```"
         )
 
-    def _eb(s: str) -> str:
-        return s.replace("{", "{{").replace("}", "}}")
-
     prompt = _GENERATE_PROMPT.format(
-        modul=_eb(module_name),
-        user_focus_section=_eb(focus_section),
-        context=_eb("\n\n".join(sections)),
-        exam_files_section=_eb(exam_files_section),
-        available_files_section=_eb(files_section),
-        old_roadmap_section=_eb(old_section),
+        modul=module_name,
+        user_focus_section=focus_section,
+        context="\n\n".join(sections),
+        exam_files_section=exam_files_section,
+        available_files_section=files_section,
+        old_roadmap_section=old_section,
     )
 
     response = _get_client().messages.create(
