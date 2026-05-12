@@ -2309,6 +2309,21 @@ const resultChatBtn     = document.getElementById('result-chat-btn');
 const newCourseToggle   = document.getElementById('new-course-toggle');
 const newCoursePanel    = document.getElementById('new-course-panel');
 
+const pkModal       = document.getElementById('pk-modal');
+const pkBtn         = document.getElementById('pk-btn');
+const pkModalClose  = document.getElementById('pk-modal-close');
+const pkCancelBtn   = document.getElementById('pk-cancel-btn');
+const pkGenerateBtn = document.getElementById('pk-generate-btn');
+const pkNumTasks    = document.getElementById('pk-num-tasks');
+const pkTotalPoints = document.getElementById('pk-total-points');
+const pkStateForm   = document.getElementById('pk-state-form');
+const pkStateLoad   = document.getElementById('pk-state-loading');
+const pkStateError  = document.getElementById('pk-state-error');
+const pkLoadStatus  = document.getElementById('pk-loading-status');
+const pkErrorMsg    = document.getElementById('pk-error-msg');
+const pkErrorClose  = document.getElementById('pk-error-close');
+const pkErrorRetry  = document.getElementById('pk-error-retry');
+
 // ── Accordion ─────────────────────────────────────────────────────────────────
 function toggleNewCourse(forceOpen) {
   const isOpen = newCoursePanel.classList.contains('open');
@@ -2372,6 +2387,7 @@ function isExerciseSheet(filename) {
 
 // ── Solved sheets (in-memory per session) ─────────────────────────────────────
 state.solvedSheets = [];   // [{path, name, solveData}]
+state.probeklausuren = [];  // [{n, generated, num_tasks, total_points}] — loaded from server
 
 function openSolution(sol) {
   const paneIdx = state.focusedPane;
@@ -2556,7 +2572,7 @@ function openWorkspace(moduleName, files) {
 
   // Pre-load summaries + roadmap before restoring so saved tabs validate
   // and the left-panel sections (Roadmap + Zusammenfassungen) paint correctly.
-  Promise.all([loadSummaries(moduleName), loadRoadmapForCurrentModule()]).then(() => {
+  Promise.all([loadSummaries(moduleName), loadRoadmapForCurrentModule(), loadProbeklausuren(moduleName)]).then(() => {
     restoreWorkspace(moduleName);
     renderWorkspaceFiles(state.moduleFiles);
     renderPanes();
@@ -2716,6 +2732,29 @@ function renderWorkspaceFiles(files) {
     });
   }
 
+  // Probeklausuren section
+  if (state.probeklausuren && state.probeklausuren.length) {
+    const pkHeader = document.createElement('div');
+    pkHeader.className = 'files-section-header';
+    pkHeader.textContent = 'Probeklausuren';
+    filesPanel.appendChild(pkHeader);
+
+    state.probeklausuren.forEach(exam => {
+      const row = document.createElement('div');
+      row.className = 'file-row is-probeklausur';
+      row.dataset.path = `probeklausur:${exam.n}`;
+      row.innerHTML = `
+        <span class="file-icon">📝</span>
+        <div class="file-meta">
+          <div class="file-name">Probeklausur ${exam.n}</div>
+          <div class="file-sub">${exam.num_tasks} Aufg. · ${exam.total_points} Pkt. · ${escHtml(exam.generated || '—')}</div>
+        </div>
+      `;
+      row.addEventListener('click', () => openProbeklausurTab(exam));
+      filesPanel.appendChild(row);
+    });
+  }
+
   // Lösungen section
   if (state.solvedSheets.length) {
     const solHeader = document.createElement('div');
@@ -2752,6 +2791,170 @@ function highlightActiveFileRow() {
     r.classList.toggle('active', activePaths.has(r.dataset.path));
   });
 }
+
+// ── Probeklausuren ─────────────────────────────────────────────────────────────
+
+async function loadProbeklausuren(moduleName) {
+  if (!moduleName) { state.probeklausuren = []; return []; }
+  try {
+    const res = await fetch(`/exam/${encodeURIComponent(moduleName)}`);
+    if (!res.ok) { state.probeklausuren = []; return []; }
+    const data = await res.json();
+    state.probeklausuren = data.exams || [];
+    return state.probeklausuren;
+  } catch {
+    state.probeklausuren = [];
+    return [];
+  }
+}
+
+function openProbeklausurTab(examEntry, paneIdx) {
+  if (paneIdx == null) paneIdx = state.focusedPane;
+  if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
+  const pane = state.panes[paneIdx];
+  const path = `probeklausur:${examEntry.n}`;
+  let tab = pane.tabs.find(t => t.path === path);
+  if (!tab) {
+    tab = { path, kind: 'probeklausur', name: `Probeklausur ${examEntry.n}`, examEntry };
+    pane.tabs.push(tab);
+  }
+  pane.activeTab = path;
+  state.focusedPane = paneIdx;
+  renderPanes();
+  highlightActiveFileRow();
+}
+
+async function renderProbeklausurView(vp, tab) {
+  const p = document.createElement('div');
+  p.className = 'view-pane view-probeklausur active';
+  p.innerHTML = '<div class="pane-loading"><div class="modal-spinner"></div></div>';
+  vp.appendChild(p);
+
+  try {
+    const n = tab.examEntry.n;
+    const res = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${n}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Fehler');
+
+    const md = data.content || '';
+    const meta = tab.examEntry;
+
+    const header = document.createElement('div');
+    header.className = 'pk-header';
+    header.innerHTML = `
+      <div>
+        <h2>Probeklausur ${n} — ${escHtml(state.moduleName)}</h2>
+        <div class="pk-meta-bar">${meta.num_tasks} Aufgaben · ${meta.total_points} Punkte · Erstellt: ${escHtml(meta.generated || '—')}</div>
+      </div>
+      <button class="pk-delete-btn" id="pk-del-${n}" title="Klausur löschen">Löschen</button>
+    `;
+    p.innerHTML = '';
+    p.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'pk-body';
+    body.innerHTML = renderProbeklausurMd(md);
+    p.appendChild(body);
+
+    requestAnimationFrame(() => renderMathIn(p));
+
+    header.querySelector(`#pk-del-${n}`).addEventListener('click', async () => {
+      if (!confirm(`Probeklausur ${n} wirklich löschen?`)) return;
+      try {
+        const dr = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${n}`, { method: 'DELETE' });
+        if (!dr.ok) { const dd = await dr.json(); throw new Error(dd.detail || 'Fehler'); }
+        const pane = state.panes[state.focusedPane];
+        if (pane) {
+          pane.tabs = pane.tabs.filter(t => t.path !== tab.path);
+          pane.activeTab = pane.tabs[0]?.path || '';
+        }
+        await loadProbeklausuren(state.moduleName);
+        renderWorkspaceFiles(state.moduleFiles);
+        renderPanes();
+      } catch (err) {
+        alert(`Löschen fehlgeschlagen: ${err.message}`);
+      }
+    });
+  } catch (err) {
+    p.innerHTML = `<div class="summary-cta"><strong>Klausur konnte nicht geladen werden</strong><p>${escHtml(err.message || '')}</p></div>`;
+  }
+}
+
+function renderProbeklausurMd(md) {
+  // Strip YAML frontmatter
+  let src = md;
+  if (src.startsWith('---')) {
+    const end = src.indexOf('---', 3);
+    if (end !== -1) src = src.slice(end + 3).trimStart();
+  }
+  // Split on :::solution ... ::: blocks
+  const parts = src.split(/(:::solution[\s\S]*?:::)/g);
+  return parts.map(part => {
+    if (part.startsWith(':::solution')) {
+      const inner = part.replace(/^:::solution\s*/, '').replace(/:::\s*$/, '').trim();
+      return `<details class="pk-solution"><summary>Lösung anzeigen</summary><div class="pk-solution-body">${renderMarkdown(inner)}</div></details>`;
+    }
+    return renderMarkdown(part);
+  }).join('');
+}
+
+// ── Probeklausur modal wiring ──────────────────────────────────────────────────
+
+function showPkState(id) {
+  [pkStateForm, pkStateLoad, pkStateError].forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function openPkModal() {
+  showPkState('pk-state-form');
+  pkModal.classList.add('active');
+}
+function closePkModal() {
+  pkModal.classList.remove('active');
+}
+
+pkBtn.addEventListener('click', () => {
+  if (!state.moduleName) { alert('Bitte zuerst ein Modul öffnen.'); return; }
+  openPkModal();
+});
+pkModalClose.addEventListener('click', closePkModal);
+pkCancelBtn.addEventListener('click', closePkModal);
+pkModal.addEventListener('click', e => { if (e.target === pkModal) closePkModal(); });
+
+async function generateProbeklausur() {
+  const numTasks = parseInt(pkNumTasks.value, 10) || 5;
+  const totalPoints = parseInt(pkTotalPoints.value, 10) || 50;
+
+  showPkState('pk-state-loading');
+  pkLoadStatus.textContent = 'Klausurstil wird analysiert…';
+
+  await new Promise(r => setTimeout(r, 400));
+  pkLoadStatus.textContent = 'Probeklausur wird generiert… (kann 30–60 Sek. dauern)';
+
+  try {
+    const res = await fetch('/exam/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ module_name: state.moduleName, num_tasks: numTasks, total_points: totalPoints }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Generierung fehlgeschlagen');
+
+    closePkModal();
+    await loadProbeklausuren(state.moduleName);
+    renderWorkspaceFiles(state.moduleFiles);
+
+    const newExam = state.probeklausuren.find(e => e.n === data.n);
+    if (newExam) openProbeklausurTab(newExam);
+  } catch (err) {
+    pkErrorMsg.textContent = err.message || 'Unbekannter Fehler';
+    showPkState('pk-state-error');
+  }
+}
+
+pkGenerateBtn.addEventListener('click', generateProbeklausur);
+pkErrorClose.addEventListener('click', closePkModal);
+pkErrorRetry.addEventListener('click', generateProbeklausur);
 
 // ── Roadmap (per-module): tab kind 'roadmap' + state ───────────────────────────
 state.roadmap = null;          // parsed roadmap object {phases, mermaid, progress, ...}
@@ -3553,7 +3756,7 @@ function buildTabBar(pane, paneIdx) {
     tab.draggable = true;
     tab.dataset.tabPath = t.path;
     tab.dataset.paneIdx = String(paneIdx);
-    const icon = t.kind === 'summary' ? '✦ ' : t.kind === 'solution' ? '⚡ ' : '';
+    const icon = t.kind === 'summary' ? '✦ ' : t.kind === 'solution' ? '⚡ ' : t.kind === 'probeklausur' ? '📝 ' : '';
     tab.innerHTML = `<span class="tab-name">${icon}${escHtml(t.name)}</span><span class="tab-close" data-close="1">×</span>`;
     tab.addEventListener('click', e => {
       if (e.target.closest('.tab-close')) closeTab(t.path, paneIdx, e);
@@ -3667,6 +3870,8 @@ function buildViewport(pane, paneIdx) {
 
   if (tab.kind === 'roadmap') {
     renderRoadmapView(vp, tab);
+  } else if (tab.kind === 'probeklausur') {
+    renderProbeklausurView(vp, tab);
   } else if (tab.kind === 'summary') {
     renderSummaryFileView(vp, tab);
   } else if (tab.kind === 'solution') {
