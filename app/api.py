@@ -31,6 +31,7 @@ from app.lecture import module_profile as mp
 from app.lecture import roadmap as rm
 from app.lecture import exam_analyzer as ea
 from app.lecture.summarizer import summarize
+from app.lecture import exam_generator as eg
 
 
 load_dotenv()
@@ -72,6 +73,11 @@ class LectureOnboardingRequest(BaseModel):
     schwerpunkte: List[str] = []
     stil: str = "mixed"
     pruefungsrelevant: List[str] = []
+
+class ExamGenerateRequest(BaseModel):
+    module_name: str
+    num_tasks: int = 5
+    total_points: int = 50
 
 def sanitize_module_name(name: str) -> str:
     name = name.strip()
@@ -756,3 +762,78 @@ def delete_module(module_name: str):
         shutil.rmtree(roadmap_dir)
 
     return {"success": True, "deleted": clean_name}
+
+
+# ─────────────────────── Probeklausur endpoints ───────────────────────────────
+
+@app.post("/exam/generate")
+async def exam_generate(body: ExamGenerateRequest):
+    clean_name = sanitize_module_name(body.module_name)
+
+    existing = eg.list_exams(clean_name)
+    if len(existing) >= 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Limit von 100 Klausuren erreicht. Bitte alte Klausuren löschen.",
+        )
+
+    # Schritt 1 (optional): Klausurstil analysieren
+    exam_style = ""
+    exam_texts = _collect_exam_text(clean_name)
+    if exam_texts:
+        try:
+            exam_style = eg.analyze_exam_style(exam_texts, clean_name)
+        except Exception as exc:
+            print(f"[exam_generate] Stilanalyse fehlgeschlagen (nicht fatal): {exc}")
+
+    # RAG-Kontext
+    rag_result = rag.ask(
+        "Fasse alle wichtigen Konzepte, Definitionen, Methoden und prüfungsrelevanten Inhalte zusammen.",
+        module_name=clean_name,
+        top_k=20,
+    )
+    rag_context = rag_result.get("answer", "") or ""
+    if not rag_context:
+        raise HTTPException(
+            status_code=422,
+            detail="Keine Inhalte für dieses Modul gefunden. Bitte zuerst Materialien hochladen und verarbeiten.",
+        )
+
+    try:
+        md_content = eg.generate(
+            module_name=clean_name,
+            exam_style=exam_style,
+            rag_context=rag_context,
+            num_tasks=body.num_tasks,
+            total_points=body.total_points,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Generierung fehlgeschlagen: {exc}")
+
+    n = eg.save_exam(clean_name, md_content)
+    return {"success": True, "n": n, "module_name": clean_name}
+
+
+@app.get("/exam/{module_name}")
+def exam_list(module_name: str):
+    clean_name = sanitize_module_name(module_name)
+    return {"module_name": clean_name, "exams": eg.list_exams(clean_name)}
+
+
+@app.get("/exam/{module_name}/{n}")
+def exam_get(module_name: str, n: int):
+    clean_name = sanitize_module_name(module_name)
+    content = eg.load_exam(clean_name, n)
+    if content is None:
+        raise HTTPException(status_code=404, detail=f"Klausur {n} nicht gefunden.")
+    return {"module_name": clean_name, "n": n, "content": content}
+
+
+@app.delete("/exam/{module_name}/{n}")
+def exam_delete(module_name: str, n: int):
+    clean_name = sanitize_module_name(module_name)
+    if not eg.delete_exam(clean_name, n):
+        raise HTTPException(status_code=404, detail=f"Klausur {n} nicht gefunden.")
+    return {"success": True}
