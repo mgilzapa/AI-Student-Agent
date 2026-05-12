@@ -961,6 +961,62 @@
   }
   .roadmap-regen-btn:hover { background: var(--accent-glow); border-color: var(--accent); }
 
+  /* ── Tagesplan panel ── */
+  .tagesplan-panel {
+    background: var(--panel-soft); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+    margin-top: 10px;
+  }
+  .tagesplan-panel-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .tagesplan-controls {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .tagesplan-hours-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+  .tagesplan-hours-input {
+    width: 70px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 8px; font-size: 0.85rem; color: var(--text); font-family: 'JetBrains Mono', monospace;
+  }
+  .tagesplan-mode { display: flex; gap: 6px; }
+  .tagesplan-mode-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 12px; font-size: 0.78rem; color: var(--muted); font-family: inherit;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .tagesplan-mode-btn.active {
+    background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
+  }
+  .tagesplan-generate-btn {
+    background: var(--accent-soft); border: 1px solid var(--accent-border);
+    border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; color: var(--accent);
+    font-family: inherit; cursor: pointer; transition: all 0.18s ease; white-space: nowrap;
+  }
+  .tagesplan-generate-btn:hover:not(:disabled) { background: var(--accent-glow); }
+  .tagesplan-generate-btn:disabled { opacity: 0.42; cursor: not-allowed; }
+  .tagesplan-progress {
+    font-size: 0.78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+  }
+  /* ── Daily tasks list inside topic detail ── */
+  .daily-tasks-section { display: flex; flex-direction: column; gap: 2px; }
+  .daily-task-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .daily-task-item:last-child { border-bottom: none; }
+  .daily-task-cb {
+    margin-top: 2px; width: 15px; height: 15px; flex-shrink: 0;
+    accent-color: var(--accent); cursor: pointer;
+  }
+  .daily-task-text { font-size: 0.84rem; color: var(--text); line-height: 1.5; }
+  .daily-task-text.done { text-decoration: line-through; color: var(--muted); }
+  /* ── Done-gate: grey out the "Fertig" status button when tasks are open ── */
+  .status-btn.done-locked {
+    opacity: 0.38; cursor: not-allowed; pointer-events: none;
+  }
+  .status-btn.done-locked::after { content: ' 🔒'; font-size: 0.7em; }
+
   .roadmap-body {
     flex: 1 1 auto; min-height: 0;
     display: grid;
@@ -2251,6 +2307,8 @@
 // ── State ──────────────────────────────────────────────────────────────────────
 const state = {
   moduleName: '',
+  dailyPlan: null,
+  dailyMode: 'konkret',
   selectedFiles: [],
   isUploading: false,
   currentLectureFile: '',
@@ -2986,9 +3044,16 @@ window.selectTopic = function(topicId) {
 async function loadRoadmapForCurrentModule() {
   if (!state.moduleName) return null;
   try {
-    const res = await fetch(`/roadmap/${encodeURIComponent(state.moduleName)}`);
-    const data = await res.json();
+    const [rmRes, dpRes] = await Promise.all([
+      fetch(`/roadmap/${encodeURIComponent(state.moduleName)}`),
+      fetch(`/daily/${encodeURIComponent(state.moduleName)}`),
+    ]);
+    const data = await rmRes.json();
     state.roadmap = data.exists ? data : null;
+    try {
+      const dpData = await dpRes.json();
+      state.dailyPlan = dpData.exists ? dpData : null;
+    } catch (_) { state.dailyPlan = null; }
     return state.roadmap;
   } catch {
     state.roadmap = null;
@@ -3050,6 +3115,7 @@ async function renderRoadmapView(vp, tab) {
     }
     p.appendChild(topbar);
     topbar.querySelector('#rd-generate').addEventListener('click', () => openRoadmapGenModal());
+    if (data) renderDailyPanel(topbar);
 
     // Pending diff banner — if a generation is parked
     if (state.roadmapPending) {
@@ -3110,6 +3176,125 @@ async function renderRoadmapView(vp, tab) {
     p.innerHTML += `<div class="roadmap-empty-detail" style="color:var(--danger);">
       <div><strong>Render-Fehler</strong>
       <p style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;">${escHtml(err.message || String(err))}</p></div></div>`;
+  }
+}
+
+function renderDailyPanel(container) {
+  const plan = state.dailyPlan;
+  const allDone = plan && plan.progress && plan.progress.total > 0 &&
+    plan.progress.done === plan.progress.total;
+  const canGenerate = !plan || allDone;
+
+  let progressHtml = '';
+  if (plan && plan.progress) {
+    const { done, total } = plan.progress;
+    progressHtml = `<span class="tagesplan-progress">${done}/${total} Tasks erledigt</span>`;
+  }
+
+  const panel = document.createElement('div');
+  panel.className = 'tagesplan-panel';
+  panel.id = 'tagesplan-panel';
+  panel.innerHTML = `
+    <div class="tagesplan-panel-title">Tagesplan</div>
+    <div class="tagesplan-controls">
+      <span class="tagesplan-hours-label">Lernzeit heute:</span>
+      <input class="tagesplan-hours-input" id="tp-hours" type="number"
+             min="0.5" max="12" step="0.5"
+             value="${plan ? escHtml(String(plan.daily_hours || 2.0)) : '2.0'}">
+      <div class="tagesplan-mode">
+        <button class="tagesplan-mode-btn ${state.dailyMode === 'konkret' ? 'active' : ''}"
+                id="tp-mode-konkret">Konkret</button>
+        <button class="tagesplan-mode-btn ${state.dailyMode === 'grob' ? 'active' : ''}"
+                id="tp-mode-grob">Grob</button>
+      </div>
+      <button class="tagesplan-generate-btn" id="tp-generate"
+              ${canGenerate ? '' : 'disabled'}>
+        ✦ Tagesplan generieren
+      </button>
+    </div>
+    ${progressHtml}
+  `;
+  container.appendChild(panel);
+
+  panel.querySelector('#tp-mode-konkret').addEventListener('click', () => {
+    state.dailyMode = 'konkret';
+    panel.querySelector('#tp-mode-konkret').classList.add('active');
+    panel.querySelector('#tp-mode-grob').classList.remove('active');
+  });
+  panel.querySelector('#tp-mode-grob').addEventListener('click', () => {
+    state.dailyMode = 'grob';
+    panel.querySelector('#tp-mode-grob').classList.add('active');
+    panel.querySelector('#tp-mode-konkret').classList.remove('active');
+  });
+  panel.querySelector('#tp-generate').addEventListener('click', generateDailyPlan);
+}
+
+async function generateDailyPlan() {
+  if (!state.moduleName) return;
+  const hoursInput = document.getElementById('tp-hours');
+  const daily_hours = hoursInput ? parseFloat(hoursInput.value) || 2.0 : 2.0;
+  const genBtn = document.getElementById('tp-generate');
+  if (genBtn) { genBtn.disabled = true; genBtn.textContent = '... wird generiert'; }
+
+  try {
+    const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: state.dailyMode, daily_hours }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      addMsg('agent', `❌ Tagesplan-Generierung fehlgeschlagen: ${err.detail || res.statusText}`);
+      return;
+    }
+    const data = await res.json();
+    state.dailyPlan = data.exists === false ? null : data;
+
+    // Replace panel in-place
+    const existingPanel = document.getElementById('tagesplan-panel');
+    if (existingPanel) {
+      const parent = existingPanel.parentElement;
+      existingPanel.remove();
+      renderDailyPanel(parent);
+    }
+    paintRoadmapDetail();
+  } catch (err) {
+    addMsg('agent', `❌ Netzwerkfehler: ${err.message}`);
+  } finally {
+    const btn = document.getElementById('tp-generate');
+    if (btn) { btn.textContent = '✦ Tagesplan generieren'; }
+  }
+}
+
+async function toggleDailyTask(topicId, taskIndex, done) {
+  if (!state.moduleName) return;
+  try {
+    const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/task`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic_id: topicId, task_index: taskIndex, done }),
+    });
+    if (!res.ok) { console.warn('[daily] toggle failed'); return; }
+    const data = await res.json();
+    if (state.dailyPlan && data.progress) {
+      state.dailyPlan.progress = data.progress;
+      const t = (state.dailyPlan.topics || []).find(t => t.id === topicId);
+      if (t && t.tasks[taskIndex] !== undefined) t.tasks[taskIndex].done = done;
+    }
+    // Refresh panel progress text and generate button state
+    const prog = state.dailyPlan?.progress;
+    if (prog) {
+      const pEl = document.querySelector('#tagesplan-panel .tagesplan-progress');
+      if (pEl) pEl.textContent = `${prog.done}/${prog.total} Tasks erledigt`;
+      const genBtn = document.getElementById('tp-generate');
+      if (genBtn) {
+        const allDone = prog.total > 0 && prog.done === prog.total;
+        genBtn.disabled = !(allDone || !state.dailyPlan);
+      }
+    }
+    paintRoadmapDetail();
+  } catch (err) {
+    console.warn('[daily] toggle error:', err);
   }
 }
 
@@ -3186,10 +3371,15 @@ function paintRoadmapDetail() {
       <span class="topic-hours-pill">~${t.hours}h</span>
       <span class="topic-hours-pill" style="opacity:0.7;">${escHtml(found.phase.title)}</span>
     </div>`);
+  const dailyOpenCount = (state.dailyPlan?.topics || []).find(dt => dt.id === t.id)
+    ?.tasks?.filter(tk => !tk.done)?.length || 0;
+  const doneLocked = dailyOpenCount > 0;
+  const doneLockedAttr = doneLocked ? ' done-locked' : '';
+  const doneTitle = doneLocked ? ` title="Noch ${dailyOpenCount} Tasks offen"` : '';
   sections.push(`<div class="status-switcher" data-tid="${escHtml(t.id)}">
       <button class="status-btn todo  ${t.status === 'todo'  ? 'active' : ''}" data-status="todo">○ Offen</button>
       <button class="status-btn doing ${t.status === 'doing' ? 'active' : ''}" data-status="doing">◐ Dran</button>
-      <button class="status-btn done  ${t.status === 'done'  ? 'active' : ''}" data-status="done">● Fertig</button>
+      <button class="status-btn done  ${t.status === 'done'  ? 'active' : ''}${doneLockedAttr}" data-status="done"${doneTitle}>● Fertig</button>
     </div>`);
   if (t.bedeutung) {
     sections.push(`<div class="topic-section">
@@ -3221,10 +3411,36 @@ function paintRoadmapDetail() {
         <div class="topic-chips">${t.aufgaben.map(a => `<span class="topic-chip">${escHtml(a)}</span>`).join('')}</div>
       </div>`);
   }
+
+  // "Heutige Tasks" — only when the active daily plan has tasks for this topic
+  const dailyTopicData = (state.dailyPlan?.topics || []).find(dt => dt.id === t.id);
+  if (dailyTopicData && dailyTopicData.tasks && dailyTopicData.tasks.length > 0) {
+    const taskItemsHtml = dailyTopicData.tasks.map((task, idx) => {
+      const checked = task.done ? 'checked' : '';
+      const doneClass = task.done ? ' done' : '';
+      return `<label class="daily-task-item">
+        <input class="daily-task-cb" type="checkbox" ${checked}
+               data-tid="${escHtml(t.id)}" data-idx="${idx}">
+        <span class="daily-task-text${doneClass}">${escHtml(task.text)}</span>
+      </label>`;
+    }).join('');
+    sections.push(`<div class="topic-section">
+      <div class="topic-section-label">Heutige Tasks</div>
+      <div class="daily-tasks-section" id="rm-daily-tasks">${taskItemsHtml}</div>
+    </div>`);
+  }
+
   detail.style.animation = 'none';
   void detail.offsetWidth;
   detail.style.animation = 'viewIn 0.2s cubic-bezier(0.4,0,0.2,1)';
   detail.innerHTML = sections.join('');
+
+  // Daily task checkboxes
+  detail.querySelectorAll('.daily-task-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      toggleDailyTask(cb.dataset.tid, parseInt(cb.dataset.idx, 10), cb.checked);
+    });
+  });
 
   // File-link buttons: try to match by name to actual module files; click opens in pane.
   const filesEl = detail.querySelector('#rm-detail-files');
@@ -3285,7 +3501,16 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     });
-    if (!res.ok) throw new Error('Status-Update fehlgeschlagen');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        await loadRoadmapForCurrentModule();
+        paintRoadmapDetail();
+        addMsg('agent', `🔒 ${errData.detail || 'Erst alle Tasks abhaken.'}`);
+        return;
+      }
+      throw new Error(errData.detail || 'Status-Update fehlgeschlagen');
+    }
 
     // Reload server state (for accurate mermaid classDefs)
     await loadRoadmapForCurrentModule();
