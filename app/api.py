@@ -32,6 +32,7 @@ from app.lecture import roadmap as rm
 from app.lecture import exam_analyzer as ea
 from app.lecture.summarizer import summarize
 from app.lecture import exam_generator as eg
+from app.lecture import daily_tasks as dt
 
 
 load_dotenv()
@@ -78,6 +79,15 @@ class ExamGenerateRequest(BaseModel):
     module_name: str
     num_tasks: int = 5
     total_points: int = 50
+
+class DailyGenerateRequest(BaseModel):
+    mode: str = "konkret"   # "konkret" | "grob"
+    daily_hours: float = 2.0
+
+class DailyTaskPatchRequest(BaseModel):
+    topic_id: str
+    task_index: int
+    done: bool
 
 def sanitize_module_name(name: str) -> str:
     name = name.strip()
@@ -443,6 +453,13 @@ def roadmap_get(module_name: str):
 def roadmap_update_status(module_name: str, topic_id: str, body: RoadmapStatusRequest):
     if body.status not in ("todo", "doing", "done"):
         raise HTTPException(status_code=400, detail="status muss todo|doing|done sein.")
+    if body.status == "done":
+        open_count = dt.has_open_tasks_for_topic(module_name, topic_id)
+        if open_count > 0:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Noch {open_count} Tasks für dieses Topic offen.",
+            )
     md = rm.load_roadmap_md(module_name)
     if not md:
         raise HTTPException(status_code=404, detail="Keine Roadmap gefunden.")
@@ -837,3 +854,63 @@ def exam_delete(module_name: str, n: int):
     if not eg.delete_exam(clean_name, n):
         raise HTTPException(status_code=404, detail=f"Klausur {n} nicht gefunden.")
     return {"success": True}
+
+
+# ─────────────────────── Daily tasks endpoints ────────────────────────────────
+
+@app.get("/daily/{module_name}")
+def daily_get(module_name: str):
+    """Load active daily plan. Returns {exists: false} if none."""
+    clean = sanitize_module_name(module_name)
+    md = dt.load_plan(clean)
+    if not md:
+        return {"exists": False}
+    parsed = dt.parse_plan(md)
+    return {"exists": True, **parsed}
+
+
+@app.post("/daily/{module_name}/generate")
+async def daily_generate(module_name: str, body: DailyGenerateRequest):
+    """Generate a new daily plan. Archives old plan and applies carryover."""
+    clean = sanitize_module_name(module_name)
+    if body.mode not in ("konkret", "grob"):
+        raise HTTPException(status_code=400, detail="mode muss 'konkret' oder 'grob' sein.")
+    if body.daily_hours < 0.5 or body.daily_hours > 12:
+        raise HTTPException(status_code=400, detail="daily_hours muss zwischen 0.5 und 12 liegen.")
+
+    roadmap_md = rm.load_roadmap_md(clean)
+    if not roadmap_md:
+        raise HTTPException(status_code=404, detail="Keine Roadmap gefunden. Erst Roadmap generieren.")
+    roadmap_data = rm.parse_md(roadmap_md)
+
+    def rag_fn(question: str, module_name: str, top_k: int = 8) -> str:
+        result = rag.ask(question, module_name=module_name, top_k=top_k)
+        return result.get("answer", "") or ""
+
+    try:
+        new_md = dt.generate(
+            clean,
+            mode=body.mode,
+            daily_hours=body.daily_hours,
+            roadmap_data=roadmap_data,
+            rag_fn=rag_fn,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Plan-Generierung fehlgeschlagen: {exc}")
+
+    parsed = dt.parse_plan(new_md)
+    return {"success": True, **parsed}
+
+
+@app.patch("/daily/{module_name}/task")
+def daily_task_patch(module_name: str, body: DailyTaskPatchRequest):
+    """Toggle a single task checkbox (done or undone)."""
+    clean = sanitize_module_name(module_name)
+    try:
+        updated_md = dt.toggle_task(clean, body.topic_id, body.task_index, body.done)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    parsed = dt.parse_plan(updated_md)
+    return {"success": True, "progress": parsed["progress"]}
