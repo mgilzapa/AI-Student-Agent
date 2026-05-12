@@ -1030,9 +1030,9 @@
   .roadmap-graph-col::-webkit-scrollbar { width: 5px; }
   .roadmap-graph-col::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.22); border-radius: 999px; }
   .roadmap-graph {
-    padding: 18px 18px 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    padding: 18px;
+    display: flex; align-items: flex-start; justify-content: center;
+    flex: 1 1 auto; min-height: 0;
   }
   .roadmap-graph > svg { display: block; max-width: 100%; height: auto; }
   .roadmap-graph svg { max-width: 100%; height: auto; }
@@ -1461,6 +1461,23 @@
     border-color: rgba(124,58,237,0.6);
     box-shadow: 0 0 20px rgba(124,58,237,0.18); transform: translateY(-1px);
   }
+  /* ── Solution view (in-pane) ── */
+  .view-pane.view-solution { overflow-y: auto; padding: 20px 24px; display: block !important; }
+  .view-pane.view-solution:not(.active) { display: none !important; }
+  .sol-header { margin-bottom: 18px; }
+  .sol-header h2 { font-family:'DM Serif Display',serif; font-size:1.3rem; font-weight:400; color:#c4b5fd; margin:0 0 4px; }
+  .sol-meta-bar { font-family:'DM Mono',monospace; font-size:0.74rem; color:var(--muted); }
+  .sol-list { display:grid; gap:14px; }
+  .sol-item { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px 16px; display:grid; gap:8px; }
+  .sol-item-hd { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .sol-aufgabe-nr { font-family:'DM Serif Display',serif; font-size:1rem; color:#c4b5fd; }
+  .sol-model-badge { font-family:'DM Mono',monospace; font-size:0.71rem; padding:2px 8px; border-radius:999px; border:1px solid; font-weight:500; }
+  .sol-model-badge.mini { color:#6ee7b7; border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.08); }
+  .sol-model-badge.full { color:#93c5fd; border-color:rgba(96,165,250,0.4); background:rgba(96,165,250,0.08); }
+  .sol-route-badge { font-family:'DM Mono',monospace; font-size:0.7rem; padding:2px 7px; border-radius:999px; color:var(--muted); border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); }
+  .sol-loesung { font-size:0.85rem; line-height:1.75; color:var(--text); }
+  .is-solution .file-icon { color:#6ee7b7; opacity:1; }
+  .is-solution .file-name { color:#a7f3d0; }
 
   /* ════════════════════════════════════════
      EXAM MODAL (3-step form)
@@ -2227,6 +2244,79 @@ function isLecture(filename) {
   return /^(VL_|Vorlesung_|lecture_)/i.test(filename);
 }
 
+function isExerciseSheet(filename) {
+  return /übungsblatt|uebungsblatt|aufgabenblatt|exercise.?sheet|worksheet|blatt\s*\d|blatt_\d|\bblatt\d/i.test(filename);
+}
+
+// ── Solved sheets (in-memory per session) ─────────────────────────────────────
+state.solvedSheets = [];   // [{path, name, solveData}]
+
+function openSolution(sol) {
+  const paneIdx = state.focusedPane;
+  if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
+  const pane = state.panes[paneIdx];
+  let tab = pane.tabs.find(t => t.path === sol.path);
+  if (!tab) {
+    tab = { path: sol.path, kind: 'solution', name: sol.name, solveData: sol.solveData };
+    pane.tabs.push(tab);
+  }
+  pane.activeTab = sol.path;
+  state.focusedPane = paneIdx;
+  renderPanes();
+  highlightActiveFileRow();
+}
+
+async function solveSheet(file, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
+
+  // 1) Fetch text
+  let sheetText;
+  try {
+    const r = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/text?path=${encodeURIComponent(file.relative_path || file.name)}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.statusText);
+    sheetText = d.text || '';
+  } catch (err) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
+    alert(`Datei konnte nicht gelesen werden: ${err.message}`);
+    return;
+  }
+
+  // 2) Solve
+  let solveData;
+  try {
+    const r = await fetch('/solve-sheet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet_text: sheetText, module_id: state.moduleName }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.statusText);
+    solveData = d;
+  } catch (err) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
+    alert(`Lösen fehlgeschlagen: ${err.message}`);
+    return;
+  }
+
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
+
+  const solPath = `solution:${file.relative_path || file.name}`;
+  const solName = `Lösung: ${file.name}`;
+
+  // Update or append in solved list
+  const existing = state.solvedSheets.findIndex(s => s.path === solPath);
+  const solEntry = { path: solPath, name: solName, solveData };
+  if (existing >= 0) state.solvedSheets[existing] = solEntry;
+  else state.solvedSheets.push(solEntry);
+
+  // Refresh files panel to show/update "Lösungen" section
+  renderWorkspaceFiles(state.moduleFiles);
+
+  // Open solution tab
+  openSolution(solEntry);
+}
+
 // ── Upload ─────────────────────────────────────────────────────────────────────
 function updateUploadButton() {
   uploadBtn.disabled = state.isUploading || !(moduleNameInput.value.trim() && state.selectedFiles.length);
@@ -2326,7 +2416,10 @@ async function uploadModule() {
 // ── Navigation ─────────────────────────────────────────────────────────────────
 function openWorkspace(moduleName, files) {
   // Drop iframes from any previously opened module — paths can collide across modules.
-  if (state.moduleName && state.moduleName !== moduleName) disposeAllPdfFrames();
+  if (state.moduleName && state.moduleName !== moduleName) {
+    disposeAllPdfFrames();
+    state.solvedSheets = [];
+  }
   state.moduleName = moduleName;
   state.moduleFiles = files || [];
   state.parsedTextCache = {};
@@ -2430,6 +2523,7 @@ function renderWorkspaceFiles(files) {
           </div>
           <div class="file-actions">
             ${lecture || ext === 'pdf' || ext === 'pptx' ? `<button class="file-action-btn" data-action="summarize" title="Zusammenfassen">≡</button>` : ''}
+            ${isExerciseSheet(file.name) ? `<button class="file-action-btn" data-action="solve" title="Übungsblatt lösen" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#6ee7b7;">⚡</button>` : ''}
             <button class="file-action-btn" data-action="exam-toggle" title="Klausur-Markierung umschalten" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;">🎓</button>
             <button class="file-action-btn" data-action="delete" title="Datei löschen" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.3);color:#f87171;">🗑</button>
           </div>
@@ -2440,6 +2534,7 @@ function renderWorkspaceFiles(files) {
             e.stopPropagation();
             const action = actionBtn.dataset.action;
             if (action === 'summarize') openSummaryFlow(file.name);
+            else if (action === 'solve') solveSheet(file, actionBtn);
             else if (action === 'exam-toggle' || action === 'exam-flag') toggleExamFlag(file);
             else if (action === 'delete') deleteModuleFile(file);
             return;
@@ -2499,6 +2594,31 @@ function renderWorkspaceFiles(files) {
     });
   }
 
+  // Lösungen section
+  if (state.solvedSheets.length) {
+    const solHeader = document.createElement('div');
+    solHeader.className = 'files-section-header';
+    solHeader.textContent = 'Lösungen';
+    filesPanel.appendChild(solHeader);
+
+    state.solvedSheets.forEach(sol => {
+      const row = document.createElement('div');
+      row.className = 'file-row is-solution';
+      row.dataset.path = sol.path;
+      const n = sol.solveData.results.length;
+      const tok = sol.solveData.total_tokens.toLocaleString();
+      row.innerHTML = `
+        <span class="file-icon">⚡</span>
+        <div class="file-meta">
+          <div class="file-name" title="${escHtml(sol.name)}">${escHtml(sol.name)}</div>
+          <div class="file-sub">${n} Aufgabe${n !== 1 ? 'n' : ''} · ${tok} Tokens</div>
+        </div>
+      `;
+      row.addEventListener('click', () => openSolution(sol));
+      filesPanel.appendChild(row);
+    });
+  }
+
   highlightActiveFileRow();
 }
 
@@ -2523,8 +2643,8 @@ function initMermaidIfReady() {
     window.mermaid.initialize({
       startOnLoad: false,
       theme: 'dark',
-      securityLevel: 'loose',  // required for `click NODE call fn(...)` directives
-      flowchart: { curve: 'basis', useMaxWidth: true },
+      securityLevel: 'loose',
+      flowchart: { curve: 'linear', useMaxWidth: true, nodeSpacing: 50, rankSpacing: 70 },
     });
     window.__mermaidInitDone = true;
   } catch (err) {
@@ -2640,23 +2760,18 @@ async function renderRoadmapView(vp, tab) {
       return;
     }
 
-    // Body: graph + topic list (left) + detail panel (right)
+    // Body: graph (left) + detail panel (right)
     const body = document.createElement('div');
     body.className = 'roadmap-body';
     body.innerHTML = `
       <div class="roadmap-graph-col">
         <div class="roadmap-graph" id="rm-graph"></div>
-        <div class="roadmap-phaselist" id="rm-phaselist"></div>
       </div>
       <div class="roadmap-detail" id="rm-detail"></div>
     `;
     p.appendChild(body);
 
     const graphEl = body.querySelector('#rm-graph');
-    const listEl = body.querySelector('#rm-phaselist');
-
-    // Always render the HTML phase/topic list — works even if Mermaid is broken
-    renderRoadmapPhaseList(listEl, data);
 
     // Best-effort Mermaid render on top
     initMermaidIfReady();
@@ -2830,6 +2945,25 @@ function labelPrio(p) {
 
 async function updateRoadmapTopicStatus(topicId, newStatus) {
   if (!state.moduleName) return;
+
+  // Optimistic update: change local state immediately for instant feedback
+  if (state.roadmap) {
+    let found = false;
+    for (const phase of state.roadmap.phases || []) {
+      for (const t of phase.topics || []) {
+        if (t.id === topicId) { t.status = newStatus; found = true; break; }
+      }
+      if (found) break;
+    }
+    // Recalculate progress locally
+    const prog = { todo: 0, doing: 0, done: 0 };
+    for (const phase of state.roadmap.phases || []) {
+      for (const t of phase.topics || []) { if (prog[t.status] != null) prog[t.status]++; }
+    }
+    state.roadmap.progress = prog;
+  }
+  paintRoadmapDetail();
+
   try {
     const res = await fetch(`/roadmap/${encodeURIComponent(state.moduleName)}/topic/${encodeURIComponent(topicId)}`, {
       method: 'PATCH',
@@ -2837,10 +2971,35 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
       body: JSON.stringify({ status: newStatus }),
     });
     if (!res.ok) throw new Error('Status-Update fehlgeschlagen');
-    // Re-load + re-render the roadmap view so mermaid colors update.
+
+    // Reload server state (for accurate mermaid classDefs)
     await loadRoadmapForCurrentModule();
-    renderPanes();
+
+    // Update topbar progress in-place
+    const topbarProgress = document.querySelector('.view-pane.view-roadmap.active .roadmap-progress');
+    if (topbarProgress && state.roadmap?.progress) {
+      const p = state.roadmap.progress;
+      const total = (p.todo||0) + (p.doing||0) + (p.done||0);
+      topbarProgress.textContent = `${p.done||0}/${total} fertig · ${p.doing||0} dran`;
+    }
+
+    // Re-render mermaid graph in-place (no full page re-render)
+    const graphEl = document.getElementById('rm-graph');
+    if (graphEl && window.mermaid && state.roadmap?.mermaid) {
+      try {
+        const id = 'rm-svg-' + Math.random().toString(36).slice(2, 9);
+        const cleaned = String(state.roadmap.mermaid).replace(/^flowchart\s+\w+\s*\n?/i, '');
+        const result = await window.mermaid.render(id, 'flowchart TD\n' + cleaned);
+        graphEl.innerHTML = result.svg;
+        if (result.bindFunctions) result.bindFunctions(graphEl);
+      } catch (err) {
+        console.error('[roadmap] mermaid update failed:', err);
+      }
+    }
   } catch (err) {
+    // Revert on error
+    await loadRoadmapForCurrentModule();
+    paintRoadmapDetail();
     addMsg('agent', `❌ Status-Update fehlgeschlagen: ${err.message}`);
   }
 }
@@ -3179,7 +3338,10 @@ function persistWorkspace() {
   if (!state.moduleName) return;
   try {
     const data = {
-      panes: state.panes.map(p => p ? { tabs: p.tabs, activeTab: p.activeTab } : null),
+      panes: state.panes.map(p => p ? {
+        tabs: p.tabs.filter(t => t.kind !== 'solution'),
+        activeTab: p.activeTab,
+      } : null),
       focusedPane: state.focusedPane,
     };
     localStorage.setItem(`studyAgent.ws.${state.moduleName}`, JSON.stringify(data));
@@ -3287,7 +3449,7 @@ function buildTabBar(pane, paneIdx) {
     tab.draggable = true;
     tab.dataset.tabPath = t.path;
     tab.dataset.paneIdx = String(paneIdx);
-    const icon = t.kind === 'summary' ? '✦ ' : '';
+    const icon = t.kind === 'summary' ? '✦ ' : t.kind === 'solution' ? '⚡ ' : '';
     tab.innerHTML = `<span class="tab-name">${icon}${escHtml(t.name)}</span><span class="tab-close" data-close="1">×</span>`;
     tab.addEventListener('click', e => {
       if (e.target.closest('.tab-close')) closeTab(t.path, paneIdx, e);
@@ -3339,6 +3501,12 @@ function buildViewBar(pane, paneIdx) {
     lbl.className = 'view-toggle active';
     lbl.style.cursor = 'default';
     lbl.textContent = '✦ Zusammenfassung';
+    bar.appendChild(lbl);
+  } else if (activeTab.kind === 'solution') {
+    const lbl = document.createElement('span');
+    lbl.className = 'view-toggle active';
+    lbl.style.cursor = 'default';
+    lbl.textContent = '⚡ Lösung';
     bar.appendChild(lbl);
   } else if (activeTab.kind === 'roadmap') {
     // Roadmap: viewport itself contains topbar — keep view-bar minimal.
@@ -3397,6 +3565,8 @@ function buildViewport(pane, paneIdx) {
     renderRoadmapView(vp, tab);
   } else if (tab.kind === 'summary') {
     renderSummaryFileView(vp, tab);
+  } else if (tab.kind === 'solution') {
+    renderSolutionView(vp, tab);
   } else if (tab.view === 'pdf') {
     renderPdfView(vp, tab);
   } else if (tab.view === 'text') {
@@ -3492,6 +3662,53 @@ async function renderSummaryFileView(vp, tab) {
   p.innerHTML = '<div class="pane-loading"><div class="modal-spinner"></div></div>';
   vp.appendChild(p);
   await fillSummaryContent(p, tab.summaryPath);
+}
+
+function renderSolutionView(vp, tab) {
+  const d = tab.solveData;
+  const p = document.createElement('div');
+  p.className = 'view-pane view-solution active';
+
+  const modelsStr = Object.entries(d.models_used || {})
+    .map(([m, n]) => `${m} ×${n}`).join('  ·  ');
+
+  const header = document.createElement('div');
+  header.className = 'sol-header';
+  header.innerHTML = `
+    <h2>${escHtml(tab.name)}</h2>
+    <div class="sol-meta-bar">${d.results.length} Aufgaben · ${(d.total_tokens || 0).toLocaleString()} Tokens · ${escHtml(modelsStr)}</div>
+  `;
+  p.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'sol-list';
+
+  d.results.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'sol-item';
+    const badgeClass = r.model_used === 'gpt-4o-mini' ? 'mini' : 'full';
+    item.innerHTML = `
+      <div class="sol-item-hd">
+        <span class="sol-aufgabe-nr">Aufgabe ${escHtml(r.aufgabe_nr)}</span>
+        <span class="sol-model-badge ${badgeClass}">${escHtml(r.model_used)}</span>
+        <span class="sol-route-badge">${escHtml(r.route)}</span>
+      </div>
+      <div class="sol-loesung"></div>
+    `;
+    const loesungEl = item.querySelector('.sol-loesung');
+    loesungEl.innerHTML = renderMarkdown(r.loesung);
+    list.appendChild(item);
+  });
+
+  p.appendChild(list);
+  vp.appendChild(p);
+
+  // Render LaTeX after DOM insertion
+  requestAnimationFrame(() => {
+    if (typeof window.renderMathInElement === 'function') {
+      list.querySelectorAll('.sol-loesung').forEach(el => renderMathIn(el));
+    }
+  });
 }
 
 async function fillSummaryContent(paneEl, summaryPath) {

@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
+from anthropic import Anthropic
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -37,6 +38,7 @@ load_dotenv()
 app = FastAPI(title="Study Agent")
 
 client = OpenAI()
+anthropic_client = Anthropic()
 config = load_config()
 RAW_DIR = config["raw_path"]
 RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -308,6 +310,11 @@ def toggle_exam_flag(module_name: str, path: str):
 
 
 # ─────────────────────── Roadmap endpoints ────────────────────────────────────
+
+class SolveSheetRequest(BaseModel):
+    sheet_text: str
+    module_id: str
+
 
 class RoadmapGenerateRequest(BaseModel):
     module_name: str
@@ -645,6 +652,38 @@ def get_lecture_summary(path: str):
         raise HTTPException(status_code=404, detail="Zusammenfassung nicht gefunden.")
 
     return {"content": summary_path.read_text(encoding="utf-8")}
+
+
+@app.post("/solve-sheet")
+async def solve_sheet(body: SolveSheetRequest):
+    from app.router import HybridRouter
+    from app.solver import ExerciseSheetSolver
+
+    router = HybridRouter(vector_store=vector_store, embedder=embedder, client=anthropic_client)
+    solver = ExerciseSheetSolver(router=router, client=anthropic_client)
+
+    results = await solver.solve(body.sheet_text, body.module_id)
+
+    total_tokens = sum(r.tokens_used for r in results)
+    models_used: dict = {}
+    for r in results:
+        models_used[r.model_used] = models_used.get(r.model_used, 0) + 1
+
+    return {
+        "results": [
+            {
+                "aufgabe_nr": r.aufgabe_nr,
+                "aufgabe_text": r.aufgabe_text,
+                "loesung": r.loesung,
+                "model_used": r.model_used,
+                "route": r.route,
+                "tokens_used": r.tokens_used,
+            }
+            for r in results
+        ],
+        "total_tokens": total_tokens,
+        "models_used": models_used,
+    }
 
 
 @app.delete("/modules/{module_name}")

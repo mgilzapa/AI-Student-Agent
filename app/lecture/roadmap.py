@@ -19,20 +19,20 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from openai import OpenAI
+from anthropic import Anthropic
 
 from . import module_profile as mp
 
 logger = logging.getLogger(__name__)
-MODEL = "gpt-4o-mini"
+MODEL = "claude-sonnet-4-6"
 
-_client: Optional[OpenAI] = None
+_client: Optional[Anthropic] = None
 
 
-def _get_client() -> OpenAI:
+def _get_client() -> Anthropic:
     global _client
     if _client is None:
-        _client = OpenAI()
+        _client = Anthropic()
     return _client
 
 ROADMAPS_DIR = Path("data/processed/roadmaps")
@@ -48,7 +48,7 @@ KONTEXT
 {exam_files_section}{available_files_section}{old_roadmap_section}
 
 PHASEN-REIHENFOLGE (lass weg was nicht passt):
-voraussetzungen → grundlagen → kernkonzepte → methoden → uebung → klausurtraining → typische_fehler → wiederholung
+prerequisites → basics → core_concepts → methods → practice → exam_training → common_mistakes → review
 
 ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
 
@@ -56,43 +56,75 @@ ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
   "exam_date": "YYYY-MM-DD oder leer",
   "phases": [
     {{
-      "title": "Phase 1 · Voraussetzungen",
+      "title": "Phase 1 · Prerequisites",
       "topics": [
         {{
           "id": "t1",
           "name": "Logik-Grundlagen",
-          "pruefungsrelevanz": "hoch|mittel|niedrig",
+          "relevance": "high|medium|low",
           "hours": 1.5,
-          "bedeutung": "Was das Thema ist (1 Satz)",
-          "warum_relevant": "Warum prüfungsrelevant (1 Satz)",
+          "summary": "Was das Thema ist (1 Satz)",
+          "exam_relevance_reason": "Warum prüfungsrelevant (1 Satz)",
           "subtopics": ["Unterthema 1", "Unterthema 2"],
-          "dateien": ["Skript Kap.1.pdf"],
-          "aufgaben": ["Übung 1 (1-3)"]
+          "files": ["Skript Kap.1.pdf"],
+          "exercises": ["Übungsblatt 1 (1-3)"]
         }}
       ]
     }}
   ],
   "mermaid_edges": [
     ["t1", "t2"],
-    ["t1", "t3"]
+    ["t1", "t3"],
+    ["t2", "t5"],
+    ["t4", "t7"]
   ]
 }}
 
 REGELN:
-- Topic-IDs sind eindeutig: t1, t2, t3, ... über alle Phasen hinweg.
-- Wenn alte Roadmap existiert: behalte vorhandene Topic-Namen + IDs wo möglich, damit Status mitwandert.
-- "dateien" darf NUR Dateinamen aus der VERFÜGBARE-DATEIEN-Liste enthalten. Erfinde keine Dateinamen.
-  Wenn keine passende Datei vorhanden ist, lasse "dateien" leer ([]).
-- "aufgaben" referenzieren konkrete Übungsblätter / Aufgaben aus dem Kontext.
-- mermaid_edges definiert die Lernreihenfolge — Pfeile von Voraussetzungen zu darauf aufbauenden Topics.
-  Mindestens jede Phase mit der nächsten verknüpfen, plus topic-spezifische Bezüge wenn sinnvoll.
-- Wenn NUTZER-FOKUS angegeben: Topics und Phasen müssen sich direkt auf diesen Fokus konzentrieren.
-  Nicht-fokussierte Themen nur aufnehmen, wenn sie zwingende Voraussetzung sind.
+
+IDs & Konsistenz:
+- Topic-IDs sind global eindeutig: t1, t2, t3, ... über alle Phasen. Keine ID wird je wiederverwendet.
+- Wenn alte Roadmap existiert: behalte vorhandene Topic-Namen + IDs. Neue Topics erhalten neue IDs
+  (höher als die höchste vorhandene ID). Lösche keine vorhandenen Topics ohne explizite Anweisung.
+
+Dateien & Aufgaben:
+- "files" darf NUR Dateinamen aus der VERFÜGBARE-DATEIEN-Liste enthalten. Erfinde keine Dateinamen.
+  Wenn keine passende Datei vorhanden ist, setze "files": [].
+- "exercises" referenzieren konkrete Übungsblätter / Aufgaben aus dem Kontext.
+
+Zeitschätzung ("hours"):
+- Einfaches Faktenwissen / Definition: 0.5–1h
+- Konzept mit Anwendung: 1.5–3h
+- Komplexes Thema mit Beweisen / Implementierung: 3–6h
+- Schätze realistisch für einen durchschnittlichen Studierenden.
+
+Prüfungsrelevanz ("relevance"):
+- "high": direkt klausurrelevant laut Materialien, Klausurdateien oder typischem Prüfungsprofil
+- "medium": notwendige Verständnisgrundlage für high-Topics
+- "low": Hintergrundwissen / Kontext, selten direkt geprüft
+
+Abhängigkeiten (mermaid_edges):
+- Pfeile zeigen Lernreihenfolge: [Voraussetzung, aufbauendes Topic].
+- Verknüpfe nicht nur Phasen linear. Bilde echte topic-spezifische Abhängigkeiten ab,
+  auch phasenübergreifend (z.B. t2 → t7 wenn t7 direkt auf t2 aufbaut).
+- Mindestens 1 Edge pro Topic das eine Voraussetzung hat.
+
+Fokus & Klausuren:
+- Wenn NUTZER-FOKUS angegeben: Topics und Phasen direkt auf diesen Fokus ausrichten.
+  Nicht-fokussierte Themen nur aufnehmen wenn sie eine direkte, unverzichtbare Voraussetzung sind
+  (d.h. ohne dieses Topic ist ein high-relevance Topic nicht verstehbar).
 - Wenn KLAUSUR-DATEIEN vorhanden: Die Roadmap bereitet gezielt auf eine ähnliche Prüfung vor.
-  Themen aus den Klausuren erhalten pruefungsrelevanz "hoch". Die Phase "klausurtraining" muss
-  die Klausur-Dateien in "dateien" referenzieren und typische Aufgabentypen aus dem PRÜFUNGSPROFIL üben.
-- 4-7 Phasen, 3-7 Topics pro Phase, je nach Materialumfang.
-- Antworte NUR mit dem JSON-Objekt."""
+  Topics aus den Klausuren erhalten relevance "high". Die Phase "exam_training" muss
+  die Klausur-Dateien in "files" referenzieren und typische Aufgabentypen aus dem PRÜFUNGSPROFIL üben.
+
+Kein Kontext vorhanden:
+- Wenn KONTEXT leer ist: Generiere eine allgemeine Hochschul-Roadmap für "{modul}" basierend
+  auf typischen Curricula für dieses Fachgebiet. Kennzeichne "files": [] und "exercises": []
+  überall — erfinde keine Materialien.
+
+Umfang: 4–7 Phasen, 3–7 Topics pro Phase, je nach Materialumfang.
+
+Antworte NUR mit dem JSON-Objekt."""
 
 
 # ─────────────────────────────── Generation ─────────────────────────────────
@@ -142,7 +174,7 @@ def generate(
     if available_files:
         files_list = "\n".join(f"  - {f}" for f in available_files)
         files_section = (
-            "\n\nVERFÜGBARE DATEIEN (NUR diese Namen dürfen in 'dateien' verwendet werden — "
+            "\n\nVERFÜGBARE DATEIEN (NUR diese Namen dürfen in 'files' verwendet werden — "
             "keine anderen, keine erfundenen):\n" + files_list
         )
 
@@ -153,22 +185,28 @@ def generate(
             + old_md[:4000] + "\n```"
         )
 
+    def _eb(s: str) -> str:
+        return s.replace("{", "{{").replace("}", "}}")
+
     prompt = _GENERATE_PROMPT.format(
-        modul=module_name,
-        user_focus_section=focus_section,
-        context="\n\n".join(sections),
-        exam_files_section=exam_files_section,
-        available_files_section=files_section,
-        old_roadmap_section=old_section,
+        modul=_eb(module_name),
+        user_focus_section=_eb(focus_section),
+        context=_eb("\n\n".join(sections)),
+        exam_files_section=_eb(exam_files_section),
+        available_files_section=_eb(files_section),
+        old_roadmap_section=_eb(old_section),
     )
 
-    response = _get_client().chat.completions.create(
+    response = _get_client().messages.create(
         model=MODEL,
+        max_tokens=8000,
         messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        max_tokens=4000,
     )
-    return json.loads(response.choices[0].message.content)
+    text = response.content[0].text.strip()
+    # Strip markdown code fences if the LLM wraps the JSON
+    text = re.sub(r'^```(?:json)?\s*\n?', '', text)
+    text = re.sub(r'\n?```\s*$', '', text).strip()
+    return json.loads(text)
 
 
 # ──────────────────────────── Markdown render ───────────────────────────────
@@ -234,23 +272,30 @@ def render_md(module_name: str, data: Dict[str, Any]) -> str:
         for topic in phase.get("topics") or []:
             tid = str(topic.get("id") or "").strip() or "tx"
             name = str(topic.get("name") or "").strip() or "(unbenannt)"
-            prio = str(topic.get("pruefungsrelevanz") or "mittel").strip()
+            # LLM returns 'relevance'; fall back to German key for old data
+            prio = str(topic.get("relevance") or topic.get("pruefungsrelevanz") or "medium").strip()
             try:
                 hours = float(topic.get("hours") or 1.0)
             except (TypeError, ValueError):
                 hours = 1.0
             out.append(f"### {name} <!-- id:{tid} status:todo prio:{prio} h:{hours} -->")
-            if topic.get("bedeutung"):
-                out.append(f"**Bedeutung:** {topic['bedeutung'].strip()}")
-            if topic.get("warum_relevant"):
-                out.append(f"**Warum relevant:** {topic['warum_relevant'].strip()}")
+            # LLM returns 'summary'; fall back to 'bedeutung' for old data
+            bedeutung = (topic.get("summary") or topic.get("bedeutung") or "").strip()
+            if bedeutung:
+                out.append(f"**Bedeutung:** {bedeutung}")
+            # LLM returns 'exam_relevance_reason'; fall back to 'warum_relevant'
+            warum = (topic.get("exam_relevance_reason") or topic.get("warum_relevant") or "").strip()
+            if warum:
+                out.append(f"**Warum relevant:** {warum}")
             subs = [str(s).strip() for s in (topic.get("subtopics") or []) if str(s).strip()]
             if subs:
                 out.append("**Subtopics:** " + " · ".join(subs))
-            datnr = [str(d).strip() for d in (topic.get("dateien") or []) if str(d).strip()]
+            # LLM returns 'files'; fall back to 'dateien'
+            datnr = [str(d).strip() for d in (topic.get("files") or topic.get("dateien") or []) if str(d).strip()]
             if datnr:
                 out.append("**Dateien:** " + ", ".join(datnr))
-            aufg = [str(a).strip() for a in (topic.get("aufgaben") or []) if str(a).strip()]
+            # LLM returns 'exercises'; fall back to 'aufgaben'
+            aufg = [str(a).strip() for a in (topic.get("exercises") or topic.get("aufgaben") or []) if str(a).strip()]
             if aufg:
                 out.append("**Aufgaben:** " + ", ".join(aufg))
             out.append("")
