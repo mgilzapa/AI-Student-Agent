@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-12T00:00:00Z",
+  "title": "Design System: Study Agent",
+  "extensions": {
+    "colorMeta": {
+      "warm-parchment": {
+        "role": "neutral",
+        "displayName": "Warm Parchment",
+        "canonical": "oklch(98% 0.005 80)",
+        "tonalRamp": [
+          "oklch(15% 0.01 80)",
+          "oklch(28% 0.01 80)",
+          "oklch(42% 0.01 80)",
+          "oklch(55% 0.01 80)",
+          "oklch(68% 0.008 80)",
+          "oklch(80% 0.007 80)",
+          "oklch(90% 0.006 80)",
+          "oklch(98% 0.005 80)"
+        ]
+      },
+      "reed-paper": {
+        "role": "neutral",
+        "displayName": "Reed Paper",
+        "canonical": "oklch(95% 0.009 80)",
+        "tonalRamp": [
+          "oklch(15% 0.01 80)",
+          "oklch(28% 0.01 80)",
+          "oklch(42% 0.01 80)",
+          "oklch(55% 0.01 80)",
+          "oklch(68% 0.009 80)",
+          "oklch(80% 0.009 80)",
+          "oklch(89% 0.009 80)",
+          "oklch(95% 0.009 80)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(14% 0.010 60)",
+        "tonalRamp": [
+          "oklch(14% 0.010 60)",
+          "oklch(25% 0.010 60)",
+          "oklch(38% 0.010 60)",
+          "oklch(50% 0.010 60)",
+          "oklch(62% 0.010 60)",
+          "oklch(74% 0.008 65)",
+          "oklch(86% 0.006 70)",
+          "oklch(95% 0.005 75)"
+        ]
+      },
+      "warm-stone": {
+        "role": "neutral",
+        "displayName": "Warm Stone",
+        "canonical": "oklch(49% 0.012 60)",
+        "tonalRamp": [
+          "oklch(15% 0.010 60)",
+          "oklch(25% 0.010 60)",
+          "oklch(35% 0.012 60)",
+          "oklch(49% 0.012 60)",
+          "oklch(62% 0.010 60)",
+          "oklch(74% 0.009 65)",
+          "oklch(85% 0.007 70)",
+          "oklch(94% 0.005 75)"
+        ]
+      },
+      "study-flame": {
+        "role": "primary",
+        "displayName": "Study Flame",
+        "canonical": "oklch(52% 0.21 35)",
+        "darkModeCanonical": "oklch(70% 0.20 40)",
+        "tonalRamp": [
+          "oklch(15% 0.08 35)",
+          "oklch(25% 0.12 35)",
+          "oklch(35% 0.16 35)",
+          "oklch(45% 0.20 35)",
+          "oklch(52% 0.21 35)",
+          "oklch(65% 0.18 40)",
+          "oklch(78% 0.12 50)",
+          "oklch(92% 0.04 60)"
+        ]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Amber",
+        "canonical": "oklch(62% 0.16 65)",
+        "tonalRamp": [
+          "oklch(18% 0.06 65)",
+          "oklch(28% 0.09 65)",
+          "oklch(40% 0.13 65)",
+          "oklch(52% 0.16 65)",
+          "oklch(62% 0.16 65)",
+          "oklch(74% 0.14 70)",
+          "oklch(84% 0.09 75)",
+          "oklch(94% 0.04 80)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero headline only — one per screen, setup view only." },
+      "headline": { "displayName": "Headline", "purpose": "Modal and overlay titles. Module names in processing cards." },
+      "title": { "displayName": "Title", "purpose": "Panel headings, chat topbar, summary section titles." },
+      "body": { "displayName": "Body", "purpose": "All descriptive copy and UI text. Base for reading views." },
+      "label": { "displayName": "Label", "purpose": "Metadata: file names, timestamps, section markers, source tags. Minimum size tier — never go below." }
+    },
+    "shadows": [
+      {
+        "name": "ambient-ground",
+        "value": "0 4px 24px rgba(28,25,23,0.08), 0 1px 4px rgba(28,25,23,0.05)",
+        "darkValue": "0 8px 40px rgba(0,0,0,0.45)",
+        "purpose": "Cards and modals at rest. Two-layer: atmospheric + definition. Grounds without lifting."
+      },
+      {
+        "name": "accent-hover-glow",
+        "value": "0 4px 16px rgba(194,65,12,0.22)",
+        "darkValue": "0 4px 16px rgba(249,115,22,0.28)",
+        "purpose": "Module cards and interactive surfaces on hover. Warmth, not height."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(194,65,12,0.09)",
+        "darkValue": "0 0 0 3px rgba(249,115,22,0.11)",
+        "purpose": "Keyboard focus indicator on inputs and interactive controls."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.4,0,0.2,1)",
+        "purpose": "Default easing for all state transitions. Use everywhere."
+      },
+      {
+        "name": "ease-spring-prohibited",
+        "value": "cubic-bezier(0.34,1.56,0.64,1)",
+        "purpose": "PROHIBITED — produces a bounce. Replace with ease-out across the codebase."
+      },
+      {
+        "name": "duration-short",
+        "value": "150ms",
+        "purpose": "Micro-interactions: opacity, color changes, icon fills."
+      },
+      {
+        "name": "duration-standard",
+        "value": "200ms",
+        "purpose": "Standard state transitions: borders, backgrounds, transforms."
+      },
+      {
+        "name": "duration-entrance",
+        "value": "250–300ms",
+        "purpose": "Panel entrances, slideUp, fadeIn. Upper limit for user-triggered animations."
+      }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "560px", "note": "Single-column layout. Setup screen padding reduces." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single most important action on a screen. Study Flame background — use at most once per view.",
+      "html": "<button class=\"ds-btn-primary\">Modul anlegen</button>",
+      "css": ".ds-btn-primary { min-height: 42px; padding: 0 20px; border-radius: 10px; font-family: 'Inter', system-ui, sans-serif; font-weight: 600; font-size: 0.875rem; color: #ffffff; background: #C2410C; border: none; cursor: pointer; transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease, filter 0.2s ease; } .ds-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(194,65,12,0.22); filter: brightness(1.08); } .ds-btn-primary:active { transform: scale(0.97) translateY(0); filter: brightness(0.96); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(194,65,12,0.09); border: 1px solid rgba(194,65,12,0.32); } .ds-btn-primary:disabled { opacity: 0.38; cursor: default; pointer-events: none; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Supporting actions — cancel, secondary navigation, non-destructive operations. Stays in plane.",
+      "html": "<button class=\"ds-btn-secondary\">Abbrechen</button>",
+      "css": ".ds-btn-secondary { min-height: 42px; padding: 0 16px; border-radius: 10px; font-family: 'Inter', system-ui, sans-serif; font-weight: 500; font-size: 0.875rem; color: #1C1917; background: #F4F0EB; border: 1px solid #DDD8D2; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease; } .ds-btn-secondary:hover { background: #EDE8E2; border-color: rgba(194,65,12,0.32); transform: translateY(-1px); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(194,65,12,0.09); border-color: rgba(194,65,12,0.32); } .ds-btn-secondary:disabled { opacity: 0.38; cursor: default; pointer-events: none; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Single-line text entry. Recessed into the surface at rest; accent ring activates on focus only.",
+      "html": "<div class=\"ds-input-group\"><label class=\"ds-input-label\">MODULNAME</label><input class=\"ds-input\" type=\"text\" placeholder=\"z.B. Lineare Algebra\" /></div>",
+      "css": ".ds-input-group { display: grid; gap: 7px; } .ds-input-label { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: #78716C; } .ds-input { width: 100%; background: #FAFAF8; border: 1px solid #DDD8D2; border-radius: 9px; color: #1C1917; padding: 10px 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; } .ds-input:focus { border-color: rgba(194,65,12,0.32); box-shadow: 0 0 0 3px rgba(194,65,12,0.09); } .ds-input::placeholder { color: #78716C; }"
+    },
+    {
+      "name": "Module Card",
+      "kind": "card",
+      "refersTo": "button-primary",
+      "description": "Clickable study module tile on the dashboard. Lifts 2px on hover with accent warmth.",
+      "html": "<button class=\"ds-module-card\"><span class=\"ds-module-card__tag\">3 Dateien · Heute</span><strong class=\"ds-module-card__title\">Lineare Algebra</strong><small class=\"ds-module-card__meta\">2 Zusammenfassungen</small></button>",
+      "css": ".ds-module-card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 20px 18px 16px; background: #F4F0EB; border: 1px solid #DDD8D2; border-radius: 14px; color: #1C1917; cursor: pointer; text-align: left; width: 100%; transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; } .ds-module-card::after { content: '→'; position: absolute; bottom: 15px; right: 15px; color: #78716C; font-size: 0.9rem; transition: color 0.2s ease, transform 0.2s ease; } .ds-module-card:hover { border-color: rgba(194,65,12,0.32); box-shadow: 0 4px 16px rgba(194,65,12,0.22); transform: translateY(-2px); } .ds-module-card:hover::after { color: #C2410C; transform: translateX(3px); } .ds-module-card__tag { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: #C2410C; } .ds-module-card__title { font-family: 'Lora', Georgia, serif; font-size: 1rem; font-weight: 600; color: #1C1917; line-height: 1.25; padding-right: 24px; } .ds-module-card__meta { font-size: 0.84rem; color: #78716C; }"
+    },
+    {
+      "name": "Chip (Accent)",
+      "kind": "chip",
+      "refersTo": "chip-accent",
+      "description": "Active module indicator, source tags, and any state-marking label that needs to stand out.",
+      "html": "<span class=\"ds-chip-accent\">Modul aktiv</span>",
+      "css": ".ds-chip-accent { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; background: rgba(194,65,12,0.09); border: 1px solid rgba(194,65,12,0.32); padding: 5px 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: #C2410C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    },
+    {
+      "name": "Chat Bubble — User",
+      "kind": "custom",
+      "description": "User message in the Q&A chat. Accent-tinted; aligned right.",
+      "html": "<div class=\"ds-chat-msg ds-chat-msg--user\"><span class=\"ds-chat-label\">Du</span><div class=\"ds-chat-bubble ds-chat-bubble--user\">Was ist ein Eigenvektor?</div></div>",
+      "css": ".ds-chat-msg { display: flex; flex-direction: column; gap: 4px; max-width: 600px; } .ds-chat-msg--user { align-self: flex-end; align-items: flex-end; } .ds-chat-label { font-family: 'JetBrains Mono', monospace; font-size: 0.59rem; letter-spacing: 0.08em; text-transform: uppercase; color: #78716C; } .ds-chat-bubble { padding: 12px 15px; border-radius: 14px; line-height: 1.72; font-size: 0.9rem; font-family: 'Inter', system-ui, sans-serif; word-break: break-word; border: 1px solid #DDD8D2; } .ds-chat-bubble--user { background: rgba(194,65,12,0.09); border-color: rgba(194,65,12,0.32); color: #1C1917; }"
+    },
+    {
+      "name": "Chat Bubble — Agent",
+      "kind": "custom",
+      "description": "Agent response in the Q&A chat. Neutral panel; supports nested Lora headings for structured answers.",
+      "html": "<div class=\"ds-chat-msg ds-chat-msg--agent\"><span class=\"ds-chat-label\">Study Agent</span><div class=\"ds-chat-bubble ds-chat-bubble--agent\">Ein <strong>Eigenvektor</strong> ist ein Vektor, der durch eine lineare Transformation nur skaliert, nicht rotiert wird.</div></div>",
+      "css": ".ds-chat-msg--agent { align-self: flex-start; align-items: flex-start; } .ds-chat-bubble--agent { background: #F4F0EB; border-color: #DDD8D2; color: #1C1917; } .ds-chat-bubble--agent strong { color: #1C1917; font-weight: 600; } .ds-chat-bubble--agent h2, .ds-chat-bubble--agent h3 { font-family: 'Lora', Georgia, serif; color: #1C1917; line-height: 1.3; margin-top: 0.75rem; }"
+    },
+    {
+      "name": "Source Tag",
+      "kind": "chip",
+      "description": "Citation pill below agent responses. Identifies which uploaded file the answer draws from.",
+      "html": "<span class=\"ds-source-tag\">lineare-algebra-vl3.pdf</span>",
+      "css": ".ds-source-tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.59rem; color: #C2410C; background: rgba(194,65,12,0.09); border: 1px solid rgba(194,65,12,0.32); padding: 3px 8px; border-radius: 999px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Annotated Volume",
+    "overview": "Study Agent's design inhabits the feeling of a well-used academic textbook: warm paper, precise serif type, terracotta ink in the margins, and the quiet authority of something trusted through repeated use. The interface does not announce itself. It recedes so the material can speak — creating the conditions for concentration rather than competing with the content.\n\nThe warmth is structural, not decorative. It comes from typography (Lora's humanist curves), from color (parchment neutrals tinted toward ochre, a terracotta accent used sparingly), and from spacing (breathing room that mirrors the margins of a real book). There are no gradients-as-branding, no glowing accents, no choreographed animation sequences. The system is precisely restrained: every element does exactly its job.\n\nThis system explicitly rejects: the AI-Tech-Startup-Vibe (gradient-as-identity, neon violet), Duolingo's gamified reward loops (streaks, badges, infantilizing copy), Anki's flat utilitarian legacy (a dense grid of gray controls from 2012), and cool dark modes built on purple-to-blue gradients.",
+    "keyCharacteristics": [
+      "Dual register: Lora for reading surfaces, Inter for UI chrome, JetBrains Mono for metadata only",
+      "Warm terracotta primary on an ochre-tinted parchment field",
+      "Dual mode: warm light by default; dark mode is warm and receding, not electric",
+      "Shadows are ambient and diffuse, never structural or theatrical",
+      "Motion is quiet and responsive: state changes only, always ease-out, always reduced-motion safe"
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Study Flame is never decorative. It marks active, focused, and primary-action states. On any given screen, no more than 10% of visible surface carries the accent. Its rarity is what makes it legible.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Foundation Rule",
+        "body": "Every neutral is tinted toward ochre. Never #FFFFFF, never #000000. The warmth is in the substrate — both in light mode and dark mode.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reader's Rule",
+        "body": "When text is meant to be read at length — summaries, chat responses, roadmap descriptions — Lora leads. When text is UI chrome — navigation, metadata, timestamps, button copy — Inter or JetBrains Mono do the work. Never invert this assignment.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ambient-Only Rule",
+        "body": "Shadows define surfaces; they do not perform them. If a shadow reads louder than the content it holds, it has failed.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Tonal Layering Rule",
+        "body": "Depth inside reading panels comes from background steps (Warm Parchment → Reed Paper → Vellum), not additional shadow. Shadow is for the outer shell.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Study Flame for primary actions, active states, and focus indicators only. Its scarcity is its strength.",
+      "Do tint every neutral toward ochre. #FAFAF8 not #FFFFFF. #1C1917 not #000000.",
+      "Do use Lora for any text meant to be read at length: summaries, chat content, headings in reading views.",
+      "Do use JetBrains Mono exclusively for metadata: labels, file names, timestamps, source tags.",
+      "Do use ambient diffuse shadows. Two-layer: atmospheric + definition. Keep them quiet.",
+      "Do apply @media (prefers-reduced-motion: reduce) to collapse all animations to 0ms.",
+      "Do confirm destructive actions (module deletion) with an explicit modal.",
+      "Do keep minimum visible text at 13px / 0.81rem.",
+      "Do use cubic-bezier(0.4,0,0.2,1) (ease-out) for all state transitions."
+    ],
+    "donts": [
+      "Don't use gradient text (background-clip: text). Use solid Study Flame or Ink instead.",
+      "Don't use border-left or border-right greater than 1px as a colored stripe on blockquotes, callouts, or list items. Use background tints. (Two current violations in summary-result.)",
+      "Don't use cubic-bezier(0.34,1.56,0.64,1) (ease-spring) — it produces a bounce. Replace with ease-out.",
+      "Don't produce an AI-Tech-Startup aesthetic: no gradient-as-brand, no neon or violet palette, no glowing accent fields.",
+      "Don't add gamification: no streaks, no badges, no progress percentages for their own sake.",
+      "Don't replicate the Anki or legacy study tool look: no dense grids of gray utility controls.",
+      "Don't add ambient decoration: no floating background words, no particle systems.",
+      "Don't use glassmorphism decoratively. Blurred backdrops for transient overlays only.",
+      "Don't nest cards inside cards. Use tonal background stepping for interior hierarchy.",
+      "Don't build dark mode by inverting light mode. Dark mode is its own warm palette."
+    ]
+  }
+}

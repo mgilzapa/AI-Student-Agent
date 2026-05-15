@@ -4,13 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Study Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- KaTeX for math rendering ($...$ inline, $$...$$ display) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
 <!-- Mermaid for the roadmap flowchart (securityLevel: loose so click directives fire) -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <style>
   :root {
     --bg: #FAFAF8;
@@ -100,7 +103,14 @@
     position: relative; z-index: 20; flex-shrink: 0;
   }
 
-  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    background: none; border: none; padding: 0;
+    cursor: pointer; text-align: left;
+    border-radius: 8px;
+    transition: opacity 0.18s ease;
+  }
+  .brand:hover { opacity: 0.72; }
   .brand-mark {
     width: 28px; height: 28px;
     background: var(--accent);
@@ -116,7 +126,7 @@
     letter-spacing: -0.01em;
   }
   .brand-sub {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
     letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
   }
   .header-right {
@@ -292,7 +302,7 @@
     padding-right: 24px;
   }
   .existing-module > span {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--accent);
     display: block;
   }
@@ -392,7 +402,7 @@
   .drop-title { font-size: 0.9rem; font-weight: 500; }
   .drop-subtitle { color: var(--muted); font-size: 0.82rem; line-height: 1.6; max-width: 32ch; }
   .drop-hint {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--muted);
     letter-spacing: 0.06em; background: var(--panel-soft);
     padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border);
   }
@@ -453,6 +463,7 @@
   #workspace-screen {
     min-height: 0;
     opacity: 0;
+    position: relative;
     transition: opacity 0.4s var(--ease-out);
   }
   #workspace-screen.visible { opacity: 1; }
@@ -490,7 +501,7 @@
 
   .badge-lecture {
     display: inline-flex; align-items: center; gap: 3px;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.57rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
     letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent);
     background: var(--accent-soft); border: 1px solid var(--accent-border);
     padding: 2px 7px; border-radius: 999px; flex-shrink: 0;
@@ -570,7 +581,7 @@
     to   { opacity: 1; transform: translateY(0); }
   }
   .msg { animation: msgIn 0.24s var(--ease-out) both; }
-  .label { font-family: 'JetBrains Mono', monospace; font-size: 0.59rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .label { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .bubble { padding: 12px 15px; border-radius: 14px; line-height: 1.72; font-size: 0.9rem; word-break: break-word; border: 1px solid var(--border); }
   .msg.user .bubble { background: var(--accent-soft); border-color: var(--accent-border); }
   .msg.agent .bubble { background: var(--panel); }
@@ -585,7 +596,7 @@
   .msg.agent .bubble code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; background: var(--panel-soft); padding: 0.14rem 0.4rem; border-radius: 4px; color: var(--accent); border: 1px solid var(--border); }
 
   .sources { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
-  .source-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.59rem; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-border); padding: 3px 8px; border-radius: 999px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .source-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-border); padding: 3px 8px; border-radius: 999px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .thinking .bubble { display: flex; gap: 5px; align-items: center; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: dotBounce 1.2s ease-in-out infinite; }
@@ -694,23 +705,27 @@
     flex: 1; min-height: 0;
     display: grid;
     grid-template-columns:
-      var(--w-left, 280px)
-      4px
+      56px
+      0px
       minmax(420px, 1fr)
       4px
       var(--w-right, 360px);
     background: transparent;
-    transition: grid-template-columns 0.24s var(--ease-out);
+    position: relative;
+    transition: grid-template-columns 0.22s var(--ease-out);
   }
-  .ws-grid.left-collapsed {
-    grid-template-columns: 32px 0px minmax(0, 1fr) 4px var(--w-right, 360px);
+  .ws-grid.drawer-open {
+    grid-template-columns: 56px 280px minmax(0, 1fr) 4px var(--w-right, 360px);
   }
   .ws-grid.right-collapsed {
-    grid-template-columns: var(--w-left, 280px) 4px minmax(0, 1fr) 0px 32px;
+    grid-template-columns: 56px 0px minmax(0, 1fr) 0px 0px;
   }
-  .ws-grid.left-collapsed.right-collapsed {
-    grid-template-columns: 32px 0px minmax(0, 1fr) 0px 32px;
+  .ws-grid.drawer-open.right-collapsed {
+    grid-template-columns: 56px 280px minmax(0, 1fr) 0px 0px;
   }
+  .ws-grid.right-collapsed .ws-split,
+  .ws-grid.right-collapsed .ws-right { overflow: hidden; }
+  .ws-drawer-spacer { min-width: 0; overflow: hidden; }
 
   /* Splitter handles */
   .ws-split {
@@ -751,27 +766,138 @@
     border-color: var(--accent-border);
     color: var(--accent);
   }
-  .ws-left .ws-panel-toggle { right: 6px; }
-  .ws-right .ws-panel-toggle { left: 6px; }
-
-  /* ── Left panel (files) ── */
+  /* ── Icon Rail (left panel) ── */
   .ws-left {
-    border-right: 1px solid var(--border);
     background: var(--panel);
-    display: grid;
-    grid-template-rows: auto auto minmax(0,1fr) auto;
-    gap: 12px;
-    padding: 16px 13px;
-    min-height: 0; min-width: 0;
-    overflow: hidden;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 0 12px;
+    gap: 4px;
+    min-height: 0;
+    overflow: visible;
     position: relative;
+    z-index: 11;
   }
-  .ws-left-header { display: grid; gap: 8px; }
-  .ws-left-header .module-chip { max-width: 100%; }
-  .ws-left-section-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.61rem;
+
+  .rail-avatar-wrap { position: relative; margin-bottom: 10px; }
+  .rail-avatar {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .rail-avatar:hover { opacity: 0.82; transform: scale(1.06); }
+
+  .rail-avatar-dropdown {
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    box-shadow: var(--shadow);
+    padding: 4px;
+    min-width: 160px;
+    z-index: 50;
+    display: none;
+    white-space: nowrap;
+  }
+  .rail-avatar-dropdown.open { display: block; animation: fadeIn 0.14s var(--ease-out); }
+  .rail-avatar-dropdown ul { list-style: none; }
+  .rail-avatar-dropdown li button {
+    display: block; width: 100%;
+    padding: 8px 12px;
+    background: none; border: none;
+    color: var(--text); font-family: inherit; font-size: 0.84rem;
+    text-align: left; cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.14s ease, color 0.14s ease;
+  }
+  .rail-avatar-dropdown li button:hover { background: var(--accent-soft); color: var(--accent); }
+
+  .rail-tab {
+    width: 40px; height: 46px;
+    background: none; border: none; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; cursor: pointer;
+    color: var(--muted);
+    transition: color 0.15s ease, background 0.15s ease;
+    padding: 0; flex-shrink: 0;
+  }
+  .rail-tab:hover { color: var(--text); background: var(--panel-soft); }
+  .rail-tab.active { color: var(--accent); }
+  .rail-tab svg { flex-shrink: 0; }
+  .rail-tab-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem; letter-spacing: 0.07em;
+    text-transform: uppercase; line-height: 1;
+    display: none;
+  }
+  .rail-tab.active .rail-tab-label { display: block; }
+
+  /* ── Files Drawer ── */
+  .files-drawer {
+    position: fixed;
+    left: 56px;
+    width: 280px;
+    z-index: 9;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    box-shadow: 4px 0 20px rgba(28,25,23,0.10);
+    transform: translateX(-110%);
+    transition: transform 0.22s var(--ease-out);
+    display: grid;
+    grid-template-rows: auto auto minmax(0,1fr);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  [data-theme="dark"] .files-drawer { box-shadow: 4px 0 24px rgba(0,0,0,0.38); }
+  .files-drawer.open { transform: translateX(0); pointer-events: auto; }
+
+  .files-drawer-header {
+    padding: 13px 14px 11px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Lora', serif; font-size: 0.9rem; font-weight: 500;
+    color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .files-drawer-section {
+    padding: 8px 12px 4px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    flex-shrink: 0;
+  }
+  .drawer-section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
     letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
-    padding: 4px 4px 0;
+  }
+  .files-drawer-body {
+    min-height: 0; overflow-y: auto; overflow-x: hidden;
+    display: grid; align-content: start; gap: 6px;
+    padding: 4px 10px 12px;
+  }
+  .files-drawer-body::-webkit-scrollbar { width: 3px; }
+  .files-drawer-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  .files-drawer-ai-divider {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 0 2px;
+  }
+  .files-drawer-ai-divider::before, .files-drawer-ai-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .files-drawer-ai-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.57rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    white-space: nowrap;
   }
 
   .files-panel-new {
@@ -784,7 +910,7 @@
   .files-panel-new::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 
   .files-folder-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.59rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
     letter-spacing: 0.09em; text-transform: uppercase;
     color: var(--muted);
     padding: 8px 6px 4px;
@@ -813,7 +939,7 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .file-sub {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.59rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
     color: var(--muted); letter-spacing: 0.04em;
   }
   .file-actions {
@@ -838,8 +964,6 @@
     color: var(--accent);
     transform: translateY(-1px);
   }
-
-  .ws-left-actions { display: grid; gap: 8px; }
 
   /* ── Center panel (one or two panes) ── */
   .ws-center {
@@ -883,31 +1007,38 @@
     position: absolute; top: 0; bottom: 0;
     pointer-events: auto;
     z-index: 10;
-    transition: background 0.15s ease;
+    /* Show a subtle hint even before hover so user knows where to aim */
+    background: var(--accent-soft);
+    border: 2px dashed var(--accent-border);
+    border-radius: 6px;
+    transition: background 0.12s ease, border-color 0.12s ease;
   }
   .drop-zone {
     pointer-events: none;
     position: absolute; top: 0; bottom: 0;
     background: transparent;
     border: 2px dashed transparent;
-    border-radius: 4px;
+    border-radius: 6px;
   }
-  .drop-zone.right { right: 0; width: 38%; }
-  .drop-zone.left  { left: 0;  width: 38%; }
-  .drop-zone.over {
-    background: var(--accent-soft);
-    border-color: var(--accent-border);
-  }
-  .drop-zone.over::after {
-    content: 'Hier ablegen';
+  .drop-zone.right { right: 0; width: 36%; }
+  .drop-zone.left  { left: 0;  width: 36%; }
+  .drop-zone::after {
+    content: '';
     position: absolute; inset: 0;
     display: grid; place-items: center;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-    letter-spacing: 0.07em;
-    color: var(--accent);
+    font-size: 0.72rem; letter-spacing: 0.07em;
+    color: var(--accent); opacity: 0;
     pointer-events: none;
+    transition: opacity 0.12s ease;
   }
+  .ws-center.dragging .drop-zone::after { content: 'Split'; opacity: 0.6; }
+  .drop-zone.over {
+    background: rgba(194,65,12,0.18);
+    border-color: var(--accent);
+  }
+  [data-theme="dark"] .drop-zone.over { background: rgba(249,115,22,0.20); }
+  .drop-zone.over::after { content: 'Hier ablegen'; opacity: 1; color: var(--accent); font-size: 0.78rem; }
 
   body.tab-dragging { cursor: grabbing; }
   .tab[draggable="true"] { cursor: grab; }
@@ -939,20 +1070,22 @@
   }
   .view-pane.view-roadmap.active { display: flex; }
   .roadmap-topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 14px;
+    padding: 10px 14px 0;
     border-bottom: 1px solid var(--border);
     background: var(--panel);
     flex-shrink: 0;
   }
-  .roadmap-topbar h3 {
-    font-family: 'Lora', serif; font-weight: 600; font-size: 0.98rem;
-    color: var(--text); margin: 0;
+  .roadmap-topbar-row1 {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;
   }
-  .roadmap-progress {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-    color: var(--muted); letter-spacing: 0.05em;
+  .roadmap-topbar-title {
+    font-family: 'Lora', serif; font-weight: 600; font-size: 0.92rem; color: var(--text);
   }
+  .roadmap-topbar-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    color: var(--muted); letter-spacing: 0.04em; padding-bottom: 8px;
+  }
+  .roadmap-topbar-actions { display: flex; align-items: center; gap: 6px; }
   .roadmap-regen-btn {
     background: var(--accent-soft); border: 1px solid var(--accent-border);
     color: var(--accent); padding: 5px 11px; border-radius: 7px;
@@ -960,6 +1093,17 @@
     transition: all 0.18s ease;
   }
   .roadmap-regen-btn:hover { background: var(--accent-glow); border-color: var(--accent); }
+  .roadmap-close-tab-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s ease;
+  }
+  .roadmap-close-tab-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(220,38,38,0.08); }
+  .roadmap-progress-bar {
+    height: 3px; background: var(--border); display: flex; overflow: hidden; flex-shrink: 0;
+  }
+  .roadmap-progress-done  { background: var(--success); transition: width 0.4s ease; }
+  .roadmap-progress-doing { background: var(--amber);   transition: width 0.4s ease; }
 
   /* ── Tagesplan panel ── */
   .tagesplan-panel {
@@ -968,7 +1112,7 @@
     margin-top: 10px;
   }
   .tagesplan-panel-title {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--muted);
   }
   .tagesplan-controls {
@@ -1047,11 +1191,12 @@
     padding: 8px 14px 18px;
     display: flex; flex-direction: column; gap: 0;
   }
+  .rm-pl-phase { margin-bottom: 4px; }
   .roadmap-phaselist-empty, .rm-pl-empty {
     color: var(--muted); font-size: 0.78rem; padding: 8px;
   }
   .rm-pl-phase-header {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 14px;
   }
   .rm-pl-phase-line { flex: 1; height: 1px; background: var(--border); }
   .rm-pl-phase-title {
@@ -1060,44 +1205,41 @@
     color: var(--muted); white-space: nowrap;
   }
   .rm-pl-topics {
-    display: flex; flex-wrap: wrap; gap: 8px;
-    justify-content: center; width: 100%; margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px; margin-bottom: 12px;
   }
   .rm-pl-topic {
-    position: relative; overflow: hidden;
-    display: flex; flex-direction: column; gap: 5px;
-    padding: 9px 11px; border-radius: 8px;
-    min-width: 100px; max-width: 145px; flex: 0 0 auto;
-    cursor: pointer; text-align: left; font-family: inherit;
-    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    width: 100%; aspect-ratio: 1 / 1;
+    display: flex; flex-direction: column;
+    border-radius: 12px; overflow: hidden;
+    cursor: pointer; font-family: inherit;
     border: 1.5px solid var(--border);
     background: var(--panel);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    padding: 0;
   }
-  .rm-pl-topic:hover { box-shadow: 0 0 0 2px var(--accent-glow); border-color: var(--accent-border); }
-  .rm-pl-topic.selected { box-shadow: 0 0 0 3px var(--accent-glow); border-color: var(--accent); }
-  .rm-pl-topic.status-doing { border-color: var(--amber); background: rgba(217,119,6,0.07); }
-  .rm-pl-topic.status-done  { border-color: var(--success); background: rgba(22,163,74,0.07); opacity: 0.85; }
-  .rm-pl-topic.status-todo  { border-color: var(--border); }
-  .rm-pl-rel-bar { height: 2px; border-radius: 1px; margin-bottom: 3px; }
-  .rm-pl-rel-bar.high   { background: #E24B4A; }
-  .rm-pl-rel-bar.medium { background: var(--amber); }
-  .rm-pl-rel-bar.low    { background: var(--muted); }
+  .rm-pl-topic:hover       { border-color: var(--accent-border); box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+  .rm-pl-topic.selected    { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+  .rm-pl-topic.status-todo  { background: var(--panel); }
+  .rm-pl-topic.status-doing { background: rgba(217,119,6,0.13); border-color: var(--amber); }
+  .rm-pl-topic.status-done  { background: rgba(22,163,74,0.11); border-color: var(--success); }
+  .rm-pl-prio-stripe { height: 5px; width: 100%; flex-shrink: 0; }
+  .rm-pl-prio-stripe.high,      .rm-pl-prio-stripe.must_know    { background: #E24B4A; }
+  .rm-pl-prio-stripe.medium,    .rm-pl-prio-stripe.good_to_know { background: var(--amber); }
+  .rm-pl-prio-stripe.low,       .rm-pl-prio-stripe.nice_to_have { background: var(--success); }
+  .rm-pl-prio-stripe.hoch       { background: #E24B4A; }
+  .rm-pl-prio-stripe.niedrig    { background: var(--success); }
+  .rm-pl-card-body {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 8px 7px; text-align: center;
+  }
   .rm-pl-name {
-    font-size: 0.78rem; font-weight: 500; color: var(--text);
-    line-height: 1.3; overflow: hidden; display: -webkit-box;
-    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    font-size: 0.75rem; font-weight: 500; color: var(--text);
+    line-height: 1.3; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
   }
   .rm-pl-topic.status-done .rm-pl-name { color: var(--muted); }
-  .rm-pl-hours {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.67rem; color: var(--muted);
-    display: flex; align-items: center; gap: 2px;
-  }
-  .rm-pl-status-icon {
-    position: absolute; top: 5px; right: 7px;
-    font-size: 0.7rem; line-height: 1;
-  }
-  .rm-pl-topic.status-done  .rm-pl-status-icon { color: var(--success); }
-  .rm-pl-topic.status-doing .rm-pl-status-icon { color: var(--amber); }
   .rm-pl-phase-arrow {
     display: flex; justify-content: center; height: 22px; width: 100%; margin-bottom: 8px;
   }
@@ -1153,7 +1295,7 @@
 
   .topic-section { margin-bottom: 12px; }
   .topic-section-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
     letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
     margin-bottom: 5px;
   }
@@ -1382,7 +1524,7 @@
   }
   .view-toggle:disabled { opacity: 0.32; cursor: not-allowed; }
   .view-bar-spacer { flex: 1; }
-  .view-bar-info { font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; color: var(--muted); letter-spacing: 0.05em; }
+  .view-bar-info { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--muted); letter-spacing: 0.05em; }
 
   .ws-viewport {
     position: relative; min-height: 0; overflow: hidden;
@@ -1498,9 +1640,27 @@
     overflow: hidden;
     position: relative;
   }
-  .ws-right .chat-topbar { padding: 12px 16px; }
+  .ws-right .chat-topbar {
+    padding: 12px 16px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  }
   .ws-right .chat-topbar h3 { font-size: 0.95rem; }
   .ws-right .chat-topbar p { font-size: 0.74rem; }
+  .chat-close-btn {
+    width: 26px; height: 26px; flex-shrink: 0;
+    background: var(--panel-soft);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    display: grid; place-items: center;
+    font-size: 0.78rem; line-height: 1;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    margin-top: 2px;
+  }
+  .chat-close-btn:hover {
+    background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent);
+  }
   .ws-right .chat-footer { padding: 10px 12px 12px; }
   .ws-right #chat { padding: 14px; gap: 12px; background: var(--bg); }
 
@@ -1640,7 +1800,7 @@
     font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 600;
     color: var(--text);
   }
-  .roadmap-brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.08em; }
+  .roadmap-brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--muted); letter-spacing: 0.08em; }
   .roadmap-topbar-actions { display: flex; gap: 8px; }
 
   .roadmap-frame { flex: 1; overflow-y: auto; overflow-x: hidden; }
@@ -1748,7 +1908,7 @@
   }
   .topic-sources { display: flex; flex-wrap: wrap; gap: 4px; }
   .topic-source {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.59rem; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--accent);
     background: var(--accent-soft); border: 1px solid var(--accent-border);
     padding: 1px 6px; border-radius: 4px;
   }
@@ -1822,13 +1982,13 @@
 
 <div class="app-shell">
   <header>
-    <div class="brand">
+    <button class="brand" id="brand-home-btn" type="button" title="Zur Startseite" aria-label="Zur Startseite">
       <div class="brand-mark">S</div>
       <div class="brand-text">
         <h1>Study Agent</h1>
         <div class="brand-sub">Lernassistent</div>
       </div>
-    </div>
+    </button>
     <div class="header-right">
       <div class="header-status" id="header-status">Noch kein Kurs geöffnet</div>
       <button class="theme-toggle" id="theme-toggle" title="Design wechseln" aria-label="Design wechseln">☀</button>
@@ -1935,31 +2095,38 @@
     <section class="screen" id="workspace-screen">
       <div class="ws-grid" id="ws-grid">
 
-        <!-- LEFT: Files panel -->
-        <aside class="ws-left">
-          <button class="ws-panel-toggle" id="toggle-left" title="Dateien zuklappen" aria-label="Dateien zuklappen">‹</button>
-          <div class="ws-left-header">
-            <div class="module-chip" id="module-chip">Kein Kurs</div>
-            <button class="roadmap-trigger-btn" id="roadmap-btn" type="button">
-              <span>🗺</span> Lernplan erstellen
-            </button>
-            <button class="roadmap-trigger-btn" id="pk-btn" type="button" style="margin-top:6px;">
-              <span>📝</span> Probeklausur
-            </button>
+        <!-- LEFT: Icon Rail -->
+        <aside class="ws-left" id="ws-rail">
+          <!-- Kurs Avatar -->
+          <div class="rail-avatar-wrap">
+            <button class="rail-avatar" id="rail-avatar-btn" title="Kurs-Menü" aria-haspopup="true" aria-expanded="false">—</button>
+            <div class="rail-avatar-dropdown" id="rail-avatar-dropdown" role="menu">
+              <ul>
+                <li><button id="new-module-btn" type="button" role="menuitem">Kurs wechseln</button></li>
+              </ul>
+            </div>
           </div>
-          <div class="ws-left-section-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <span>Materialien</span>
-            <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="opacity:1;width:24px;height:24px;font-size:0.95rem;">+</button>
-          </div>
-          <input id="add-files-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple hidden>
-          <div class="files-panel-new" id="files-panel"></div>
-          <div class="ws-left-actions">
-            <button class="secondary-btn" id="new-module-btn" type="button">Anderen Kurs öffnen</button>
-          </div>
+          <!-- Tabs -->
+          <button class="rail-tab" id="rail-tab-files" data-tab="files" title="Dateien" type="button" aria-label="Dateien">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="rail-tab-label">Dateien</span>
+          </button>
+          <button class="rail-tab" id="roadmap-btn" data-tab="roadmap" title="Lernplan" type="button" aria-label="Lernplan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+            <span class="rail-tab-label">Lernplan</span>
+          </button>
+          <button class="rail-tab" id="pk-btn" data-tab="pk" title="Probeklausur" type="button" aria-label="Probeklausur">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="rail-tab-label">Klausur</span>
+          </button>
+          <button class="rail-tab" id="rail-tab-chat" data-tab="chat" title="Chat" type="button" aria-label="Chat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="rail-tab-label">Chat</span>
+          </button>
         </aside>
 
-        <!-- Splitter 1 -->
-        <div class="ws-split" id="ws-split-left" data-split="left" role="separator" aria-orientation="vertical" tabindex="0"></div>
+        <!-- Drawer spacer: reserves grid space when drawer is open so center pane is pushed right -->
+        <div class="ws-drawer-spacer" id="ws-drawer-spacer" aria-hidden="true"></div>
 
         <!-- CENTER: Multi-pane workspace (built by JS — supports split via drag) -->
         <section class="ws-center" id="ws-center"></section>
@@ -1969,12 +2136,12 @@
 
         <!-- RIGHT: Chat -->
         <aside class="ws-right">
-          <button class="ws-panel-toggle" id="toggle-right" title="Chat zuklappen" aria-label="Chat zuklappen">›</button>
           <div class="chat-topbar">
             <div>
               <h3>Chat</h3>
               <p id="chat-subtitle">Antworten basieren auf den Materialien des Kurses.</p>
             </div>
+            <button class="chat-close-btn" id="toggle-right" type="button" title="Chat zuklappen" aria-label="Chat zuklappen">✕</button>
           </div>
           <div id="chat">
             <div class="chat-empty" id="empty">
@@ -1992,6 +2159,17 @@
             </div>
           </div>
         </aside>
+      </div>
+
+      <!-- Files Drawer (absolute within workspace-screen, overlays grid) -->
+      <div class="files-drawer" id="files-drawer" aria-label="Dateien">
+        <div class="files-drawer-header" id="files-drawer-module-name">Kein Kurs</div>
+        <div class="files-drawer-section">
+          <span class="drawer-section-label">Materialien</span>
+          <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="opacity:1;width:24px;height:24px;font-size:0.95rem;">+</button>
+        </div>
+        <input id="add-files-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple hidden>
+        <div class="files-drawer-body" id="files-panel"></div>
       </div>
     </section>
 
@@ -2298,7 +2476,8 @@
       <button class="secondary-btn" id="roadmap-close-btn" style="min-height:36px;padding:0 14px;font-size:0.82rem;">Schließen</button>
     </div>
   </div>
-  <div class="roadmap-frame">
+  <div id="roadmap-overlay-diff-banner" class="roadmap-diff-banner" style="display:none;"></div>
+  <div class="roadmap-frame" id="roadmap-frame">
     <div class="roadmap-content" id="roadmap-content"></div>
   </div>
 </div>
@@ -2342,7 +2521,7 @@ const processingText    = document.getElementById('processing-text');
 const existingModulesEl = document.getElementById('existing-modules');
 const emptyModulesEl    = document.getElementById('empty-modules');
 const filesPanel        = document.getElementById('files-panel');
-const moduleChip        = document.getElementById('module-chip');
+const moduleChip        = document.getElementById('files-drawer-module-name');
 const wsCenter          = document.getElementById('ws-center');
 const headerStatus      = document.getElementById('header-status');
 const newModuleBtn      = document.getElementById('new-module-btn');
@@ -2627,6 +2806,8 @@ function openWorkspace(moduleName, files) {
   document.getElementById('fw-layer').style.opacity = '0';
   moduleChip.textContent = moduleName;
   headerStatus.textContent = `Aktueller Kurs: ${moduleName}`;
+  const avatarBtn = document.getElementById('rail-avatar-btn');
+  if (avatarBtn) avatarBtn.textContent = moduleName.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase() || '?';
 
   // Pre-load summaries + roadmap before restoring so saved tabs validate
   // and the left-panel sections (Roadmap + Zusammenfassungen) paint correctly.
@@ -2740,30 +2921,6 @@ function renderWorkspaceFiles(files) {
         filesPanel.appendChild(row);
       });
     });
-  }
-
-  // Roadmap section — shown if a generated roadmap exists for this module
-  if (state.roadmap) {
-    const rmHeader = document.createElement('div');
-    rmHeader.className = 'files-section-header';
-    rmHeader.textContent = 'Roadmap';
-    filesPanel.appendChild(rmHeader);
-
-    const rmRow = document.createElement('div');
-    rmRow.className = 'file-row is-roadmap';
-    rmRow.dataset.path = 'roadmap:current';
-    const prog = state.roadmap.progress || {};
-    const total = (prog.todo||0) + (prog.doing||0) + (prog.done||0);
-    const subDate = state.roadmap.exam_date ? `Prüfung: ${state.roadmap.exam_date}` : 'kein Datum';
-    rmRow.innerHTML = `
-      <span class="file-icon">🗺</span>
-      <div class="file-meta">
-        <div class="file-name">Lernplan: ${escHtml(state.moduleName)}</div>
-        <div class="file-sub">${prog.done||0}/${total} fertig · ${subDate}</div>
-      </div>
-    `;
-    rmRow.addEventListener('click', () => openRoadmapTab());
-    filesPanel.appendChild(rmRow);
   }
 
   // Summaries section
@@ -3039,6 +3196,10 @@ function initMermaidIfReady() {
 window.selectTopic = function(topicId) {
   state.roadmapTopicId = topicId;
   paintRoadmapDetail();
+  const host = document.getElementById('rm-phaselist');
+  if (host) host.querySelectorAll('.rm-pl-topic').forEach(b =>
+    b.classList.toggle('selected', b.getAttribute('data-tid') === topicId)
+  );
 };
 
 async function loadRoadmapForCurrentModule() {
@@ -3095,26 +3256,45 @@ async function renderRoadmapView(vp, tab) {
   }
 
   try {
-    // Topbar with progress + "Neu generieren" button
+    // Topbar
     const topbar = document.createElement('div');
     topbar.className = 'roadmap-topbar';
-    if (!data) {
-      topbar.innerHTML = `
-        <h3>Roadmap</h3>
-        <span class="roadmap-progress">noch keine generiert</span>
-        <button class="roadmap-regen-btn" id="rd-generate">✦ Roadmap erstellen</button>
-      `;
-    } else {
-      const prog = data.progress || {todo:0, doing:0, done:0};
-      const total = (prog.todo||0) + (prog.doing||0) + (prog.done||0);
-      topbar.innerHTML = `
-        <h3>Roadmap${data.exam_date ? ' · Prüfung am ' + escHtml(data.exam_date) : ''}</h3>
-        <span class="roadmap-progress">${prog.done||0}/${total} fertig · ${prog.doing||0} dran</span>
-        <button class="roadmap-regen-btn" id="rd-generate">↑ Neu generieren</button>
-      `;
-    }
+    const prog = data ? (data.progress || {todo:0, doing:0, done:0}) : {todo:0, doing:0, done:0};
+    const total = (prog.todo||0) + (prog.doing||0) + (prog.done||0);
+    const donePct  = total ? (prog.done  / total * 100).toFixed(1) : 0;
+    const doingPct = total ? (prog.doing / total * 100).toFixed(1) : 0;
+    const titleTxt = `🗺 Lernplan: ${state.moduleName || 'Kurs'}${data?.exam_date ? ' · Prüfung: ' + data.exam_date : ''}`;
+    const metaTxt  = data ? `${prog.done||0}/${total} fertig · ${prog.doing||0} aktiv` : 'noch keine generiert';
+    topbar.innerHTML = `
+      <div class="roadmap-topbar-row1">
+        <span class="roadmap-topbar-title">${escHtml(titleTxt)}</span>
+        <div class="roadmap-topbar-actions">
+          <button class="roadmap-regen-btn" id="rd-generate">${data ? '↥ Neu generieren' : '✦ Erstellen'}</button>
+          <button class="roadmap-close-tab-btn" id="rd-close-tab" title="Schließen">✕</button>
+        </div>
+      </div>
+      <div class="roadmap-topbar-meta">${escHtml(metaTxt)}</div>
+    `;
     p.appendChild(topbar);
+
+    // Progress bar (separate element so it sits flush at the topbar bottom)
+    if (data && total > 0) {
+      const bar = document.createElement('div');
+      bar.className = 'roadmap-progress-bar';
+      bar.innerHTML = `
+        <div class="roadmap-progress-done"  style="width:${donePct}%"></div>
+        <div class="roadmap-progress-doing" style="width:${doingPct}%"></div>
+      `;
+      p.appendChild(bar);
+    }
+
     topbar.querySelector('#rd-generate').addEventListener('click', () => openRoadmapGenModal());
+    topbar.querySelector('#rd-close-tab').addEventListener('click', () => {
+      state.panes.forEach(pane => { if (pane) pane.tabs = pane.tabs.filter(t => t.kind !== 'roadmap'); });
+      document.getElementById('roadmap-btn').classList.remove('active');
+      persistWorkspace();
+      renderPanes();
+    });
     if (data) renderDailyPanel(topbar);
 
     // Pending diff banner — if a generation is parked
@@ -3151,7 +3331,7 @@ async function renderRoadmapView(vp, tab) {
       return;
     }
 
-    // Body: card phase list (left) + detail panel (right)
+    // Body: phase list (left) + detail panel (right)
     const body = document.createElement('div');
     body.className = 'roadmap-body';
     body.innerHTML = `
@@ -3276,12 +3456,18 @@ async function toggleDailyTask(topicId, taskIndex, done) {
     });
     if (!res.ok) { console.warn('[daily] toggle failed'); return; }
     const data = await res.json();
-    if (state.dailyPlan && data.progress) {
-      state.dailyPlan.progress = data.progress;
+    // Update local task state first
+    if (state.dailyPlan) {
       const t = (state.dailyPlan.topics || []).find(t => t.id === topicId);
       if (t && t.tasks[taskIndex] !== undefined) t.tasks[taskIndex].done = done;
+      // Recalculate progress locally — don't rely on server response alone
+      let doneCnt = 0, totalCnt = 0;
+      for (const topic of state.dailyPlan.topics || []) {
+        for (const task of topic.tasks || []) { totalCnt++; if (task.done) doneCnt++; }
+      }
+      state.dailyPlan.progress = { done: doneCnt, total: totalCnt };
     }
-    // Refresh panel progress text and generate button state
+    // Refresh panel counter and generate-button state
     const prog = state.dailyPlan?.progress;
     if (prog) {
       const pEl = document.querySelector('#tagesplan-panel .tagesplan-progress');
@@ -3305,16 +3491,14 @@ function renderRoadmapPhaseList(host, data) {
     host.innerHTML = '<div class="roadmap-phaselist-empty">Keine Phasen in dieser Roadmap.</div>';
     return;
   }
-  const statusIcon = { doing: '⟳', done: '✓' };
   const html = phases.map((ph, i) => {
     const topics = (ph.topics || []).map(t => {
       const rel = t.pruefungsrelevanz || t.relevance || 'medium';
-      const icon = statusIcon[t.status] || '';
       return `<button class="rm-pl-topic status-${escHtml(t.status||'todo')}" data-tid="${escHtml(t.id)}">
-        <div class="rm-pl-rel-bar ${escHtml(rel)}"></div>
-        <span class="rm-pl-name">${escHtml(t.name)}</span>
-        <span class="rm-pl-hours">🕐 ${escHtml(String(t.hours||'?'))}h</span>
-        ${icon ? `<span class="rm-pl-status-icon">${icon}</span>` : ''}
+        <div class="rm-pl-prio-stripe ${escHtml(rel)}"></div>
+        <div class="rm-pl-card-body">
+          <span class="rm-pl-name">${escHtml(t.name)}</span>
+        </div>
       </button>`;
     }).join('');
     const arrow = i < phases.length - 1
@@ -3355,7 +3539,7 @@ function paintRoadmapDetail() {
   const detail = document.getElementById('rm-detail');
   if (!detail) return;
   if (!state.roadmap || !state.roadmapTopicId) {
-    detail.innerHTML = '<div class="roadmap-empty-detail">Klick einen Knoten im Graph für Details.</div>';
+    detail.innerHTML = '<div class="roadmap-empty-detail">Klick einen Knoten im Graph um Details zu sehen.</div>';
     return;
   }
   const found = findRoadmapTopic(state.roadmapTopicId);
@@ -3469,9 +3653,23 @@ function paintRoadmapDetail() {
 }
 
 function labelPrio(p) {
-  if (p === 'high'   || p === 'hoch')    return '🔴 Hoch';
-  if (p === 'low'    || p === 'niedrig') return '🟢 Niedrig';
+  if (p === 'high' || p === 'must_know' || p === 'hoch')        return '🔴 Hoch';
+  if (p === 'low'  || p === 'nice_to_have' || p === 'niedrig')  return '🟢 Niedrig';
   return '🟡 Mittel';
+}
+
+function recolorMermaidNode(topicId, status) {
+  const fills   = { todo: '#475569', doing: '#f59e0b', done: '#10b981' };
+  const strokes = { todo: '#334155', doing: '#d97706', done: '#059669' };
+  const fill   = fills[status]   || fills.todo;
+  const stroke = strokes[status] || strokes.todo;
+  const graphEl = document.getElementById('rm-graph');
+  if (!graphEl) return;
+  // Mermaid v10 generates g elements with id="flowchart-{nodeId}-{n}"
+  const nodeEl = graphEl.querySelector(`[id^="flowchart-${topicId}-"]`);
+  if (!nodeEl) return;
+  const shape = nodeEl.querySelector('rect, polygon, circle');
+  if (shape) { shape.style.fill = fill; shape.style.stroke = stroke; }
 }
 
 async function updateRoadmapTopicStatus(topicId, newStatus) {
@@ -3492,6 +3690,11 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
       for (const t of phase.topics || []) { if (prog[t.status] != null) prog[t.status]++; }
     }
     state.roadmap.progress = prog;
+  }
+  const cardEl = document.querySelector(`#rm-phaselist [data-tid="${topicId}"]`);
+  if (cardEl) {
+    cardEl.classList.remove('status-todo', 'status-doing', 'status-done');
+    cardEl.classList.add(`status-${newStatus}`);
   }
   paintRoadmapDetail();
 
@@ -3516,11 +3719,18 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
     await loadRoadmapForCurrentModule();
 
     // Update topbar progress in-place
-    const topbarProgress = document.querySelector('.view-pane.view-roadmap.active .roadmap-progress');
-    if (topbarProgress && state.roadmap?.progress) {
+    const topbarMeta = document.querySelector('.view-pane.view-roadmap.active .roadmap-topbar-meta');
+    if (topbarMeta && state.roadmap?.progress) {
       const p = state.roadmap.progress;
       const total = (p.todo||0) + (p.doing||0) + (p.done||0);
-      topbarProgress.textContent = `${p.done||0}/${total} fertig · ${p.doing||0} dran`;
+      topbarMeta.textContent = `${p.done||0}/${total} fertig · ${p.doing||0} aktiv`;
+      const bar = document.querySelector('.view-pane.view-roadmap.active .roadmap-progress-bar');
+      if (bar && total > 0) {
+        const doneEl  = bar.querySelector('.roadmap-progress-done');
+        const doingEl = bar.querySelector('.roadmap-progress-doing');
+        if (doneEl)  doneEl.style.width  = (p.done  / total * 100).toFixed(1) + '%';
+        if (doingEl) doingEl.style.width = (p.doing / total * 100).toFixed(1) + '%';
+      }
     }
 
     // Re-render card phase list in-place
@@ -3580,7 +3790,7 @@ async function runRoadmapGenerate() {
       await acceptPendingRoadmap(null);
       openRoadmapTab();
     } else {
-      // Open the roadmap tab so the diff banner shows.
+      // Open roadmap tab so the diff banner shows.
       openRoadmapTab();
     }
   } catch (err) {
@@ -3746,6 +3956,8 @@ function findTab(path) {
 }
 
 function openFile(file, paneIdx) {
+  state.panes.forEach(pane => { if (pane) pane.tabs = pane.tabs.filter(t => t.kind !== 'roadmap'); });
+  document.getElementById('roadmap-btn').classList.remove('active');
   if (paneIdx == null) paneIdx = state.focusedPane;
   if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
   const pane = state.panes[paneIdx];
@@ -3768,6 +3980,8 @@ function openFile(file, paneIdx) {
 }
 
 function openSummary(summary, paneIdx) {
+  state.panes.forEach(pane => { if (pane) pane.tabs = pane.tabs.filter(t => t.kind !== 'roadmap'); });
+  document.getElementById('roadmap-btn').classList.remove('active');
   if (paneIdx == null) paneIdx = state.focusedPane;
   if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
   const pane = state.panes[paneIdx];
@@ -3891,7 +4105,7 @@ function restoreWorkspace(moduleName) {
     const validSummaryPaths = new Set((state.summariesByModule[moduleName] || []).map(s => `summary:${s.path}`));
     function isValid(t) {
       if (!t || !t.path) return false;
-      if (t.kind === 'roadmap') return !!state.roadmap;
+      if (t.kind === 'roadmap') return false;
       if (t.kind === 'summary') return validSummaryPaths.has(t.path);
       return validPaths.has(t.path);
     }
@@ -3992,13 +4206,19 @@ function buildTabBar(pane, paneIdx) {
       e.dataTransfer.setData('application/x-tab', JSON.stringify({ path: t.path, paneIdx }));
       tab.classList.add('dragging');
       document.body.classList.add('tab-dragging');
-      wsCenter.classList.add('dragging');
+      // Defer so the browser captures the drag ghost before we mutate the DOM,
+      // and hide fixed PDF iframes so drop zones are not obscured.
+      requestAnimationFrame(() => {
+        wsCenter.classList.add('dragging');
+        Object.values(state.pdfFrames).forEach(f => { f.style.display = 'none'; });
+      });
     });
     tab.addEventListener('dragend', () => {
       tab.classList.remove('dragging');
       document.body.classList.remove('tab-dragging');
       wsCenter.classList.remove('dragging');
       wsCenter.querySelectorAll('.drop-zone.over').forEach(z => z.classList.remove('over'));
+      requestAnimationFrame(syncPdfFramePositions);
     });
     bar.appendChild(tab);
   });
@@ -4307,56 +4527,113 @@ function attachDropZones(splitActive) {
 }
 
 // ── Panel collapse toggles ─────────────────────────────────────────────────────
-function initPanelToggles() {
+function toggleRightPanel(forceCollapsed) {
   const grid = document.getElementById('ws-grid');
-  const btnLeft  = document.getElementById('toggle-left');
   const btnRight = document.getElementById('toggle-right');
-
-  function applyCollapsed(side, collapsed) {
-    grid.classList.toggle(side === 'left' ? 'left-collapsed' : 'right-collapsed', collapsed);
-    if (side === 'left') {
-      btnLeft.textContent = collapsed ? '›' : '‹';
-      btnLeft.title = collapsed ? 'Dateien aufklappen' : 'Dateien zuklappen';
-    } else {
-      btnRight.textContent = collapsed ? '‹' : '›';
-      btnRight.title = collapsed ? 'Chat aufklappen' : 'Chat zuklappen';
-    }
-  }
-
-  // Restore persisted state
+  const railChatTab = document.getElementById('rail-tab-chat');
+  const collapsed = forceCollapsed !== undefined ? forceCollapsed : !grid.classList.contains('right-collapsed');
+  grid.classList.toggle('right-collapsed', collapsed);
+  btnRight.textContent = collapsed ? '‹' : '›';
+  btnRight.title = collapsed ? 'Chat aufklappen' : 'Chat zuklappen';
+  if (railChatTab) railChatTab.classList.toggle('active', !collapsed);
   try {
     const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
-    if (s.left)  applyCollapsed('left',  true);
-    if (s.right) applyCollapsed('right', true);
+    s.right = collapsed || undefined;
+    localStorage.setItem('studyAgent.collapsed', JSON.stringify(s));
   } catch {}
+}
 
-  btnLeft.addEventListener('click', () => {
-    const collapsed = !grid.classList.contains('left-collapsed');
-    applyCollapsed('left', collapsed);
-    try {
-      const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
-      s.left = collapsed || undefined;
-      localStorage.setItem('studyAgent.collapsed', JSON.stringify(s));
-    } catch {}
+function initPanelToggles() {
+  const btnRight = document.getElementById('toggle-right');
+  // Chat starts collapsed; only the rail Chat tab opens it.
+  toggleRightPanel(true);
+  btnRight.addEventListener('click', () => toggleRightPanel());
+}
+
+// ── Icon Rail ──────────────────────────────────────────────────────────────────
+function initRail() {
+  const avatarBtn = document.getElementById('rail-avatar-btn');
+  const dropdown  = document.getElementById('rail-avatar-dropdown');
+  const drawer    = document.getElementById('files-drawer');
+  const tabFiles  = document.getElementById('rail-tab-files');
+  const tabChat   = document.getElementById('rail-tab-chat');
+
+  // Avatar dropdown toggle
+  avatarBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = dropdown.classList.toggle('open');
+    avatarBtn.setAttribute('aria-expanded', String(open));
   });
 
-  btnRight.addEventListener('click', () => {
-    const collapsed = !grid.classList.contains('right-collapsed');
-    applyCollapsed('right', collapsed);
-    try {
-      const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
-      s.right = collapsed || undefined;
-      localStorage.setItem('studyAgent.collapsed', JSON.stringify(s));
-    } catch {}
+  // Close avatar dropdown on outside click
+  document.addEventListener('click', e => {
+    if (!dropdown.contains(e.target) && e.target !== avatarBtn) {
+      dropdown.classList.remove('open');
+      avatarBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  const wsGrid = document.getElementById('ws-grid');
+
+  function syncDrawerPosition() {
+    const ws = document.getElementById('workspace-screen');
+    if (!ws) return;
+    const r = ws.getBoundingClientRect();
+    drawer.style.top    = r.top    + 'px';
+    drawer.style.height = r.height + 'px';
+  }
+
+  function openDrawer() {
+    syncDrawerPosition();
+    drawer.classList.add('open');
+    wsGrid.classList.add('drawer-open');
+    tabFiles.classList.add('active');
+    // Re-sync PDF positions after the grid transition finishes
+    setTimeout(syncPdfFramePositions, 230);
+  }
+  function closeDrawer() {
+    drawer.classList.remove('open');
+    wsGrid.classList.remove('drawer-open');
+    tabFiles.classList.remove('active');
+    setTimeout(syncPdfFramePositions, 230);
+  }
+  window.addEventListener('resize', () => { if (drawer.classList.contains('open')) syncDrawerPosition(); });
+
+  // Files tab toggle
+  tabFiles.addEventListener('click', () => {
+    drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+  });
+
+  // Close drawer on outside click (but not when clicking rail or drawer itself)
+  document.addEventListener('click', e => {
+    const rail = document.getElementById('ws-rail');
+    if (drawer.classList.contains('open') && !drawer.contains(e.target) && !rail.contains(e.target)) {
+      closeDrawer();
+    }
+  });
+
+  // Chat tab toggles right panel
+  tabChat.addEventListener('click', () => toggleRightPanel());
+
+  // Roadmap + PK tabs: their existing listeners on #roadmap-btn and #pk-btn already fire.
+  // We just need to mark them active visually. Handle in their existing listeners via
+  // a light wrapper that sets active state.
+  const tabRoadmap = document.getElementById('roadmap-btn');
+  const tabPk      = document.getElementById('pk-btn');
+  [tabRoadmap, tabPk].forEach(tab => {
+    if (!tab) return;
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.rail-tab').forEach(t => t !== tabFiles && t !== tabChat && t.classList.remove('active'));
+      tab.classList.add('active');
+    });
   });
 }
 
 // ── Splitter drag ──────────────────────────────────────────────────────────────
 function initSplitters() {
-  // Restore widths
+  // Restore right panel width
   try {
     const w = JSON.parse(localStorage.getItem('studyAgent.panels') || '{}');
-    if (w.left)  document.documentElement.style.setProperty('--w-left',  w.left  + 'px');
     if (w.right) document.documentElement.style.setProperty('--w-right', w.right + 'px');
   } catch {}
 
@@ -4368,7 +4645,6 @@ function initSplitters() {
 function startSplitDrag(e, handle) {
   const grid = document.getElementById('ws-grid');
   const side = handle.dataset.split;
-  if (side === 'left'  && grid.classList.contains('left-collapsed'))  return;
   if (side === 'right' && grid.classList.contains('right-collapsed')) return;
   e.preventDefault();
   handle.classList.add('dragging');
@@ -4377,13 +4653,8 @@ function startSplitDrag(e, handle) {
   const rect = grid.getBoundingClientRect();
 
   const onMove = ev => {
-    if (side === 'left') {
-      const w = Math.min(420, Math.max(240, ev.clientX - rect.left));
-      document.documentElement.style.setProperty('--w-left', w + 'px');
-    } else {
-      const w = Math.min(540, Math.max(280, rect.right - ev.clientX));
-      document.documentElement.style.setProperty('--w-right', w + 'px');
-    }
+    const w = Math.min(540, Math.max(280, rect.right - ev.clientX));
+    document.documentElement.style.setProperty('--w-right', w + 'px');
   };
   const onUp = () => {
     handle.classList.remove('dragging');
@@ -4393,7 +4664,6 @@ function startSplitDrag(e, handle) {
     const cs = getComputedStyle(document.documentElement);
     try {
       localStorage.setItem('studyAgent.panels', JSON.stringify({
-        left:  parseInt(cs.getPropertyValue('--w-left'))  || 280,
         right: parseInt(cs.getPropertyValue('--w-right')) || 360,
       }));
     } catch {}
@@ -4805,6 +5075,7 @@ fileInput.addEventListener('change', e => applySelectedFiles(e.target.files));
 clearBtn.addEventListener('click', resetUploadForm);
 uploadBtn.addEventListener('click', uploadModule);
 newModuleBtn.addEventListener('click', showSetup);
+document.getElementById('brand-home-btn').addEventListener('click', showSetup);
 sendBtn.addEventListener('click', sendQuestion);
 input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); } });
 dropZone.addEventListener('dragover',  e => { if (state.isUploading) return; e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -4993,51 +5264,61 @@ async function generateRoadmap() {
 }
 
 // ── Roadmap Renderer ───────────────────────────────────────────────────────────
+// rm comes from parse_md(): {phases, exam_date, progress, mermaid, ...}
 function renderAndShowRoadmap(rm) {
+  if (!rm) return;
   const content = document.getElementById('roadmap-content');
-  document.getElementById('roadmap-brand-title').textContent = rm.title  || 'Lernplan';
+
+  const prog = rm.progress || {todo:0, doing:0, done:0};
+  const total = (prog.todo||0) + (prog.doing||0) + (prog.done||0);
+  const totalHours = (rm.phases||[]).reduce((s,p) => s + (p.topics||[]).reduce((ts,t) => ts + (parseFloat(t.hours)||0), 0), 0);
+
+  document.getElementById('roadmap-brand-title').textContent = state.moduleName || 'Lernplan';
   document.getElementById('roadmap-brand-sub').textContent =
-    `${rm.total_study_hours || '?'}h gesamt · ${(rm.phases||[]).length} Phasen`;
+    `${prog.done||0}/${total} fertig · ${prog.doing||0} aktiv${totalHours ? ' · ' + totalHours + 'h' : ''}`;
 
   content.innerHTML = '';
 
-  // Goal box
+  // Goal / header box
   const goal = document.createElement('div');
   goal.className = 'roadmap-goal';
   const statsHtml = [
-    rm.total_study_hours ? `${rm.total_study_hours}h Lernzeit` : null,
-    rm.phases?.length    ? `${rm.phases.length} Phasen`        : null,
-    examState.examDate   ? `Prüfung: ${examState.examDate}`    : null,
+    totalHours ? `${totalHours}h Lernzeit` : null,
+    (rm.phases||[]).length ? `${rm.phases.length} Phasen` : null,
+    rm.exam_date ? `Prüfung: ${rm.exam_date}` : null,
   ].filter(Boolean).map(s => `<span class="roadmap-stat">${escHtml(s)}</span>`).join('');
-
   goal.innerHTML = `
     <span class="roadmap-goal-icon">🎯</span>
-    <div class="roadmap-goal-title">${escHtml(rm.exam_goal || rm.title)}</div>
-    <div class="roadmap-goal-meta">${escHtml(rm.study_strategy || '')}</div>
+    <div class="roadmap-goal-title">${escHtml(state.moduleName || 'Lernplan')}</div>
+    <div class="roadmap-goal-meta">${prog.done||0} fertig · ${prog.doing||0} aktiv · ${prog.todo||0} offen</div>
     ${statsHtml ? `<div class="roadmap-goal-stats">${statsHtml}</div>` : ''}
   `;
   content.appendChild(goal);
 
+  // Priority / status helpers
+  const prioMap = {
+    must_know:    { cls: 'priority-must', label: '🔴 Pflicht' },
+    high:         { cls: 'priority-must', label: '🔴 Pflicht' },
+    good_to_know: { cls: 'priority-good', label: '🟡 Wichtig' },
+    medium:       { cls: 'priority-good', label: '🟡 Wichtig' },
+    nice_to_have: { cls: 'priority-nice', label: '🟢 Optional' },
+    low:          { cls: 'priority-nice', label: '🟢 Optional' },
+  };
+  const statusIcon = { todo: '⬜', doing: '🔄', done: '✅' };
+
   // Phases
   (rm.phases || []).forEach((phase, idx) => {
-    // Connector
     const conn = document.createElement('div');
     conn.className = 'roadmap-connector';
     content.appendChild(conn);
 
-    // Section
     const section = document.createElement('div');
     section.className = 'roadmap-section';
     section.style.animationDelay = `${idx * 0.08}s`;
-
-    const metaParts = [phase.duration, phase.daily_hours ? `${phase.daily_hours}h täglich` : null].filter(Boolean);
     section.innerHTML = `
       <div class="roadmap-phase-header">
         <div class="roadmap-phase-num">${idx + 1}</div>
-        <div>
-          <div class="roadmap-phase-title">${escHtml(phase.title)}</div>
-          <div class="roadmap-phase-meta">${escHtml(phase.focus || '')}${metaParts.length ? ' · ' + metaParts.join(' · ') : ''}</div>
-        </div>
+        <div><div class="roadmap-phase-title">${escHtml(phase.title || '')}</div></div>
       </div>
       <div class="roadmap-topics-grid" id="rm-grid-${idx}"></div>
     `;
@@ -5045,53 +5326,57 @@ function renderAndShowRoadmap(rm) {
 
     const grid = section.querySelector(`#rm-grid-${idx}`);
     (phase.topics || []).forEach(t => {
-      const pClass = { must_know:'priority-must', good_to_know:'priority-good', nice_to_have:'priority-nice' }[t.priority] || 'priority-good';
-      const pLabel = { must_know:'🔴 Pflicht', good_to_know:'🟡 Wichtig', nice_to_have:'🟢 Optional' }[t.priority] || '🟡 Wichtig';
-
+      const prio = prioMap[t.pruefungsrelevanz] || { cls: 'priority-good', label: '🟡 Wichtig' };
       const card = document.createElement('div');
-      card.className = `roadmap-topic-card ${pClass}`;
+      card.className = `roadmap-topic-card ${prio.cls}`;
 
       const subtopsHtml = t.subtopics?.length
-        ? `<div class="topic-subtopics">${t.subtopics.map(s=>`<span class="topic-subtag">${escHtml(s)}</span>`).join('')}</div>` : '';
-      const tipHtml    = t.exam_tip ? `<div class="topic-exam-tip">💡 ${escHtml(t.exam_tip)}</div>` : '';
-      const srcHtml    = t.sources?.length
-        ? `<div class="topic-sources">${t.sources.map(s=>`<span class="topic-source">${escHtml(s)}</span>`).join('')}</div>` : '';
+        ? `<div class="topic-subtopics">${t.subtopics.map(s => `<span class="topic-subtag">${escHtml(s)}</span>`).join('')}</div>` : '';
+      const tipHtml  = t.warum_relevant ? `<div class="topic-exam-tip">💡 ${escHtml(t.warum_relevant)}</div>` : '';
+      const srcHtml  = t.dateien?.length
+        ? `<div class="topic-sources">${t.dateien.map(s => `<span class="topic-source">${escHtml(s)}</span>`).join('')}</div>` : '';
+      const icon = statusIcon[t.status] || '⬜';
 
       card.innerHTML = `
         <div class="topic-card-top">
-          <span class="topic-priority-badge">${pLabel}</span>
-          <span class="topic-hours">${t.hours != null ? t.hours+'h' : '?'}</span>
+          <span class="topic-priority-badge">${prio.label}</span>
+          <span class="topic-hours">${t.hours != null ? t.hours + 'h' : '?'} ${icon}</span>
         </div>
-        <div class="topic-card-title">${escHtml(t.title)}</div>
-        ${t.description ? `<div class="topic-card-desc">${escHtml(t.description)}</div>` : ''}
+        <div class="topic-card-title">${escHtml(t.name || '')}</div>
+        ${t.bedeutung ? `<div class="topic-card-desc">${escHtml(t.bedeutung)}</div>` : ''}
         ${subtopsHtml}${tipHtml}${srcHtml}
       `;
       grid.appendChild(card);
     });
   });
 
-  // Exam tips
-  if (rm.exam_tips?.length) {
-    content.appendChild(Object.assign(document.createElement('div'), { className:'roadmap-connector' }));
-    const tips = document.createElement('div');
-    tips.className = 'roadmap-tips';
-    tips.innerHTML = `
-      <div class="roadmap-tips-title">💡 Prüfungstipps</div>
-      <ul class="roadmap-tips-list">${rm.exam_tips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+  // Diff banner for pending re-generation
+  const diffBanner = document.getElementById('roadmap-overlay-diff-banner');
+  if (state.roadmapPending) {
+    const d = state.roadmapPending.diff || {};
+    const parts = [];
+    if (d.added_count) parts.push(`+${d.added_count} neu`);
+    if (d.removed_count) parts.push(`−${d.removed_count} entfernt`);
+    if (typeof d.status_preserved === 'number') parts.push(`${d.status_preserved} Status erhalten`);
+    const summary = parts.length ? parts.join(' · ') : 'Neue Roadmap bereit';
+    diffBanner.innerHTML = `
+      <span>↻ ${escHtml(summary)}</span>
+      <span class="spacer"></span>
+      <button class="reject-btn" id="rd-overlay-reject">✗ Verwerfen</button>
+      <button class="accept-btn" id="rd-overlay-accept">✓ Akzeptieren</button>
     `;
-    content.appendChild(tips);
-  }
-
-  // Daily schedule
-  if (rm.daily_schedule) {
-    content.appendChild(Object.assign(document.createElement('div'), { className:'roadmap-connector' }));
-    const sched = document.createElement('div');
-    sched.className = 'roadmap-schedule';
-    sched.innerHTML = `
-      <div class="roadmap-schedule-title">📅 Empfohlene Tagesplanung</div>
-      <div class="roadmap-schedule-text">${escHtml(rm.daily_schedule)}</div>
-    `;
-    content.appendChild(sched);
+    diffBanner.style.display = 'flex';
+    diffBanner.querySelector('#rd-overlay-accept').addEventListener('click', async () => {
+      await acceptPendingRoadmap(null);
+      if (state.roadmap) renderAndShowRoadmap(state.roadmap);
+    });
+    diffBanner.querySelector('#rd-overlay-reject').addEventListener('click', async () => {
+      await rejectPendingRoadmap(null);
+      renderAndShowRoadmap(state.roadmap);
+    });
+  } else {
+    diffBanner.style.display = 'none';
+    diffBanner.innerHTML = '';
   }
 
   document.getElementById('roadmap-overlay').classList.add('active');
@@ -5101,9 +5386,11 @@ function renderAndShowRoadmap(rm) {
 // ── Roadmap overlay controls ───────────────────────────────────────────────────
 document.getElementById('roadmap-close-btn').addEventListener('click', () => {
   document.getElementById('roadmap-overlay').classList.remove('active');
+  document.getElementById('roadmap-btn').classList.remove('active');
 });
 document.getElementById('roadmap-edit-btn').addEventListener('click', () => {
   document.getElementById('roadmap-overlay').classList.remove('active');
+  document.getElementById('roadmap-btn').classList.remove('active');
   openExamModal();
 });
 
@@ -5148,6 +5435,7 @@ document.getElementById('roadmap-btn').addEventListener('click', () => {
 // ── Init ───────────────────────────────────────────────────────────────────────
 initSplitters();
 initPanelToggles();
+initRail();
 loadModules();
 
 // If KaTeX loads after some markdown has already been painted, re-render the

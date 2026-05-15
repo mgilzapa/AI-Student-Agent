@@ -2,8 +2,8 @@
 Study Agent FastAPI backend.
 """
 import json
+import glob as _glob
 import re
-import re as _re
 import shutil
 import tempfile
 from pathlib import Path
@@ -12,7 +12,7 @@ from typing import List, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from anthropic import Anthropic
 from openai import OpenAI
 from pydantic import BaseModel
@@ -25,6 +25,7 @@ from app.main import (
 )
 from app.parsing.parsers import parse_document
 from app.rag.query_service import create_query_service
+from app.rag.advanced_rag import ask_advanced
 from app.utils.config import load_config
 from app.vectorstore.chroma_db import ChromaVectorStore
 from app.lecture import module_profile as mp
@@ -151,8 +152,8 @@ def _find_file(module_name: str, filename: str) -> Path:
 
 def _slug(name: str) -> str:
     s = name.lower().strip()
-    s = _re.sub(r"[äöüß]", lambda m: {"ä":"ae","ö":"oe","ü":"ue","ß":"ss"}[m.group()], s)
-    return _re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    s = re.sub(r"[äöüß]", lambda m: {"ä":"ae","ö":"oe","ü":"ue","ß":"ss"}[m.group()], s)
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
 
 @app.get("/", response_class=HTMLResponse)
 def serve_ui():
@@ -161,9 +162,27 @@ def serve_ui():
 
 
 @app.post("/ask")
-def ask(body: Question):
-    result = rag.ask(body.question, module_name=body.module_name)
-    return result
+async def ask(body: Question):
+    answer_parts: List[str] = []
+    sources: list = []
+    path = "simple"
+    async for raw in ask_advanced(body.question, body.module_name, rag):
+        data = json.loads(raw)
+        if data["type"] == "token":
+            answer_parts.append(data["content"])
+        elif data["type"] == "done":
+            sources = data.get("sources", [])
+            path = data.get("path", "simple")
+    return {"answer": "".join(answer_parts), "sources": sources, "path": path}
+
+
+@app.post("/ask/stream")
+async def ask_stream(body: Question):
+    async def event_stream():
+        async for raw in ask_advanced(body.question, body.module_name, rag):
+            yield f"data: {raw}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.get("/modules")
@@ -278,7 +297,7 @@ def delete_module_file(module_name: str, path: str):
 
     parsed_dir = config["processed_path"] / "parsed"
     if parsed_dir.exists():
-        safe_stem = target.stem.replace(" ", "_")
+        safe_stem = _glob.escape(target.stem.replace(" ", "_"))
         for jf in parsed_dir.glob(f"{safe_stem}_*.json"):
             try: jf.unlink()
             except Exception: pass
@@ -553,8 +572,11 @@ async def process_lecture(file: UploadFile = File(...)):
         tmp.write(content)
         tmp_path = Path(tmp.name)
 
-    parsed = parse_document(tmp_path)
-    text = parsed.extracted_text
+    try:
+        parsed = parse_document(tmp_path)
+        text = parsed.extracted_text
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
     prompt = f"""
 Analysiere diese Vorlesung und antworte NUR als valides JSON ohne Markdown:
@@ -666,8 +688,9 @@ def get_lecture_summary(path: str):
     """Gibt Inhalt einer gespeicherten Zusammenfassung zurück."""
     summary_path = Path(path)
     # Sicherheits-Check: nur Dateien innerhalb data/processed/summaries
+    _summaries_root = (Path(__file__).parent.parent / "data/processed/summaries").resolve()
     try:
-        summary_path.resolve().relative_to(Path("data/processed/summaries").resolve())
+        summary_path.resolve().relative_to(_summaries_root)
     except ValueError:
         raise HTTPException(status_code=403, detail="Ungültiger Pfad.")
 
