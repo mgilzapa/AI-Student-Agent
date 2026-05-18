@@ -1021,6 +1021,61 @@ async def exam_generate(body: ExamGenerateRequest):
     return {"success": True, "n": n, "module_name": clean_name}
 
 
+@app.post("/exam/generate/stream")
+async def exam_generate_stream(body: ExamGenerateRequest):
+    """SSE version of /exam/generate — emits step events then a result event."""
+
+    async def event_gen():
+        clean_name = sanitize_module_name(body.module_name)
+
+        existing = eg.list_exams(clean_name)
+        if len(existing) >= 100:
+            yield f"data: {json.dumps({'type': 'error', 'detail': 'Limit von 100 Klausuren erreicht. Bitte alte löschen.'})}\n\n"
+            return
+
+        all_files = list_module_files(clean_name)
+
+        yield f"data: {json.dumps({'type': 'step', 'key': 'analyze_style', 'label': 'Klausurstil analysieren…', 'done': False})}\n\n"
+        yield f"data: {json.dumps({'type': 'step', 'key': 'rag', 'label': 'Inhalte laden…', 'done': False})}\n\n"
+
+        try:
+            analyze_coro = asyncio.to_thread(_exam_analyze_cached, clean_name, all_files)
+            rag_coro = asyncio.to_thread(
+                rag.ask,
+                "Fasse alle wichtigen Konzepte, Definitionen, Methoden und prüfungsrelevanten Inhalte zusammen.",
+                module_name=clean_name,
+                top_k=20,
+            )
+
+            (_, exam_style), rag_result = await asyncio.gather(analyze_coro, rag_coro)
+
+            rag_context = rag_result.get("answer", "") or ""
+            if not rag_context:
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Keine Inhalte gefunden. Bitte zuerst Materialien hochladen.'})}\n\n"
+                return
+
+            yield f"data: {json.dumps({'type': 'step', 'key': 'analyze_style', 'label': 'Klausurstil analysiert', 'done': True})}\n\n"
+            yield f"data: {json.dumps({'type': 'step', 'key': 'rag', 'label': 'Inhalte geladen', 'done': True})}\n\n"
+            yield f"data: {json.dumps({'type': 'step', 'key': 'generate', 'label': 'Probeklausur generieren…', 'done': False})}\n\n"
+
+            md_content = await asyncio.to_thread(
+                eg.generate,
+                module_name=clean_name,
+                exam_style=exam_style,
+                rag_context=rag_context,
+                num_tasks=body.num_tasks,
+                total_points=body.total_points,
+            )
+
+            n = eg.save_exam(clean_name, md_content)
+            yield f"data: {json.dumps({'type': 'result', 'data': {'success': True, 'n': n, 'module_name': clean_name}})}\n\n"
+
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
+
+
 @app.get("/exam/{module_name}")
 def exam_list(module_name: str):
     clean_name = sanitize_module_name(module_name)
