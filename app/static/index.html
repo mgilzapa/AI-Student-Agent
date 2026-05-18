@@ -2644,9 +2644,12 @@
     <!-- State: loading -->
     <div class="modal-state" id="pk-state-loading">
       <div class="modal-loading">
-        <div class="modal-spinner"></div>
-        <div class="modal-loading-text">Probeklausur wird generiert…</div>
-        <div class="modal-loading-status" id="pk-loading-status">Klausurstil wird analysiert…</div>
+        <div class="modal-loading-text" style="margin-bottom:12px;">Probeklausur wird generiert…</div>
+        <div class="gen-steps" id="pk-steps">
+          <div class="gen-step pending" data-key="analyze_style"><span class="gen-step-icon">○</span><span class="gen-step-label">Klausurstil analysieren…</span></div>
+          <div class="gen-step pending" data-key="rag"><span class="gen-step-icon">○</span><span class="gen-step-label">Inhalte laden…</span></div>
+          <div class="gen-step pending" data-key="generate"><span class="gen-step-icon">○</span><span class="gen-step-label">Probeklausur generieren…</span></div>
+        </div>
       </div>
     </div>
 
@@ -2761,7 +2764,6 @@ const pkTotalPoints = document.getElementById('pk-total-points');
 const pkStateForm   = document.getElementById('pk-state-form');
 const pkStateLoad   = document.getElementById('pk-state-loading');
 const pkStateError  = document.getElementById('pk-state-error');
-const pkLoadStatus  = document.getElementById('pk-loading-status');
 const pkErrorMsg    = document.getElementById('pk-error-msg');
 const pkErrorClose  = document.getElementById('pk-error-close');
 const pkErrorRetry  = document.getElementById('pk-error-retry');
@@ -3522,28 +3524,24 @@ pkModal.addEventListener('click', e => { if (e.target === pkModal) closePkModal(
 async function generateProbeklausur() {
   const numTasks = parseInt(pkNumTasks.value, 10) || 5;
   const totalPoints = parseInt(pkTotalPoints.value, 10) || 50;
-
+  resetSteps('pk-steps');
   showPkState('pk-state-loading');
-  pkLoadStatus.textContent = 'Klausurstil wird analysiert…';
-
-  await new Promise(r => setTimeout(r, 400));
-  pkLoadStatus.textContent = 'Probeklausur wird generiert… (kann 30–60 Sek. dauern)';
-
   try {
-    const res = await fetch('/exam/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ module_name: state.moduleName, num_tasks: numTasks, total_points: totalPoints }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Generierung fehlgeschlagen');
-
-    closePkModal();
-    await loadProbeklausuren(state.moduleName);
-    renderWorkspaceFiles(state.moduleFiles);
-
-    const newExam = state.probeklausuren.find(e => e.n === data.n);
-    if (newExam) openProbeklausurTab(newExam);
+    for await (const msg of streamSteps('/exam/generate/stream', { module_name: state.moduleName, num_tasks: numTasks, total_points: totalPoints })) {
+      if (msg.type === 'step') {
+        applyStep('pk-steps', msg);
+      } else if (msg.type === 'result') {
+        const data = msg.data;
+        closePkModal();
+        await loadProbeklausuren(state.moduleName);
+        renderWorkspaceFiles(state.moduleFiles);
+        const newExam = state.probeklausuren.find(e => e.n === data.n);
+        if (newExam) openProbeklausurTab(newExam);
+        return;
+      } else if (msg.type === 'error') {
+        throw new Error(msg.detail);
+      }
+    }
   } catch (err) {
     pkErrorMsg.textContent = err.message || 'Unbekannter Fehler';
     showPkState('pk-state-error');
