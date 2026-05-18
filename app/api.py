@@ -534,6 +534,67 @@ async def roadmap_generate(body: RoadmapGenerateRequest):
     }
 
 
+@app.post("/roadmap/generate/stream")
+async def roadmap_generate_stream(body: RoadmapGenerateRequest):
+    """SSE version of /roadmap/generate — emits step events then a result event."""
+
+    async def event_gen():
+        module_name = body.module_name
+        all_files = list_module_files(module_name)
+        module_files = [f["name"] for f in all_files]
+        exam_file_names = [f["name"] for f in all_files if f.get("is_exam")]
+
+        yield f"data: {json.dumps({'type': 'step', 'key': 'rag', 'label': 'Kursinhalte laden…', 'done': False})}\n\n"
+        yield f"data: {json.dumps({'type': 'step', 'key': 'analyze', 'label': 'Klausurstil analysieren…', 'done': False})}\n\n"
+
+        try:
+            rag_coro = asyncio.to_thread(
+                rag.ask,
+                "Liste alle wichtigen Themen, Konzepte und Aufgaben aus den Materialien dieses Kurses auf.",
+                module_name=module_name,
+                top_k=20,
+            )
+            analyze_coro = asyncio.to_thread(_exam_analyze_cached, module_name, all_files)
+
+            rag_result, (exam_profile_md, _) = await asyncio.gather(rag_coro, analyze_coro)
+
+            course_context = rag_result.get("answer", "") or "Keine Kursinhalte gefunden."
+
+            yield f"data: {json.dumps({'type': 'step', 'key': 'rag', 'label': 'Kursinhalte geladen', 'done': True})}\n\n"
+            yield f"data: {json.dumps({'type': 'step', 'key': 'analyze', 'label': 'Klausurstil analysiert', 'done': True})}\n\n"
+            yield f"data: {json.dumps({'type': 'step', 'key': 'generate', 'label': 'Roadmap generieren…', 'done': False})}\n\n"
+
+            data = await asyncio.to_thread(
+                rm.generate,
+                module_name,
+                exam_date=body.exam_date or "",
+                focus=body.focus or "",
+                course_context=course_context,
+                exam_profile=exam_profile_md,
+                available_files=module_files,
+                exam_files=exam_file_names,
+            )
+
+            if body.exam_date:
+                rm.scale_hours_to_exam_date(data, body.exam_date)
+
+            new_md = rm.render_md(module_name, data)
+            _PENDING_ROADMAPS[module_name] = new_md
+
+            payload = {
+                "success": True,
+                "is_first_generation": True,
+                "diff": None,
+                "preview_md": new_md,
+            }
+            yield f"data: {json.dumps({'type': 'result', 'data': payload})}\n\n"
+
+        except Exception as exc:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
+
+
 @app.post("/roadmap/{module_name}/accept")
 def roadmap_accept(module_name: str):
     pending = _PENDING_ROADMAPS.pop(module_name, None)
