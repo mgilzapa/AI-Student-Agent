@@ -2590,9 +2590,12 @@
     </div>
     <div id="roadmap-gen-loading" class="modal-state">
       <div class="modal-loading">
-        <div class="modal-spinner"></div>
-        <div class="modal-loading-text">Roadmap wird erstellt…</div>
-        <div class="modal-loading-status" id="rg-loading-status">Materialien werden analysiert…</div>
+        <div class="modal-loading-text" style="margin-bottom:12px;">Roadmap wird erstellt…</div>
+        <div class="gen-steps" id="rg-steps">
+          <div class="gen-step pending" data-key="rag"><span class="gen-step-icon">○</span><span class="gen-step-label">Kursinhalte laden…</span></div>
+          <div class="gen-step pending" data-key="analyze"><span class="gen-step-icon">○</span><span class="gen-step-label">Klausurstil analysieren…</span></div>
+          <div class="gen-step pending" data-key="generate"><span class="gen-step-icon">○</span><span class="gen-step-label">Roadmap generieren…</span></div>
+        </div>
       </div>
     </div>
     <div id="roadmap-gen-error" class="modal-state">
@@ -4370,33 +4373,29 @@ function showRoadmapGenError(msg) {
 async function runRoadmapGenerate() {
   const exam_date = document.getElementById('rg-exam-date').value || null;
   const focus = document.getElementById('rg-focus').value.trim() || null;
+  resetSteps('rg-steps');
   showRoadmapGenState('loading');
-  const statusEl = document.getElementById('rg-loading-status');
-  const msgs = ['Materialien werden analysiert…','Klausuren werden ausgewertet…','Phasen werden erstellt…','Mermaid-Graph wird gebaut…','Fast fertig…'];
-  let i = 0;
-  const timer = setInterval(() => { i = (i + 1) % msgs.length; statusEl.textContent = msgs[i]; }, 2500);
   try {
-    const res = await fetch('/roadmap/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ module_name: state.moduleName, exam_date, focus }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Roadmap-Generation fehlgeschlagen.');
-    state.roadmapPending = data;
-    closeRoadmapGenModal();
-    // First-time generation: auto-accept (no diff to confirm).
-    if (data.is_first_generation) {
-      await acceptPendingRoadmap(null);
-      openRoadmapTab();
-    } else {
-      // Open roadmap tab so the diff banner shows.
-      openRoadmapTab();
+    for await (const msg of streamSteps('/roadmap/generate/stream', { module_name: state.moduleName, exam_date, focus })) {
+      if (msg.type === 'step') {
+        applyStep('rg-steps', msg);
+      } else if (msg.type === 'result') {
+        const data = msg.data;
+        state.roadmapPending = data;
+        closeRoadmapGenModal();
+        if (data.is_first_generation) {
+          await acceptPendingRoadmap(null);
+          openRoadmapTab();
+        } else {
+          openRoadmapTab();
+        }
+        return;
+      } else if (msg.type === 'error') {
+        throw new Error(msg.detail);
+      }
     }
   } catch (err) {
     showRoadmapGenError(err.message || 'Unbekannter Fehler.');
-  } finally {
-    clearInterval(timer);
   }
 }
 
