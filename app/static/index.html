@@ -549,7 +549,7 @@
   .chat-topbar p { color: var(--muted); font-size: 0.84rem; max-width: 52ch; margin-top: 2px; }
 
   #chat {
-    overflow-y: auto; overflow-x: hidden; padding: 18px;
+    overflow-y: auto; overflow-x: hidden; padding: 20px 24px;
     display: flex; flex-direction: column; gap: 14px; min-height: 0;
     background: var(--bg);
   }
@@ -576,27 +576,33 @@
 
   .msg { display: flex; flex-direction: column; gap: 4px; max-width: 800px; }
   .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.agent + .msg.user { margin-top: 20px; }
   @keyframes msgIn {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   .msg { animation: msgIn 0.24s var(--ease-out) both; }
   .label { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-  .bubble { padding: 12px 15px; border-radius: 14px; line-height: 1.72; font-size: 0.9rem; word-break: break-word; border: 1px solid var(--border); }
+  .bubble { padding: 12px 16px; border-radius: 14px; line-height: 1.72; font-size: 0.9rem; word-break: break-word; border: 1px solid var(--border); }
   .msg.user .bubble { background: var(--accent-soft); border-color: var(--accent-border); }
   .msg.agent .bubble { background: var(--panel); }
-  .msg.agent .bubble > * + * { margin-top: 0.78rem; }
-  .msg.agent .bubble h1,.msg.agent .bubble h2,.msg.agent .bubble h3 { font-family: 'Lora', serif; color: var(--text); line-height: 1.2; }
-  .msg.agent .bubble h1 { font-size: 1.05rem; }
-  .msg.agent .bubble h2 { font-size: 0.97rem; }
-  .msg.agent .bubble h3 { font-size: 0.9rem; }
+  .msg.agent .bubble > * + * { margin-top: 0.85em; }
+  .msg.agent .bubble h1,.msg.agent .bubble h2 { font-family: 'Lora', serif; color: var(--text); line-height: 1.2; }
+  .msg.agent .bubble h1 { font-size: 1.05rem; font-weight: 600; }
+  .msg.agent .bubble h2 { font-size: 0.97rem; font-weight: 600; }
+  .msg.agent .bubble h3 { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); line-height: 1.4; }
   .msg.agent .bubble p  { margin: 0; }
   .msg.agent .bubble ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.3rem; }
   .msg.agent .bubble strong { color: var(--text); font-weight: 600; }
   .msg.agent .bubble code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; background: var(--panel-soft); padding: 0.14rem 0.4rem; border-radius: 4px; color: var(--accent); border: 1px solid var(--border); }
+  .msg.agent .bubble pre { background: var(--panel-soft); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 0; }
+  .msg.agent .bubble pre code { background: none; border: none; padding: 0; color: var(--text); font-size: 0.82em; }
 
-  .sources { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
-  .source-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-border); padding: 3px 8px; border-radius: 999px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .source-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-border); padding: 3px 10px; border-radius: 999px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .stream-cursor { display: inline-block; width: 2px; height: 0.82em; background: var(--accent); margin-left: 1px; vertical-align: text-bottom; border-radius: 1px; animation: cursorBlink 0.75s step-end infinite; }
+  @keyframes cursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
 
   .thinking .bubble { display: flex; gap: 5px; align-items: center; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: dotBounce 1.2s ease-in-out infinite; }
@@ -604,7 +610,7 @@
   .dot:nth-child(3) { animation-delay: 0.36s; }
   @keyframes dotBounce { 0%,80%,100% { opacity: 0.3; transform: scale(0.7) translateY(0); } 40% { opacity: 1; transform: scale(1) translateY(-4px); } }
 
-  .chat-footer { border-top: 1px solid var(--border); padding: 11px 14px 13px; background: var(--panel); }
+  .chat-footer { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--panel); }
   .chat-form { display: flex; gap: 8px; }
   #input {
     flex: 1; resize: none; min-height: 44px; max-height: 150px;
@@ -680,6 +686,12 @@
   .modal-spinner { width: 44px; height: 44px; margin: 0 auto; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: spin 0.75s linear infinite; }
   .modal-loading-text   { color: var(--muted); font-size: 0.875rem; }
   .modal-loading-status { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--accent); letter-spacing: 0.05em; }
+  .gen-steps { display: grid; gap: 10px; text-align: left; padding: 2px 0; }
+  .gen-step { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--muted); transition: color 0.2s; }
+  .gen-step.active { color: var(--text); }
+  .gen-step.done  { color: var(--success); }
+  .gen-step-icon  { width: 16px; text-align: center; flex-shrink: 0; font-style: normal; }
+  .step-spinner   { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: spin 0.75s linear infinite; vertical-align: middle; }
 
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
   .success-badge { display: inline-flex; align-items: center; gap: 5px; color: var(--success); font-size: 0.84rem; font-weight: 600; }
@@ -1321,7 +1333,13 @@
   }
   .daily-task-text { font-size: 0.875rem; color: var(--text); line-height: 1.5; }
   .daily-card-tasks .daily-task-item { border-bottom: none; }
-  .daily-task-text.done { text-decoration: line-through; color: var(--muted); }
+  .daily-task-text.done { opacity: 0.5; }
+  .daily-task-text.done .task-action { text-decoration: line-through; }
+  .task-type { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .task-type-theory { color: #60a5fa; }
+  .task-type-practice { color: #4ade80; }
+  .task-action { display: block; font-weight: 500; line-height: 1.35; }
+  .task-fokus { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
   /* ── Tagesplan task list in panel ── */
   .tagesplan-task-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
   .tagesplan-topic-block { display: flex; flex-direction: column; gap: 2px; }
@@ -1836,7 +1854,7 @@
     background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent);
   }
   .ws-right .chat-footer { padding: 10px 12px 12px; }
-  .ws-right #chat { padding: 14px; gap: 12px; background: var(--bg); }
+  .ws-right #chat { padding: 16px; gap: 12px; background: var(--bg); }
 
   /* Desktop-only hint */
   .desktop-hint {
@@ -2040,7 +2058,7 @@
   .roadmap-phase-meta { color: var(--muted); font-size: 0.79rem; margin-top: 3px; }
 
   .roadmap-topics-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 11px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 11px;
   }
 
   /* Topic cards */
@@ -2775,6 +2793,23 @@ function formatBytes(bytes) {
 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderTaskText(text, done) {
+  const doneClass = done ? ' done' : '';
+  const parts = text.split(' :: ');
+  if (parts.length >= 2) {
+    const rawType = parts[0].trim();
+    const action = parts[1].trim();
+    const fokus = parts[2] ? parts[2].trim() : '';
+    const typeClass = rawType.toLowerCase().includes('theorie') ? 'task-type-theory' : 'task-type-practice';
+    return `<span class="daily-task-text${doneClass}">
+      <span class="task-type ${typeClass}">${escHtml(rawType)}</span>
+      <span class="task-action">${escHtml(action)}</span>
+      ${fokus ? `<span class="task-fokus">${escHtml(fokus)}</span>` : ''}
+    </span>`;
+  }
+  return `<span class="daily-task-text${doneClass}">${escHtml(text)}</span>`;
 }
 
 // Render LaTeX math inside an element. Safe to call before KaTeX has loaded —
@@ -3897,7 +3932,7 @@ function _renderDailyBoard(container) {
       label.innerHTML = `
         <input class="daily-task-cb" type="checkbox" ${task.done ? 'checked' : ''}
                data-tid="${escHtml(topic.id)}" data-idx="${idx}">
-        <span class="daily-task-text${task.done ? ' done' : ''}">${escHtml(task.text)}</span>
+        ${renderTaskText(task.text, task.done)}
       `;
       tasks.appendChild(label);
     });
@@ -4122,7 +4157,7 @@ function _buildDailyTasksHtml() {
       return `<label class="daily-task-item">
         <input class="daily-task-cb" type="checkbox" ${checked}
                data-tid="${escHtml(topic.id)}" data-idx="${idx}">
-        <span class="daily-task-text${doneClass}">${escHtml(task.text)}</span>
+        ${renderTaskText(task.text, task.done)}
       </label>`;
     }).join('');
     return `<div class="tagesplan-topic-block">
@@ -5529,6 +5564,63 @@ function addThinking() {
   return wrap;
 }
 
+// ── SSE step-display helpers ───────────────────────────────────────────────
+
+async function* streamSteps(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || res.statusText);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      let msg; try { msg = JSON.parse(line.slice(6)); } catch { continue; }
+      yield msg;
+    }
+  }
+}
+
+function applyStep(containerId, msg) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const row = container.querySelector(`[data-key="${msg.key}"]`);
+  if (!row) return;
+  const icon = row.querySelector('.gen-step-icon');
+  const label = row.querySelector('.gen-step-label');
+  row.classList.remove('pending', 'active', 'done');
+  if (msg.done) {
+    row.classList.add('done');
+    icon.textContent = '✓';
+  } else {
+    row.classList.add('active');
+    icon.innerHTML = '<span class="step-spinner"></span>';
+  }
+  label.textContent = msg.label;
+}
+
+function resetSteps(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.gen-step').forEach(row => {
+    row.classList.remove('active', 'done');
+    row.classList.add('pending');
+    row.querySelector('.gen-step-icon').textContent = '○';
+  });
+}
+
 async function sendQuestion() {
   const question = input.value.trim();
   if (!question || !state.moduleName) return;
@@ -5537,14 +5629,72 @@ async function sendQuestion() {
   addMsg('user', question);
   const thinking = addThinking();
   try {
-    const res = await fetch('/ask', {
+    const res = await fetch('/ask/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, module_name: state.moduleName }),
     });
-    const data = await res.json();
-    thinking.remove();
-    addMsg('agent', data.answer || 'Ich konnte keine Antwort erzeugen.', data.sources || []);
+    if (!res.ok) throw new Error(res.statusText);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let agentWrap = null, bubble = null, rawText = '', sources = [], buf = '';
+    let pendingRender = false;
+    function scheduleRender() {
+      if (pendingRender) return;
+      pendingRender = true;
+      requestAnimationFrame(() => {
+        pendingRender = false;
+        if (bubble) {
+          bubble.innerHTML = renderMarkdown(rawText) + '<span class="stream-cursor"></span>';
+          chat.scrollTop = chat.scrollHeight;
+        }
+      });
+    }
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let msg; try { msg = JSON.parse(line.slice(6)); } catch { continue; }
+        if (msg.type === 'token') {
+          if (!agentWrap) {
+            thinking.remove();
+            agentWrap = document.createElement('div'); agentWrap.className = 'msg agent';
+            const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = 'Agent';
+            bubble = document.createElement('div'); bubble.className = 'bubble';
+            agentWrap.append(lbl, bubble);
+            chat.appendChild(agentWrap);
+          }
+          rawText += msg.content;
+          scheduleRender();
+        } else if (msg.type === 'done') {
+          sources = msg.sources || [];
+        }
+      }
+    }
+    pendingRender = false;
+    if (agentWrap && bubble) {
+      bubble.innerHTML = renderMarkdown(rawText);
+      renderMathIn(bubble);
+      if (sources.length) {
+        const srcRow = document.createElement('div'); srcRow.className = 'sources';
+        sources.forEach(src => {
+          const tag = document.createElement('div'); tag.className = 'source-tag';
+          const name = String(src.source || '').split(/[\\/]/).pop();
+          tag.textContent = name;
+          tag.title = `${name}${typeof src.score === 'number' ? ` (Relevanz ${(src.score*100).toFixed(0)}%)` : ''}`;
+          srcRow.appendChild(tag);
+        });
+        agentWrap.appendChild(srcRow);
+      }
+      chat.scrollTop = chat.scrollHeight;
+    } else {
+      thinking.remove();
+      addMsg('agent', 'Ich konnte keine Antwort erzeugen.');
+    }
   } catch {
     thinking.remove();
     addMsg('agent', 'Fehler beim Verbinden mit dem Server.');
