@@ -1,8 +1,10 @@
 """
 Study Agent FastAPI backend.
 """
+import asyncio
 import json
 import glob as _glob
+import hashlib
 import re
 import shutil
 import tempfile
@@ -156,6 +158,86 @@ def _slug(name: str) -> str:
     s = name.lower().strip()
     s = re.sub(r"[äöüß]", lambda m: {"ä":"ae","ö":"oe","ü":"ue","ß":"ss"}[m.group()], s)
     return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+# ── Exam-style cache ──────────────────────────────────────────────────────────
+
+_EXAM_CACHE_DIR = Path("data/modules")
+
+
+def _exam_cache_hash(module_name: str, exam_files: list[dict]) -> str:
+    """MD5 over sorted (name, mtime_ns, size) of the module's exam files."""
+    base = module_dir(module_name)
+    parts = []
+    for f in sorted(exam_files, key=lambda x: x["name"]):
+        path = base / f["relative_path"]
+        try:
+            st = path.stat()
+            parts.append(f"{f['name']}:{st.st_mtime_ns}:{st.st_size}")
+        except OSError:
+            parts.append(f"{f['name']}:0:0")
+    return hashlib.md5("|".join(parts).encode()).hexdigest()
+
+
+def _load_exam_cache(module_name: str) -> dict | None:
+    cache_path = _EXAM_CACHE_DIR / f"{_slug(module_name)}-exam-style-cache.json"
+    if not cache_path.exists():
+        return None
+    try:
+        return json.loads(cache_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _save_exam_cache(module_name: str, hash_val: str, style: str, profile_md: str) -> None:
+    _EXAM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_path = _EXAM_CACHE_DIR / f"{_slug(module_name)}-exam-style-cache.json"
+    cache_path.write_text(
+        json.dumps({"hash": hash_val, "style": style, "exam_profile_md": profile_md},
+                   ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _exam_analyze_cached(module_name: str, all_files: list[dict]) -> tuple[str, str]:
+    """Run exam analysis using cache when unchanged. Returns (exam_profile_md, exam_style)."""
+    exam_files = [f for f in all_files if f.get("is_exam")]
+    if not exam_files:
+        return "", ""
+
+    current_hash = _exam_cache_hash(module_name, exam_files)
+    cache = _load_exam_cache(module_name)
+    if cache and cache.get("hash") == current_hash:
+        return cache.get("exam_profile_md", ""), cache.get("style", "")
+
+    profile = mp.load(module_name)
+    if not profile:
+        profile = mp.create_from_onboarding({
+            "name": module_name,
+            "schwerpunkte": [],
+            "stil": "mixed",
+            "pruefungsrelevant": [],
+        })
+
+    exam_texts = _collect_exam_text(module_name)
+    exam_profile_md = ""
+    exam_style = ""
+
+    if exam_texts:
+        try:
+            ea.analyze(module_name, exam_texts)
+            profile = mp.load(module_name) or profile
+        except Exception as exc:
+            print(f"[exam_cache] ea.analyze failed: {exc}")
+        exam_profile_md = mp.load_exam_profile(profile)
+        try:
+            exam_style = eg.analyze_exam_style(exam_texts, module_name)
+        except Exception as exc:
+            print(f"[exam_cache] style analysis failed: {exc}")
+
+    _save_exam_cache(module_name, current_hash, exam_style, exam_profile_md)
+    return exam_profile_md, exam_style
+
 
 @app.get("/", response_class=HTMLResponse)
 def serve_ui():
@@ -390,7 +472,8 @@ async def roadmap_generate(body: RoadmapGenerateRequest):
     Returns preview_md + diff WITHOUT writing — call /roadmap/{m}/accept to commit.
     """
     # 1) Course context via RAG — use higher top_k to cover more files.
-    rag_result = rag.ask(
+    rag_result = await asyncio.to_thread(
+        rag.ask,
         "Liste alle wichtigen Themen, Konzepte und Aufgaben aus den Materialien dieses Kurses auf.",
         module_name=body.module_name,
         top_k=20,
