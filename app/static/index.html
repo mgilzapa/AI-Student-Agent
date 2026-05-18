@@ -407,7 +407,7 @@
     padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border);
   }
 
-  .selected-files { display: grid; gap: 6px; }
+  .selected-files { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
   .selected-file {
     display: flex; justify-content: space-between; gap: 10px; align-items: center;
     padding: 8px 12px; border-radius: 9px;
@@ -916,6 +916,50 @@
     padding: 8px 6px 4px;
   }
 
+  /* ── Folder Explorer ── */
+  .files-header-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .folder-create-btn {
+    width: 20px; height: 20px; flex-shrink: 0;
+    background: transparent; border: 1px solid transparent;
+    color: var(--muted); border-radius: 4px;
+    display: grid; place-items: center; font-size: 0.75rem;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .folder-create-btn:hover { background: var(--panel-soft); border-color: var(--border); color: var(--text); }
+  .folder-new-input {
+    width: 100%; padding: 5px 8px; margin-bottom: 4px; box-sizing: border-box;
+    background: var(--panel-soft); border: 1px solid var(--accent-border);
+    border-radius: 6px; color: var(--text); font-size: 0.82rem; outline: none;
+  }
+  .folder-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 7px; border-radius: 6px; cursor: pointer;
+    transition: background 0.15s ease; user-select: none;
+  }
+  .folder-row:hover { background: var(--panel-soft); }
+  .folder-row.drag-over { background: var(--accent-soft); outline: 1px solid var(--accent-border); border-radius: 6px; }
+  .folder-toggle { font-size: 0.55rem; color: var(--muted); flex-shrink: 0; width: 10px; text-align: center; }
+  .folder-icon { font-size: 0.85rem; opacity: 0.7; flex-shrink: 0; }
+  .folder-name-text { font-size: 0.82rem; font-weight: 600; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-rename-input {
+    flex: 1; padding: 1px 5px; background: var(--panel-soft);
+    border: 1px solid var(--accent-border); border-radius: 4px;
+    color: var(--text); font-size: 0.82rem; font-weight: 600; outline: none; min-width: 0;
+  }
+  .folder-row-actions { display: flex; gap: 2px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s ease; }
+  .folder-row:hover .folder-row-actions { opacity: 1; }
+  .folder-action-btn {
+    width: 20px; height: 20px; background: transparent; border: 1px solid transparent;
+    color: var(--muted); border-radius: 4px; display: grid; place-items: center;
+    font-size: 0.68rem; cursor: pointer; transition: all 0.15s ease;
+  }
+  .folder-action-btn:hover { background: var(--panel-soft); border-color: var(--border); color: var(--text); }
+  .file-row.in-folder { margin-left: 18px; }
+  .root-drop-zone { padding: 2px 0; border-radius: 6px; transition: background 0.15s ease; }
+  .root-drop-zone.drag-over { background: var(--accent-soft); outline: 1px dashed var(--accent-border); }
+
   .file-row {
     position: relative;
     display: flex; align-items: center; gap: 8px;
@@ -1069,6 +1113,113 @@
     overflow: hidden;
   }
   .view-pane.view-roadmap.active { display: flex; }
+
+  /* ── Daily Tasks view ── */
+  .view-pane.view-daily { display: none; flex-direction: column; overflow: hidden; }
+  .view-pane.view-daily.active { display: flex; }
+  .daily-topbar {
+    padding: 14px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .daily-topbar-row1 {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .daily-topbar-title {
+    font-family: 'Lora', serif;
+    font-size: 1rem; font-weight: 600;
+    color: var(--text); flex: 1;
+  }
+  .daily-progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--muted); white-space: nowrap;
+  }
+  .daily-progress-track {
+    height: 4px; background: var(--border); border-radius: 999px; overflow: hidden;
+  }
+  .daily-progress-fill {
+    height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.4s ease;
+  }
+  .daily-topbar-row2 {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .daily-content-row {
+    flex: 1; display: flex; flex-direction: row; overflow: hidden;
+  }
+  .daily-board {
+    flex: 1; overflow-y: auto; padding: 20px 20px 32px;
+    display: flex; flex-direction: column; flex-wrap: nowrap; gap: 14px;
+    width: 100%;
+  }
+  .daily-review-divider {
+    text-align: center; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.12em; padding: 4px 0; margin-top: 4px;
+  }
+  .daily-card-review { border-color: var(--accent-border); }
+  .daily-review-panel {
+    width: 300px; flex-shrink: 0; overflow-y: auto; padding: 20px 16px;
+    border-left: 1px solid var(--border); background: var(--panel-soft);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .daily-review-panel::-webkit-scrollbar { width: 4px; }
+  .daily-review-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  .daily-review-panel-header {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  @keyframes reviewItemIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .daily-review-item-new {
+    animation: reviewItemIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .daily-review-task {
+    display: flex; gap: 8px; padding: 4px 0; font-size: 0.85rem;
+    color: var(--text); align-items: flex-start; line-height: 1.4;
+  }
+  .daily-review-task-icon { color: var(--success); flex-shrink: 0; font-size: 0.75rem; margin-top: 3px; }
+  .daily-review-task-date {
+    font-size: 0.72rem; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    margin-top: 3px;
+  }
+  .daily-review-empty {
+    color: var(--muted); font-size: 0.83rem; text-align: center; padding: 28px 0;
+    line-height: 1.5;
+  }
+  .daily-board::-webkit-scrollbar { width: 4px; }
+  .daily-board::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  .daily-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .daily-card.all-done { opacity: 0.65; }
+  .daily-card-header {
+    padding: 12px 16px; font-family: 'Lora', serif; font-weight: 600; font-size: 0.95rem;
+    border-bottom: 1px solid var(--border); background: var(--panel-soft);
+  }
+  .daily-card-tasks { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .daily-card-files {
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .daily-file-chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+    border-radius: 999px; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--accent-border); cursor: pointer; transition: background 0.15s;
+  }
+  .daily-file-chip:hover { background: var(--accent-glow); }
+  .daily-empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; height: 200px; color: var(--muted); font-size: 0.9rem; text-align: center;
+  }
+  .daily-empty-icon { font-size: 2.2rem; }
+
   .roadmap-topbar {
     padding: 10px 14px 0;
     border-bottom: 1px solid var(--border);
@@ -1133,16 +1284,31 @@
     background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
   }
   .tagesplan-generate-btn {
-    background: var(--accent-soft); border: 1px solid var(--accent-border);
-    border-radius: 8px; padding: 6px 14px; font-size: 0.82rem; color: var(--accent);
+    background: var(--accent); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 7px 16px; font-size: 0.82rem; color: #fff;
+    font-family: inherit; cursor: pointer;
+    transition: filter 0.18s cubic-bezier(0.4,0,0.2,1),
+                transform 0.18s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.18s cubic-bezier(0.4,0,0.2,1);
+    white-space: nowrap; margin-left: auto;
+  }
+  .tagesplan-generate-btn:hover:not(:disabled) {
+    filter: brightness(1.08); transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+  .tagesplan-generate-btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.97); }
+  .tagesplan-generate-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+  .tagesplan-clear-history-btn {
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 11px; font-size: 0.78rem; color: var(--muted);
     font-family: inherit; cursor: pointer; transition: all 0.18s ease; white-space: nowrap;
   }
-  .tagesplan-generate-btn:hover:not(:disabled) { background: var(--accent-glow); }
-  .tagesplan-generate-btn:disabled { opacity: 0.42; cursor: not-allowed; }
+  .tagesplan-clear-history-btn:hover:not(:disabled) { border-color: #e05c5c; color: #e05c5c; }
+  .tagesplan-clear-history-btn:disabled { opacity: 0.42; cursor: not-allowed; }
   .tagesplan-progress {
     font-size: 0.78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace;
   }
-  /* ── Daily tasks list inside topic detail ── */
+  /* ── Daily tasks list (panel + topic detail) ── */
   .daily-tasks-section { display: flex; flex-direction: column; gap: 2px; }
   .daily-task-item {
     display: flex; align-items: flex-start; gap: 8px;
@@ -1153,13 +1319,19 @@
     margin-top: 2px; width: 15px; height: 15px; flex-shrink: 0;
     accent-color: var(--accent); cursor: pointer;
   }
-  .daily-task-text { font-size: 0.84rem; color: var(--text); line-height: 1.5; }
+  .daily-task-text { font-size: 0.875rem; color: var(--text); line-height: 1.5; }
+  .daily-card-tasks .daily-task-item { border-bottom: none; }
   .daily-task-text.done { text-decoration: line-through; color: var(--muted); }
-  /* ── Done-gate: grey out the "Fertig" status button when tasks are open ── */
-  .status-btn.done-locked {
-    opacity: 0.38; cursor: not-allowed; pointer-events: none;
+  /* ── Tagesplan task list in panel ── */
+  .tagesplan-task-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .tagesplan-topic-block { display: flex; flex-direction: column; gap: 2px; }
+  .tagesplan-topic-name {
+    font-size: 0.75rem; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px;
   }
-  .status-btn.done-locked::after { content: ' 🔒'; font-size: 0.7em; }
+  /* ── All-tasks block in right detail panel ── */
+  .rm-daily-all { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--border); }
+
 
   .roadmap-body {
     flex: 1 1 auto; min-height: 0;
@@ -1205,12 +1377,13 @@
     color: var(--muted); white-space: nowrap;
   }
   .rm-pl-topics {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px; margin-bottom: 12px;
   }
   .rm-pl-topic {
-    width: 100%; aspect-ratio: 1 / 1;
+    width: 100px; aspect-ratio: 1 / 1;
     display: flex; flex-direction: column;
     border-radius: 12px; overflow: hidden;
     cursor: pointer; font-family: inherit;
@@ -1219,23 +1392,24 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     padding: 0;
   }
-  .rm-pl-topic:hover       { border-color: var(--accent-border); box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+  .rm-pl-topic:hover       { border-color: var(--accent-border); box-shadow: 0 2px 12px rgba(28,25,23,0.1); }
   .rm-pl-topic.selected    { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
   .rm-pl-topic.status-todo  { background: var(--panel); }
   .rm-pl-topic.status-doing { background: rgba(217,119,6,0.13); border-color: var(--amber); }
   .rm-pl-topic.status-done  { background: rgba(22,163,74,0.11); border-color: var(--success); }
   .rm-pl-prio-stripe { height: 5px; width: 100%; flex-shrink: 0; }
-  .rm-pl-prio-stripe.high,      .rm-pl-prio-stripe.must_know    { background: #E24B4A; }
+  .rm-pl-prio-stripe.high,      .rm-pl-prio-stripe.must_know    { background: var(--danger); }
   .rm-pl-prio-stripe.medium,    .rm-pl-prio-stripe.good_to_know { background: var(--amber); }
   .rm-pl-prio-stripe.low,       .rm-pl-prio-stripe.nice_to_have { background: var(--success); }
-  .rm-pl-prio-stripe.hoch       { background: #E24B4A; }
+  .rm-pl-prio-stripe.hoch       { background: var(--danger); }
   .rm-pl-prio-stripe.niedrig    { background: var(--success); }
+  .rm-phase-arrow-svg line, .rm-phase-arrow-svg polyline { stroke: var(--border); stroke-width: 1; }
   .rm-pl-card-body {
     flex: 1; display: flex; align-items: center; justify-content: center;
     padding: 8px 7px; text-align: center;
   }
   .rm-pl-name {
-    font-size: 0.75rem; font-weight: 500; color: var(--text);
+    font-size: 0.82rem; font-weight: 500; color: var(--text);
     line-height: 1.3; overflow: hidden;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
   }
@@ -1344,13 +1518,13 @@
     transition: all 0.18s ease;
   }
   .roadmap-diff-banner .accept-btn {
-    background: rgba(16,185,129,0.16); border-color: rgba(16,185,129,0.4); color: #34d399;
+    background: rgba(22,163,74,0.14); border-color: rgba(22,163,74,0.38); color: var(--success);
   }
-  .roadmap-diff-banner .accept-btn:hover { background: rgba(16,185,129,0.3); }
+  .roadmap-diff-banner .accept-btn:hover { background: rgba(22,163,74,0.26); }
   .roadmap-diff-banner .reject-btn {
-    background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.32); color: #f87171;
+    background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.3); color: var(--danger);
   }
-  .roadmap-diff-banner .reject-btn:hover { background: rgba(239,68,68,0.26); }
+  .roadmap-diff-banner .reject-btn:hover { background: rgba(220,38,38,0.22); }
 
   /* ════════════════════════════════════════
      PROBEKLAUSUR
@@ -1816,7 +1990,7 @@
   .roadmap-goal {
     width: 100%; max-width: 520px;
     background: var(--accent-soft);
-    border: 1px solid var(--accent-border); border-radius: 20px; padding: 28px 28px 24px;
+    border: 1px solid var(--accent-border); border-radius: 20px; padding: 32px 28px 26px;
     text-align: center; position: relative; overflow: hidden;
   }
   .roadmap-goal::before {
@@ -1824,7 +1998,6 @@
     background: radial-gradient(ellipse at 50% 0%, var(--accent-glow), transparent 70%);
     pointer-events: none;
   }
-  .roadmap-goal-icon { font-size: 2.4rem; margin-bottom: 10px; display: block; }
   .roadmap-goal-title {
     font-family: 'Lora', serif; font-size: 1.45rem; font-weight: 600;
     color: var(--text);
@@ -1883,7 +2056,13 @@
   .priority-nice { background: rgba(22,163,74,0.04); border-color: rgba(22,163,74,0.18); }
 
   .topic-card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-  .topic-priority-badge { font-size: 0.68rem; font-weight: 600; display: flex; align-items: center; gap: 3px; }
+  .topic-priority-badge { font-size: 0.68rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .prio-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+  }
+  .prio-dot.high   { background: var(--danger); }
+  .prio-dot.medium { background: var(--amber); }
+  .prio-dot.low    { background: var(--success); }
   .priority-must .topic-priority-badge { color: var(--danger); }
   .priority-good .topic-priority-badge { color: var(--amber); }
   .priority-nice .topic-priority-badge { color: var(--success); }
@@ -2118,6 +2297,10 @@
           <button class="rail-tab" id="pk-btn" data-tab="pk" title="Probeklausur" type="button" aria-label="Probeklausur">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <span class="rail-tab-label">Klausur</span>
+          </button>
+          <button class="rail-tab" id="daily-btn" data-tab="daily" title="Tagesplan" type="button" aria-label="Tagesplan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            <span class="rail-tab-label">Tasks</span>
           </button>
           <button class="rail-tab" id="rail-tab-chat" data-tab="chat" title="Chat" type="button" aria-label="Chat">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -2488,6 +2671,7 @@ const state = {
   moduleName: '',
   dailyPlan: null,
   dailyMode: 'konkret',
+  dailyReview: [],
   selectedFiles: [],
   isUploading: false,
   currentLectureFile: '',
@@ -2685,6 +2869,9 @@ async function solveSheet(file, btnEl) {
   if (existing >= 0) state.solvedSheets[existing] = solEntry;
   else state.solvedSheets.push(solEntry);
 
+  // Persist solved sheets so they survive page reloads and course switches
+  try { localStorage.setItem(`studyAgent.solutions.${state.moduleName}`, JSON.stringify(state.solvedSheets)); } catch {}
+
   // Refresh files panel to show/update "Lösungen" section
   renderWorkspaceFiles(state.moduleFiles);
 
@@ -2848,6 +3035,70 @@ function fileIconFor(ext) {
   return '📁';
 }
 
+// ── Folder config helpers ────────────────────────────────────────────────────
+function loadFolderConfig(module) {
+  try { return JSON.parse(localStorage.getItem(`folderConfig_${module}`)) || {}; }
+  catch { return {}; }
+}
+function saveFolderConfig(module, config) {
+  localStorage.setItem(`folderConfig_${module}`, JSON.stringify(config));
+}
+function getFolderForFile(config, filePath) {
+  for (const [folder, files] of Object.entries(config)) {
+    if (folder === '__collapsed__') continue;
+    if (Array.isArray(files) && files.includes(filePath)) return folder;
+  }
+  return '';
+}
+function createFolderConfig(module, name) {
+  if (!name.trim()) return;
+  const config = loadFolderConfig(module);
+  if (!config[name]) config[name] = [];
+  saveFolderConfig(module, config);
+  renderWorkspaceFiles(state.moduleFiles);
+}
+function renameFolder(module, oldName, newName) {
+  if (!newName.trim() || oldName === newName) return;
+  const config = loadFolderConfig(module);
+  config[newName] = config[oldName] || [];
+  delete config[oldName];
+  const col = config['__collapsed__'] || [];
+  const ci = col.indexOf(oldName);
+  if (ci !== -1) { col[ci] = newName; config['__collapsed__'] = col; }
+  saveFolderConfig(module, config);
+  renderWorkspaceFiles(state.moduleFiles);
+}
+function deleteFolder(module, name) {
+  const config = loadFolderConfig(module);
+  delete config[name];
+  if (config['__collapsed__']) config['__collapsed__'] = config['__collapsed__'].filter(f => f !== name);
+  saveFolderConfig(module, config);
+  renderWorkspaceFiles(state.moduleFiles);
+}
+function moveFileToFolder(module, filePath, targetFolder) {
+  const config = loadFolderConfig(module);
+  for (const [folder, files] of Object.entries(config)) {
+    if (folder === '__collapsed__' || !Array.isArray(files)) continue;
+    const idx = files.indexOf(filePath);
+    if (idx !== -1) files.splice(idx, 1);
+  }
+  if (targetFolder) {
+    if (!config[targetFolder]) config[targetFolder] = [];
+    if (!config[targetFolder].includes(filePath)) config[targetFolder].push(filePath);
+  }
+  saveFolderConfig(module, config);
+  renderWorkspaceFiles(state.moduleFiles);
+}
+function toggleFolderCollapse(module, folderName) {
+  const config = loadFolderConfig(module);
+  const col = config['__collapsed__'] || [];
+  const idx = col.indexOf(folderName);
+  if (idx !== -1) col.splice(idx, 1); else col.push(folderName);
+  config['__collapsed__'] = col;
+  saveFolderConfig(module, config);
+  renderWorkspaceFiles(state.moduleFiles);
+}
+
 function renderWorkspaceFiles(files) {
   filesPanel.innerHTML = '';
   const summaries = state.summariesByModule[state.moduleName] || [];
@@ -2857,70 +3108,164 @@ function renderWorkspaceFiles(files) {
     return;
   }
 
-  // Group regular files by folder (root vs subfolders like "solutions/")
+  // ── Folder-aware file rendering ──────────────────────────────────────────
   if (files.length) {
-    const groups = new Map();
-    files.forEach(f => {
-      const rel = f.relative_path || f.name;
-      const parts = rel.split(/[\\/]/);
-      const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
-      if (!groups.has(folder)) groups.set(folder, []);
-      groups.get(folder).push(f);
+    const module = state.moduleName;
+    const config = loadFolderConfig(module);
+    const collapsed = config['__collapsed__'] || [];
+    const folderNames = Object.keys(config).filter(k => k !== '__collapsed__').sort();
+
+    // Build a set of files assigned to any folder
+    const assignedPaths = new Set();
+    for (const [folder, fps] of Object.entries(config)) {
+      if (folder === '__collapsed__' || !Array.isArray(fps)) continue;
+      fps.forEach(p => assignedPaths.add(p));
+    }
+
+    // Helper: build a draggable file row
+    function makeFileRow(file, inFolder) {
+      const ext = (file.file_type || '').toLowerCase();
+      const lecture = isLecture(file.name);
+      const filePath = file.relative_path || file.name;
+      const row = document.createElement('div');
+      row.className = 'file-row' + (inFolder ? ' in-folder' : '');
+      row.dataset.path = filePath;
+      row.dataset.name = file.name;
+      row.dataset.fileType = ext;
+      row.draggable = true;
+      const examBadge = file.is_exam
+        ? '<span class="file-exam-badge" data-action="exam-flag" title="Klick: Klausur-Markierung umschalten">🎓 Klausur</span>'
+        : '';
+      row.innerHTML = `
+        <span class="file-icon">${fileIconFor(ext)}</span>
+        <div class="file-meta">
+          <div class="file-name" title="${escHtml(file.name)}">${escHtml(file.name)} ${examBadge}</div>
+          <div class="file-sub">${escHtml(ext.toUpperCase() || 'FILE')} · ${formatBytes(file.size)}</div>
+        </div>
+        <div class="file-actions">
+          ${lecture || ext === 'pdf' || ext === 'pptx' ? `<button class="file-action-btn" data-action="summarize" title="Zusammenfassen">≡</button>` : ''}
+          ${isExerciseSheet(file.name) ? `<button class="file-action-btn" data-action="solve" title="Übungsblatt lösen" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#6ee7b7;">⚡</button>` : ''}
+          <button class="file-action-btn" data-action="exam-toggle" title="Klausur-Markierung umschalten" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;">🎓</button>
+          <button class="file-action-btn" data-action="delete" title="Datei löschen" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.3);color:#f87171;">🗑</button>
+        </div>
+      `;
+      row.addEventListener('click', e => {
+        const actionBtn = e.target.closest('.file-action-btn, .file-exam-badge');
+        if (actionBtn) {
+          e.stopPropagation();
+          const action = actionBtn.dataset.action;
+          if (action === 'summarize') openSummaryFlow(file.name);
+          else if (action === 'solve') solveSheet(file, actionBtn);
+          else if (action === 'exam-toggle' || action === 'exam-flag') toggleExamFlag(file);
+          else if (action === 'delete') deleteModuleFile(file);
+          return;
+        }
+        openFile(file);
+      });
+      row.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('filePath', filePath);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      return row;
+    }
+
+    // Header row with "Dateien" label + folder-create button
+    const filesHeaderWrap = document.createElement('div');
+    filesHeaderWrap.className = 'files-section-header files-header-row';
+    filesHeaderWrap.innerHTML = `<span>Dateien</span><button class="folder-create-btn" title="Neuen Ordner erstellen">📁+</button>`;
+    filesPanel.appendChild(filesHeaderWrap);
+
+    // Inline new-folder input (hidden initially)
+    const newFolderInput = document.createElement('input');
+    newFolderInput.className = 'folder-new-input';
+    newFolderInput.placeholder = 'Ordnername …';
+    newFolderInput.style.display = 'none';
+    filesPanel.appendChild(newFolderInput);
+
+    filesHeaderWrap.querySelector('.folder-create-btn').addEventListener('click', () => {
+      newFolderInput.style.display = '';
+      newFolderInput.focus();
     });
-    const folderKeys = [...groups.keys()].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)));
+    newFolderInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { createFolderConfig(module, newFolderInput.value); }
+      if (e.key === 'Escape') { newFolderInput.style.display = 'none'; newFolderInput.value = ''; }
+    });
+    newFolderInput.addEventListener('blur', () => { newFolderInput.style.display = 'none'; newFolderInput.value = ''; });
 
-    const filesHeader = document.createElement('div');
-    filesHeader.className = 'files-section-header';
-    filesHeader.textContent = 'Dateien';
-    filesPanel.appendChild(filesHeader);
+    // Root drop zone (files not in any folder)
+    const rootZone = document.createElement('div');
+    rootZone.className = 'root-drop-zone';
+    rootZone.addEventListener('dragover', e => { e.preventDefault(); rootZone.classList.add('drag-over'); });
+    rootZone.addEventListener('dragleave', () => rootZone.classList.remove('drag-over'));
+    rootZone.addEventListener('drop', e => {
+      e.preventDefault(); rootZone.classList.remove('drag-over');
+      const fp = e.dataTransfer.getData('filePath');
+      if (fp) moveFileToFolder(module, fp, '');
+    });
 
-    folderKeys.forEach(folder => {
-      if (folder) {
-        const lbl = document.createElement('div');
-        lbl.className = 'files-folder-label';
-        lbl.textContent = folder + '/';
-        filesPanel.appendChild(lbl);
-      }
-      groups.get(folder).forEach(file => {
-        const ext = (file.file_type || '').toLowerCase();
-        const lecture = isLecture(file.name);
-        const row = document.createElement('div');
-        row.className = 'file-row';
-        row.dataset.path = file.relative_path || file.name;
-        row.dataset.name = file.name;
-        row.dataset.fileType = ext;
-        const examBadge = file.is_exam
-          ? '<span class="file-exam-badge" data-action="exam-flag" title="Klick: Klausur-Markierung umschalten">🎓 Klausur</span>'
-          : '';
-        row.innerHTML = `
-          <span class="file-icon">${fileIconFor(ext)}</span>
-          <div class="file-meta">
-            <div class="file-name" title="${escHtml(file.name)}">${escHtml(file.name)} ${examBadge}</div>
-            <div class="file-sub">${escHtml(ext.toUpperCase() || 'FILE')} · ${formatBytes(file.size)}</div>
-          </div>
-          <div class="file-actions">
-            ${lecture || ext === 'pdf' || ext === 'pptx' ? `<button class="file-action-btn" data-action="summarize" title="Zusammenfassen">≡</button>` : ''}
-            ${isExerciseSheet(file.name) ? `<button class="file-action-btn" data-action="solve" title="Übungsblatt lösen" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#6ee7b7;">⚡</button>` : ''}
-            <button class="file-action-btn" data-action="exam-toggle" title="Klausur-Markierung umschalten" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;">🎓</button>
-            <button class="file-action-btn" data-action="delete" title="Datei löschen" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.3);color:#f87171;">🗑</button>
-          </div>
-        `;
-        row.addEventListener('click', e => {
-          const actionBtn = e.target.closest('.file-action-btn, .file-exam-badge');
-          if (actionBtn) {
-            e.stopPropagation();
-            const action = actionBtn.dataset.action;
-            if (action === 'summarize') openSummaryFlow(file.name);
-            else if (action === 'solve') solveSheet(file, actionBtn);
-            else if (action === 'exam-toggle' || action === 'exam-flag') toggleExamFlag(file);
-            else if (action === 'delete') deleteModuleFile(file);
+    // Render folders first (above unassigned files)
+    folderNames.forEach(folderName => {
+      const isCollapsed = collapsed.includes(folderName);
+      const folderFiles = (config[folderName] || [])
+        .map(fp => files.find(f => (f.relative_path || f.name) === fp))
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+      // Folder header row
+      const folderRow = document.createElement('div');
+      folderRow.className = 'folder-row';
+      folderRow.innerHTML = `
+        <span class="folder-toggle">${isCollapsed ? '▶' : '▼'}</span>
+        <span class="folder-icon">${isCollapsed ? '📁' : '📂'}</span>
+        <span class="folder-name-text">${escHtml(folderName)}</span>
+        <span class="folder-row-actions">
+          <button class="folder-action-btn" data-action="rename" title="Umbenennen">✏</button>
+          <button class="folder-action-btn" data-action="delete" title="Ordner löschen" style="color:#f87171;">🗑</button>
+        </span>
+      `;
+      folderRow.addEventListener('dragover', e => { e.preventDefault(); folderRow.classList.add('drag-over'); });
+      folderRow.addEventListener('dragleave', () => folderRow.classList.remove('drag-over'));
+      folderRow.addEventListener('drop', e => {
+        e.preventDefault(); folderRow.classList.remove('drag-over');
+        const fp = e.dataTransfer.getData('filePath');
+        if (fp) moveFileToFolder(module, fp, folderName);
+      });
+      folderRow.addEventListener('click', e => {
+        const btn = e.target.closest('.folder-action-btn');
+        if (btn) {
+          e.stopPropagation();
+          if (btn.dataset.action === 'delete') { deleteFolder(module, folderName); return; }
+          if (btn.dataset.action === 'rename') {
+            // Inline rename
+            const nameSpan = folderRow.querySelector('.folder-name-text');
+            const input = document.createElement('input');
+            input.className = 'folder-rename-input';
+            input.value = folderName;
+            nameSpan.replaceWith(input);
+            input.focus(); input.select();
+            const commit = () => { renameFolder(module, folderName, input.value); };
+            input.addEventListener('keydown', e2 => {
+              if (e2.key === 'Enter') commit();
+              if (e2.key === 'Escape') renderWorkspaceFiles(state.moduleFiles);
+            });
+            input.addEventListener('blur', commit);
             return;
           }
-          openFile(file);
-        });
-        filesPanel.appendChild(row);
+        }
+        toggleFolderCollapse(module, folderName);
       });
+      filesPanel.appendChild(folderRow);
+
+      // Folder contents (hidden when collapsed)
+      if (!isCollapsed) {
+        folderFiles.forEach(f => filesPanel.appendChild(makeFileRow(f, true)));
+      }
     });
+
+    // Render root files (not assigned to any folder) — below folders
+    files.filter(f => !assignedPaths.has(f.relative_path || f.name))
+         .forEach(f => rootZone.appendChild(makeFileRow(f, false)));
+    filesPanel.appendChild(rootZone);
   }
 
   // Summaries section
@@ -3295,7 +3640,6 @@ async function renderRoadmapView(vp, tab) {
       persistWorkspace();
       renderPanes();
     });
-    if (data) renderDailyPanel(topbar);
 
     // Pending diff banner — if a generation is parked
     if (state.roadmapPending) {
@@ -3359,24 +3703,103 @@ async function renderRoadmapView(vp, tab) {
   }
 }
 
-function renderDailyPanel(container) {
-  const plan = state.dailyPlan;
-  const allDone = plan && plan.progress && plan.progress.total > 0 &&
-    plan.progress.done === plan.progress.total;
-  const canGenerate = !plan || allDone;
+// ── Daily Tasks view ────────────────────────────────────────────────────────
 
-  let progressHtml = '';
-  if (plan && plan.progress) {
-    const { done, total } = plan.progress;
-    progressHtml = `<span class="tagesplan-progress">${done}/${total} Tasks erledigt</span>`;
+function openDailyTab(paneIdx) {
+  if (paneIdx == null) paneIdx = state.focusedPane;
+  if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
+  const pane = state.panes[paneIdx];
+  const path = 'daily:current';
+  let tab = pane.tabs.find(t => t.path === path);
+  if (!tab) {
+    tab = { path, kind: 'daily', name: 'Tagesplan', view: 'daily' };
+    pane.tabs.push(tab);
+  }
+  pane.activeTab = path;
+  state.focusedPane = paneIdx;
+  persistWorkspace();
+  renderPanes();
+}
+
+async function renderDailyView(vp, tab) {
+  const p = document.createElement('div');
+  p.className = 'view-pane view-daily active';
+  vp.appendChild(p);
+
+  // Load fresh daily plan, review tasks, and roadmap (needed for file chips)
+  if (state.moduleName) {
+    try {
+      const fetches = [
+        fetch(`/daily/${encodeURIComponent(state.moduleName)}`),
+        fetch(`/daily/${encodeURIComponent(state.moduleName)}/review?count=3`),
+      ];
+      if (!state.roadmap) fetches.push(fetch(`/roadmap/${encodeURIComponent(state.moduleName)}`));
+      const [dpRes, revRes, rmRes] = await Promise.all(fetches);
+      if (dpRes.ok) {
+        const data = await dpRes.json();
+        state.dailyPlan = data.exists === false ? null : data;
+      }
+      if (revRes && revRes.ok) {
+        const revData = await revRes.json();
+        state.dailyReview = revData.tasks || [];
+      }
+      if (rmRes) {
+        const rmData = await rmRes.json();
+        if (rmData.exists) state.roadmap = rmData;
+      }
+    } catch {}
   }
 
-  const panel = document.createElement('div');
-  panel.className = 'tagesplan-panel';
-  panel.id = 'tagesplan-panel';
-  panel.innerHTML = `
-    <div class="tagesplan-panel-title">Tagesplan</div>
-    <div class="tagesplan-controls">
+  const topbar = document.createElement('div');
+  topbar.className = 'daily-topbar';
+  p.appendChild(topbar);
+
+  const contentRow = document.createElement('div');
+  contentRow.className = 'daily-content-row';
+  p.appendChild(contentRow);
+
+  const board = document.createElement('div');
+  board.className = 'daily-board';
+  board.id = 'daily-board';
+  contentRow.appendChild(board);
+
+  const reviewPanel = document.createElement('div');
+  reviewPanel.className = 'daily-review-panel';
+  reviewPanel.id = 'daily-review-panel';
+  contentRow.appendChild(reviewPanel);
+
+  _renderDailyTopbar(topbar);
+  _renderDailyBoard(board);
+  _renderDailyReview(reviewPanel);
+}
+
+function refreshDailyView() {
+  const topbar = document.querySelector('.daily-topbar');
+  if (topbar) _renderDailyTopbar(topbar);
+  const board = document.getElementById('daily-board');
+  if (board) _renderDailyBoard(board);
+}
+
+function _renderDailyTopbar(container) {
+  const plan = state.dailyPlan;
+  const mainTasks = (plan?.topics || [])
+    .filter(t => !t.id.endsWith('_review'))
+    .flatMap(t => t.tasks || []);
+  const allDone = mainTasks.length > 0 && mainTasks.every(t => t.done);
+  const canGenerate = !plan || allDone;
+  const done = mainTasks.filter(t => t.done).length;
+  const total = mainTasks.length;
+  const pct = total ? (done / total * 100).toFixed(1) : 0;
+
+  container.innerHTML = `
+    <div class="daily-topbar-row1">
+      <span class="daily-topbar-title">Tagesplan · ${escHtml(state.moduleName || '')}</span>
+      <span class="daily-progress-label">${done}/${total} erledigt</span>
+    </div>
+    <div class="daily-progress-track">
+      <div class="daily-progress-fill" style="width:${pct}%"></div>
+    </div>
+    <div class="daily-topbar-row2">
       <span class="tagesplan-hours-label">Lernzeit heute:</span>
       <input class="tagesplan-hours-input" id="tp-hours" type="number"
              min="0.5" max="12" step="0.5"
@@ -3387,26 +3810,108 @@ function renderDailyPanel(container) {
         <button class="tagesplan-mode-btn ${state.dailyMode === 'grob' ? 'active' : ''}"
                 id="tp-mode-grob">Grob</button>
       </div>
-      <button class="tagesplan-generate-btn" id="tp-generate"
-              ${canGenerate ? '' : 'disabled'}>
+      <button class="tagesplan-generate-btn" id="tp-generate" ${canGenerate ? '' : 'disabled'}>
         ✦ Tagesplan generieren
       </button>
+      <button class="tagesplan-clear-history-btn" id="tp-clear-history" title="Erledigten Task-Verlauf löschen">
+        Verlauf löschen
+      </button>
     </div>
-    ${progressHtml}
   `;
-  container.appendChild(panel);
 
-  panel.querySelector('#tp-mode-konkret').addEventListener('click', () => {
+  container.querySelector('#tp-mode-konkret').addEventListener('click', () => {
     state.dailyMode = 'konkret';
-    panel.querySelector('#tp-mode-konkret').classList.add('active');
-    panel.querySelector('#tp-mode-grob').classList.remove('active');
+    container.querySelector('#tp-mode-konkret').classList.add('active');
+    container.querySelector('#tp-mode-grob').classList.remove('active');
   });
-  panel.querySelector('#tp-mode-grob').addEventListener('click', () => {
+  container.querySelector('#tp-mode-grob').addEventListener('click', () => {
     state.dailyMode = 'grob';
-    panel.querySelector('#tp-mode-grob').classList.add('active');
-    panel.querySelector('#tp-mode-konkret').classList.remove('active');
+    container.querySelector('#tp-mode-grob').classList.add('active');
+    container.querySelector('#tp-mode-konkret').classList.remove('active');
   });
-  panel.querySelector('#tp-generate').addEventListener('click', generateDailyPlan);
+  container.querySelector('#tp-generate').addEventListener('click', generateDailyPlan);
+  container.querySelector('#tp-clear-history').addEventListener('click', clearDailyHistory);
+}
+
+function _renderDailyBoard(container) {
+  const plan = state.dailyPlan;
+  if (!plan || !(plan.topics || []).length) {
+    container.innerHTML = `<div class="daily-empty-state">
+      <div class="daily-empty-icon">📋</div>
+      <div>Noch kein Tagesplan erstellt.<br>Klick auf "✦ Tagesplan generieren".</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  let reviewDividerAdded = false;
+  (plan.topics || []).forEach(topic => {
+    const isReview = topic.id.endsWith('_review');
+    if (isReview && !reviewDividerAdded) {
+      reviewDividerAdded = true;
+      const divider = document.createElement('div');
+      divider.className = 'daily-review-divider';
+      divider.textContent = '— Wiederholung —';
+      container.appendChild(divider);
+    }
+    const allTasksDone = (topic.tasks || []).length > 0 && (topic.tasks || []).every(t => t.done);
+    const card = document.createElement('div');
+    card.className = 'daily-card' + (allTasksDone ? ' all-done' : '') + (isReview ? ' daily-card-review' : '');
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'daily-card-header';
+    header.textContent = topic.name;
+    card.appendChild(header);
+
+    // File chips — shown directly below header so they're always visible
+    const rmTopic = findRoadmapTopic(topic.id)?.topic;
+    const files = rmTopic?.dateien || [];
+    if (files.length) {
+      const chips = document.createElement('div');
+      chips.className = 'daily-card-files';
+      files.forEach(name => {
+        const btn = document.createElement('button');
+        btn.className = 'daily-file-chip';
+        btn.innerHTML = `📄 ${escHtml(name)}`;
+        const match = (state.moduleFiles || []).find(f =>
+          f.name.toLowerCase() === name.toLowerCase() ||
+          f.name.toLowerCase().includes(name.toLowerCase()) ||
+          name.toLowerCase().includes(f.name.toLowerCase().replace(/\.[^.]+$/, ''))
+        );
+        btn.addEventListener('click', () => {
+          if (match) openFile(match);
+          else addMsg('agent', `Datei „${name}" nicht im Modul gefunden.`);
+        });
+        chips.appendChild(btn);
+      });
+      card.appendChild(chips);
+    }
+
+    // Tasks
+    const tasks = document.createElement('div');
+    tasks.className = 'daily-card-tasks';
+    (topic.tasks || []).forEach((task, idx) => {
+      const label = document.createElement('label');
+      label.className = 'daily-task-item';
+      label.innerHTML = `
+        <input class="daily-task-cb" type="checkbox" ${task.done ? 'checked' : ''}
+               data-tid="${escHtml(topic.id)}" data-idx="${idx}">
+        <span class="daily-task-text${task.done ? ' done' : ''}">${escHtml(task.text)}</span>
+      `;
+      tasks.appendChild(label);
+    });
+    card.appendChild(tasks);
+
+    container.appendChild(card);
+  });
+
+  // Bind task checkboxes
+  container.querySelectorAll('.daily-task-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      toggleDailyTask(cb.dataset.tid, parseInt(cb.dataset.idx, 10), cb.checked);
+    });
+  });
 }
 
 async function generateDailyPlan() {
@@ -3429,20 +3934,80 @@ async function generateDailyPlan() {
     }
     const data = await res.json();
     state.dailyPlan = data.exists === false ? null : data;
-
-    // Replace panel in-place
-    const existingPanel = document.getElementById('tagesplan-panel');
-    if (existingPanel) {
-      const parent = existingPanel.parentElement;
-      existingPanel.remove();
-      renderDailyPanel(parent);
-    }
-    paintRoadmapDetail();
+    refreshDailyView();
   } catch (err) {
     addMsg('agent', `❌ Netzwerkfehler: ${err.message}`);
   } finally {
     const btn = document.getElementById('tp-generate');
     if (btn) { btn.textContent = '✦ Tagesplan generieren'; }
+  }
+}
+
+function _renderDailyReview(container) {
+  const tasks = state.dailyReview || [];
+  container.innerHTML = `
+    <div class="daily-review-panel-header">
+      <span>Abgeschlossene Tasks</span>
+    </div>
+  `;
+
+  if (!tasks.length) {
+    const empty = document.createElement('div');
+    empty.className = 'daily-review-empty';
+    empty.textContent = 'Erledige Aufgaben — sie erscheinen hier.';
+    container.appendChild(empty);
+    return;
+  }
+
+  tasks.forEach(entry => {
+    const isNew = entry.isNew === true;
+    entry.isNew = false;
+
+    const card = document.createElement('div');
+    card.className = 'daily-card daily-review-card' + (isNew ? ' daily-review-item-new' : '');
+
+    const header = document.createElement('div');
+    header.className = 'daily-card-header';
+    header.textContent = entry.topic_name || entry.topic_id;
+    card.appendChild(header);
+
+    const taskList = document.createElement('div');
+    taskList.className = 'daily-card-tasks';
+
+    const item = document.createElement('div');
+    item.className = 'daily-review-task';
+    item.innerHTML = `
+      <span class="daily-review-task-icon">✓</span>
+      <div>
+        <div>${escHtml(entry.task_text || '')}</div>
+        ${entry.completed_date ? `<div class="daily-review-task-date">${escHtml(entry.completed_date)}</div>` : ''}
+      </div>
+    `;
+    taskList.appendChild(item);
+    card.appendChild(taskList);
+    container.appendChild(card);
+  });
+}
+
+
+async function clearDailyHistory() {
+  if (!state.moduleName) return;
+  if (!confirm('Gesamten erledigten Task-Verlauf für dieses Modul löschen?')) return;
+  const btn = document.getElementById('tp-clear-history');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/history`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      addMsg('agent', '❌ Verlauf konnte nicht gelöscht werden.');
+      return;
+    }
+    addMsg('agent', '✓ Task-Verlauf gelöscht.');
+  } catch (err) {
+    addMsg('agent', `❌ Netzwerkfehler: ${err.message}`);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -3455,30 +4020,34 @@ async function toggleDailyTask(topicId, taskIndex, done) {
       body: JSON.stringify({ topic_id: topicId, task_index: taskIndex, done }),
     });
     if (!res.ok) { console.warn('[daily] toggle failed'); return; }
-    const data = await res.json();
-    // Update local task state first
     if (state.dailyPlan) {
       const t = (state.dailyPlan.topics || []).find(t => t.id === topicId);
       if (t && t.tasks[taskIndex] !== undefined) t.tasks[taskIndex].done = done;
-      // Recalculate progress locally — don't rely on server response alone
       let doneCnt = 0, totalCnt = 0;
       for (const topic of state.dailyPlan.topics || []) {
+        if (topic.id.endsWith('_review')) continue;
         for (const task of topic.tasks || []) { totalCnt++; if (task.done) doneCnt++; }
       }
       state.dailyPlan.progress = { done: doneCnt, total: totalCnt };
-    }
-    // Refresh panel counter and generate-button state
-    const prog = state.dailyPlan?.progress;
-    if (prog) {
-      const pEl = document.querySelector('#tagesplan-panel .tagesplan-progress');
-      if (pEl) pEl.textContent = `${prog.done}/${prog.total} Tasks erledigt`;
-      const genBtn = document.getElementById('tp-generate');
-      if (genBtn) {
-        const allDone = prog.total > 0 && prog.done === prog.total;
-        genBtn.disabled = !(allDone || !state.dailyPlan);
+
+      // Live-update the Wiederholung panel
+      const taskText = t?.tasks[taskIndex]?.text || '';
+      if (done) {
+        const newEntry = {
+          topic_id: topicId,
+          topic_name: t?.name || topicId,
+          task_text: taskText,
+          completed_date: new Date().toLocaleDateString('de-DE'),
+          isNew: true,
+        };
+        state.dailyReview = [newEntry, ...state.dailyReview.filter(e => e.task_text !== taskText)].slice(0, 3);
+      } else {
+        state.dailyReview = state.dailyReview.filter(e => e.task_text !== taskText);
       }
+      const panel = document.getElementById('daily-review-panel');
+      if (panel) _renderDailyReview(panel);
     }
-    paintRoadmapDetail();
+    refreshDailyView();
   } catch (err) {
     console.warn('[daily] toggle error:', err);
   }
@@ -3497,12 +4066,12 @@ function renderRoadmapPhaseList(host, data) {
       return `<button class="rm-pl-topic status-${escHtml(t.status||'todo')}" data-tid="${escHtml(t.id)}">
         <div class="rm-pl-prio-stripe ${escHtml(rel)}"></div>
         <div class="rm-pl-card-body">
-          <span class="rm-pl-name">${escHtml(t.name)}</span>
-        </div>
+              <span class="rm-pl-name">${escHtml(t.name)}</span>
+            </div>
       </button>`;
     }).join('');
     const arrow = i < phases.length - 1
-      ? `<div class="rm-pl-phase-arrow"><svg width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><line x1="10" y1="0" x2="10" y2="16" stroke="rgba(255,255,255,0.12)" stroke-width="1"/><polyline points="6,12 10,18 14,12" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/></svg></div>`
+      ? `<div class="rm-pl-phase-arrow"><svg class="rm-phase-arrow-svg" width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><line x1="10" y1="0" x2="10" y2="16"/><polyline points="6,12 10,18 14,12" fill="none"/></svg></div>`
       : '';
     return `<div class="rm-pl-phase">
       <div class="rm-pl-phase-header">
@@ -3535,6 +4104,38 @@ function findRoadmapTopic(topicId) {
   return null;
 }
 
+function _bindDetailTaskCbs(container) {
+  container.querySelectorAll('.daily-task-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      toggleDailyTask(cb.dataset.tid, parseInt(cb.dataset.idx, 10), cb.checked);
+    });
+  });
+}
+
+function _buildDailyTasksHtml() {
+  const plan = state.dailyPlan;
+  if (!plan || !(plan.topics || []).length) return '';
+  const topicBlocks = (plan.topics || []).map(topic => {
+    const taskItems = (topic.tasks || []).map((task, idx) => {
+      const checked = task.done ? 'checked' : '';
+      const doneClass = task.done ? ' done' : '';
+      return `<label class="daily-task-item">
+        <input class="daily-task-cb" type="checkbox" ${checked}
+               data-tid="${escHtml(topic.id)}" data-idx="${idx}">
+        <span class="daily-task-text${doneClass}">${escHtml(task.text)}</span>
+      </label>`;
+    }).join('');
+    return `<div class="tagesplan-topic-block">
+      <div class="tagesplan-topic-name">${escHtml(topic.name)}</div>
+      <div class="daily-tasks-section">${taskItems}</div>
+    </div>`;
+  }).join('');
+  return `<div class="topic-section rm-daily-all">
+    <div class="topic-section-label">Heutige Tasks</div>
+    <div class="tagesplan-task-list">${topicBlocks}</div>
+  </div>`;
+}
+
 function paintRoadmapDetail() {
   const detail = document.getElementById('rm-detail');
   if (!detail) return;
@@ -3555,15 +4156,10 @@ function paintRoadmapDetail() {
       <span class="topic-hours-pill">~${t.hours}h</span>
       <span class="topic-hours-pill" style="opacity:0.7;">${escHtml(found.phase.title)}</span>
     </div>`);
-  const dailyOpenCount = (state.dailyPlan?.topics || []).find(dt => dt.id === t.id)
-    ?.tasks?.filter(tk => !tk.done)?.length || 0;
-  const doneLocked = dailyOpenCount > 0;
-  const doneLockedAttr = doneLocked ? ' done-locked' : '';
-  const doneTitle = doneLocked ? ` title="Noch ${dailyOpenCount} Tasks offen"` : '';
   sections.push(`<div class="status-switcher" data-tid="${escHtml(t.id)}">
       <button class="status-btn todo  ${t.status === 'todo'  ? 'active' : ''}" data-status="todo">○ Offen</button>
       <button class="status-btn doing ${t.status === 'doing' ? 'active' : ''}" data-status="doing">◐ Dran</button>
-      <button class="status-btn done  ${t.status === 'done'  ? 'active' : ''}${doneLockedAttr}" data-status="done"${doneTitle}>● Fertig</button>
+      <button class="status-btn done  ${t.status === 'done'  ? 'active' : ''}" data-status="done">● Fertig</button>
     </div>`);
   if (t.bedeutung) {
     sections.push(`<div class="topic-section">
@@ -3596,35 +4192,10 @@ function paintRoadmapDetail() {
       </div>`);
   }
 
-  // "Heutige Tasks" — only when the active daily plan has tasks for this topic
-  const dailyTopicData = (state.dailyPlan?.topics || []).find(dt => dt.id === t.id);
-  if (dailyTopicData && dailyTopicData.tasks && dailyTopicData.tasks.length > 0) {
-    const taskItemsHtml = dailyTopicData.tasks.map((task, idx) => {
-      const checked = task.done ? 'checked' : '';
-      const doneClass = task.done ? ' done' : '';
-      return `<label class="daily-task-item">
-        <input class="daily-task-cb" type="checkbox" ${checked}
-               data-tid="${escHtml(t.id)}" data-idx="${idx}">
-        <span class="daily-task-text${doneClass}">${escHtml(task.text)}</span>
-      </label>`;
-    }).join('');
-    sections.push(`<div class="topic-section">
-      <div class="topic-section-label">Heutige Tasks</div>
-      <div class="daily-tasks-section" id="rm-daily-tasks">${taskItemsHtml}</div>
-    </div>`);
-  }
-
   detail.style.animation = 'none';
   void detail.offsetWidth;
   detail.style.animation = 'viewIn 0.2s cubic-bezier(0.4,0,0.2,1)';
   detail.innerHTML = sections.join('');
-
-  // Daily task checkboxes
-  detail.querySelectorAll('.daily-task-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      toggleDailyTask(cb.dataset.tid, parseInt(cb.dataset.idx, 10), cb.checked);
-    });
-  });
 
   // File-link buttons: try to match by name to actual module files; click opens in pane.
   const filesEl = detail.querySelector('#rm-detail-files');
@@ -3653,9 +4224,9 @@ function paintRoadmapDetail() {
 }
 
 function labelPrio(p) {
-  if (p === 'high' || p === 'must_know' || p === 'hoch')        return '🔴 Hoch';
-  if (p === 'low'  || p === 'nice_to_have' || p === 'niedrig')  return '🟢 Niedrig';
-  return '🟡 Mittel';
+  if (p === 'high' || p === 'must_know' || p === 'hoch')       return '<span class="prio-dot high"></span>Hoch';
+  if (p === 'low'  || p === 'nice_to_have' || p === 'niedrig') return '<span class="prio-dot low"></span>Niedrig';
+  return '<span class="prio-dot medium"></span>Mittel';
 }
 
 function recolorMermaidNode(topicId, status) {
@@ -3706,12 +4277,6 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      if (res.status === 403) {
-        await loadRoadmapForCurrentModule();
-        paintRoadmapDetail();
-        addMsg('agent', `🔒 ${errData.detail || 'Erst alle Tasks abhaken.'}`);
-        return;
-      }
       throw new Error(errData.detail || 'Status-Update fehlgeschlagen');
     }
 
@@ -4085,7 +4650,7 @@ function persistWorkspace() {
   try {
     const data = {
       panes: state.panes.map(p => p ? {
-        tabs: p.tabs.filter(t => t.kind !== 'solution'),
+        tabs: p.tabs,
         activeTab: p.activeTab,
       } : null),
       focusedPane: state.focusedPane,
@@ -4097,16 +4662,26 @@ function persistWorkspace() {
 function restoreWorkspace(moduleName) {
   state.panes = [{ tabs: [], activeTab: '' }, null];
   state.focusedPane = 0;
+
+  // Always restore solved sheets, even if no tab workspace was saved
+  try {
+    const solRaw = localStorage.getItem(`studyAgent.solutions.${moduleName}`);
+    if (solRaw) state.solvedSheets = JSON.parse(solRaw);
+  } catch {}
+
   try {
     const raw = localStorage.getItem(`studyAgent.ws.${moduleName}`);
     if (!raw) return;
     const parsed = JSON.parse(raw);
     const validPaths = new Set((state.moduleFiles || []).map(f => f.relative_path || f.name));
     const validSummaryPaths = new Set((state.summariesByModule[moduleName] || []).map(s => `summary:${s.path}`));
+    const validProbeklausurPaths = new Set((state.probeklausuren || []).map(e => `probeklausur:${e.n}`));
     function isValid(t) {
       if (!t || !t.path) return false;
-      if (t.kind === 'roadmap') return false;
+      if (t.kind === 'roadmap' || t.kind === 'daily') return false;
       if (t.kind === 'summary') return validSummaryPaths.has(t.path);
+      if (t.kind === 'probeklausur') return validProbeklausurPaths.has(t.path);
+      if (t.kind === 'solution') return validPaths.has(t.path.slice('solution:'.length));
       return validPaths.has(t.path);
     }
     const restored = [null, null];
@@ -4260,8 +4835,7 @@ function buildViewBar(pane, paneIdx) {
     lbl.style.cursor = 'default';
     lbl.textContent = '⚡ Lösung';
     bar.appendChild(lbl);
-  } else if (activeTab.kind === 'roadmap') {
-    // Roadmap: viewport itself contains topbar — keep view-bar minimal.
+  } else if (activeTab.kind === 'roadmap' || activeTab.kind === 'daily') {
     bar.classList.add('hidden');
     return bar;
   }
@@ -4315,6 +4889,8 @@ function buildViewport(pane, paneIdx) {
 
   if (tab.kind === 'roadmap') {
     renderRoadmapView(vp, tab);
+  } else if (tab.kind === 'daily') {
+    renderDailyView(vp, tab);
   } else if (tab.kind === 'probeklausur') {
     renderProbeklausurView(vp, tab);
   } else if (tab.kind === 'summary') {
@@ -4606,6 +5182,8 @@ function initRail() {
 
   // Close drawer on outside click (but not when clicking rail or drawer itself)
   document.addEventListener('click', e => {
+    // If the clicked element was removed from DOM during event handling (e.g. folder re-render), ignore
+    if (!e.target.isConnected) return;
     const rail = document.getElementById('ws-rail');
     if (drawer.classList.contains('open') && !drawer.contains(e.target) && !rail.contains(e.target)) {
       closeDrawer();
@@ -4615,11 +5193,10 @@ function initRail() {
   // Chat tab toggles right panel
   tabChat.addEventListener('click', () => toggleRightPanel());
 
-  // Roadmap + PK tabs: their existing listeners on #roadmap-btn and #pk-btn already fire.
-  // We just need to mark them active visually. Handle in their existing listeners via
-  // a light wrapper that sets active state.
+  // Roadmap + PK + Daily tabs
   const tabRoadmap = document.getElementById('roadmap-btn');
   const tabPk      = document.getElementById('pk-btn');
+  const tabDaily   = document.getElementById('daily-btn');
   [tabRoadmap, tabPk].forEach(tab => {
     if (!tab) return;
     tab.addEventListener('click', () => {
@@ -4627,6 +5204,13 @@ function initRail() {
       tab.classList.add('active');
     });
   });
+  if (tabDaily) {
+    tabDaily.addEventListener('click', () => {
+      document.querySelectorAll('.rail-tab').forEach(t => t !== tabFiles && t !== tabChat && t.classList.remove('active'));
+      tabDaily.classList.add('active');
+      openDailyTab();
+    });
+  }
 }
 
 // ── Splitter drag ──────────────────────────────────────────────────────────────
@@ -5271,7 +5855,8 @@ function renderAndShowRoadmap(rm) {
 
   const prog = rm.progress || {todo:0, doing:0, done:0};
   const total = (prog.todo||0) + (prog.doing||0) + (prog.done||0);
-  const totalHours = (rm.phases||[]).reduce((s,p) => s + (p.topics||[]).reduce((ts,t) => ts + (parseFloat(t.hours)||0), 0), 0);
+  const totalHoursRaw = (rm.phases||[]).reduce((s,p) => s + (p.topics||[]).reduce((ts,t) => ts + (parseFloat(t.hours)||0), 0), 0);
+  const totalHours = Math.round(totalHoursRaw * 10) / 10;
 
   document.getElementById('roadmap-brand-title').textContent = state.moduleName || 'Lernplan';
   document.getElementById('roadmap-brand-sub').textContent =
@@ -5288,7 +5873,6 @@ function renderAndShowRoadmap(rm) {
     rm.exam_date ? `Prüfung: ${rm.exam_date}` : null,
   ].filter(Boolean).map(s => `<span class="roadmap-stat">${escHtml(s)}</span>`).join('');
   goal.innerHTML = `
-    <span class="roadmap-goal-icon">🎯</span>
     <div class="roadmap-goal-title">${escHtml(state.moduleName || 'Lernplan')}</div>
     <div class="roadmap-goal-meta">${prog.done||0} fertig · ${prog.doing||0} aktiv · ${prog.todo||0} offen</div>
     ${statsHtml ? `<div class="roadmap-goal-stats">${statsHtml}</div>` : ''}
@@ -5297,14 +5881,14 @@ function renderAndShowRoadmap(rm) {
 
   // Priority / status helpers
   const prioMap = {
-    must_know:    { cls: 'priority-must', label: '🔴 Pflicht' },
-    high:         { cls: 'priority-must', label: '🔴 Pflicht' },
-    good_to_know: { cls: 'priority-good', label: '🟡 Wichtig' },
-    medium:       { cls: 'priority-good', label: '🟡 Wichtig' },
-    nice_to_have: { cls: 'priority-nice', label: '🟢 Optional' },
-    low:          { cls: 'priority-nice', label: '🟢 Optional' },
+    must_know:    { cls: 'priority-must', label: '<span class="prio-dot high"></span>Pflicht' },
+    high:         { cls: 'priority-must', label: '<span class="prio-dot high"></span>Pflicht' },
+    good_to_know: { cls: 'priority-good', label: '<span class="prio-dot medium"></span>Wichtig' },
+    medium:       { cls: 'priority-good', label: '<span class="prio-dot medium"></span>Wichtig' },
+    nice_to_have: { cls: 'priority-nice', label: '<span class="prio-dot low"></span>Optional' },
+    low:          { cls: 'priority-nice', label: '<span class="prio-dot low"></span>Optional' },
   };
-  const statusIcon = { todo: '⬜', doing: '🔄', done: '✅' };
+  const statusIcon = { todo: '○', doing: '◑', done: '●' };
 
   // Phases
   (rm.phases || []).forEach((phase, idx) => {
@@ -5326,7 +5910,7 @@ function renderAndShowRoadmap(rm) {
 
     const grid = section.querySelector(`#rm-grid-${idx}`);
     (phase.topics || []).forEach(t => {
-      const prio = prioMap[t.pruefungsrelevanz] || { cls: 'priority-good', label: '🟡 Wichtig' };
+      const prio = prioMap[t.pruefungsrelevanz] || { cls: 'priority-good', label: '<span class="prio-dot medium"></span>Wichtig' };
       const card = document.createElement('div');
       card.className = `roadmap-topic-card ${prio.cls}`;
 
@@ -5335,7 +5919,7 @@ function renderAndShowRoadmap(rm) {
       const tipHtml  = t.warum_relevant ? `<div class="topic-exam-tip">💡 ${escHtml(t.warum_relevant)}</div>` : '';
       const srcHtml  = t.dateien?.length
         ? `<div class="topic-sources">${t.dateien.map(s => `<span class="topic-source">${escHtml(s)}</span>`).join('')}</div>` : '';
-      const icon = statusIcon[t.status] || '⬜';
+      const icon = statusIcon[t.status] || '○';
 
       card.innerHTML = `
         <div class="topic-card-top">

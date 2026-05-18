@@ -66,7 +66,7 @@ ANTWORT-FORMAT (NUR valides JSON, keine Markdown-Codeblöcke, kein Kommentar):
           "name": "Logik-Grundlagen",
           "relevance": "high|medium|low",
           "status": "done|in_progress|open",
-          "hours": 1.5,
+          "hours": 2,
           "summary": "Was das Thema ist (1 Satz)",
           "exam_relevance_reason": "Warum prüfungsrelevant (1 Satz)",
           "subtopics": ["Unterthema 1", "Unterthema 2"],
@@ -98,9 +98,10 @@ Status ("status"):
 - Status darf NUR aus alter Roadmap übernommen werden — erfinde keinen Fortschritt.
 
 Zeitschätzung ("hours"):
-- Einfaches Faktenwissen / Definition: 0.5–1h
-- Konzept mit Anwendung: 1.5–3h
-- Komplexes Thema mit Beweisen / Implementierung: 3–6h
+- Nur ganze Zahlen (1, 2, 3, ...), keine Dezimalzahlen.
+- Einfaches Faktenwissen / Definition: 1–2h
+- Konzept mit Anwendung: 2–4h
+- Komplexes Thema mit Beweisen / Implementierung: 4–8h
 
 Prüfungsrelevanz ("relevance"):
 - "high": direkt klausurrelevant laut Materialien, Klausurdateien oder typischem Prüfungsprofil
@@ -212,6 +213,48 @@ def generate(
     return json.loads(text)
 
 
+# ─────────────────────── Hour scaling ──────────────────────────────────────
+
+def scale_hours_to_exam_date(
+    data: Dict[str, Any],
+    exam_date: str,
+    daily_study_hours: float = 8.0,
+) -> Dict[str, Any]:
+    """
+    Rescale topic hours so they sum to (remaining_days × daily_study_hours).
+
+    Uses the LLM's raw hours as proportional weights and distributes the
+    total available study time (days × 8h) across topics as whole hours.
+    """
+    if not exam_date:
+        return data
+
+    try:
+        exam_dt = date.fromisoformat(exam_date.strip())
+    except ValueError:
+        return data
+
+    remaining_days = max(1, (exam_dt - date.today()).days)
+    total_available = remaining_days * daily_study_hours
+
+    all_topics = [
+        topic
+        for phase in (data.get("phases") or [])
+        for topic in (phase.get("topics") or [])
+    ]
+    if not all_topics:
+        return data
+
+    total_raw = sum(max(float(t.get("hours") or 1.0), 0.1) for t in all_topics)
+
+    for topic in all_topics:
+        raw = max(float(topic.get("hours") or 1.0), 0.1)
+        scaled = max(1, round(raw / total_raw * total_available))
+        topic["hours"] = scaled
+
+    return data
+
+
 # ──────────────────────────── Markdown render ───────────────────────────────
 
 def _safe_mermaid_label(name: str) -> str:
@@ -278,9 +321,9 @@ def render_md(module_name: str, data: Dict[str, Any]) -> str:
             # LLM returns 'relevance'; fall back to German key for old data
             prio = str(topic.get("relevance") or topic.get("pruefungsrelevanz") or "medium").strip()
             try:
-                hours = float(topic.get("hours") or 1.0)
+                hours = max(1, round(float(topic.get("hours") or 1.0)))
             except (TypeError, ValueError):
-                hours = 1.0
+                hours = 1
             out.append(f"### {name} <!-- id:{tid} status:todo prio:{prio} h:{hours} -->")
             # LLM returns 'summary'; fall back to 'bedeutung' for old data
             bedeutung = (topic.get("summary") or topic.get("bedeutung") or "").strip()
@@ -368,9 +411,9 @@ def parse_md(md: str) -> Dict[str, Any]:
         tm = _TOPIC_HEADING_RE.match(line)
         if tm and current_phase is not None:
             try:
-                hours = float(tm.group("h"))
+                hours = max(1, round(float(tm.group("h"))))
             except ValueError:
-                hours = 1.0
+                hours = 1
             current_topic = {
                 "id": tm.group("id"),
                 "name": tm.group("name").strip(),

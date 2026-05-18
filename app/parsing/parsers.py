@@ -1,9 +1,25 @@
 """Document parsers for supported file types."""
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+from app.parsing import ocr as _ocr
 
 logger = logging.getLogger(__name__)
+
+_OCR_THRESHOLD = 20      # chars — below this a page is treated as image-based
+_SPACE_RATIO_MIN = 0.05  # space-to-char ratio — below this the text is likely garbled
+
+_openai_client = None
+
+
+def _get_openai_client():
+    global _openai_client
+    if _openai_client is None:
+        from openai import OpenAI
+        _openai_client = OpenAI()
+    return _openai_client
 
 try:
     import ftfy
@@ -54,18 +70,54 @@ class ParseResult:
 
 
 def parse_pdf(file_path: Path) -> ParseResult:
-    """Parse PDF file using pypdf."""
+    """Parse PDF file using pypdf, with automatic GPT-4o OCR fallback for image-based pages."""
     try:
         from pypdf import PdfReader
 
         reader = PdfReader(str(file_path))
+        cache = _ocr.load_cache(file_path)
         text_parts = []
+        ocr_pages = 0
+        ocr_cached_pages = 0
+
+        # First pass: categorize pages — cached OCR, fresh OCR needed, or plain text
+        page_texts: Dict[int, str] = {}
+        ocr_needed: List[int] = []
 
         for page_num, page in enumerate(reader.pages, 1):
-            page_text = page.extract_text()
-            if page_text:
-                text_parts.append(f"[Page {page_num}]\n{fix_text(page_text)}")
+            page_text = (page.extract_text() or "").strip()
+            space_ratio = page_text.count(' ') / max(len(page_text), 1)
+            if len(page_text) < _OCR_THRESHOLD or space_ratio < _SPACE_RATIO_MIN:
+                key = str(page_num)
+                if key in cache:
+                    page_texts[page_num] = cache[key]
+                    ocr_cached_pages += 1
+                else:
+                    ocr_needed.append(page_num)
+            else:
+                page_texts[page_num] = page_text
 
+        # Second pass: run all OCR pages in parallel (max 5 concurrent calls)
+        if ocr_needed:
+            client = _get_openai_client()
+            with ThreadPoolExecutor(max_workers=min(len(ocr_needed), 5)) as pool:
+                future_to_page = {
+                    pool.submit(_ocr.ocr_page, file_path, pn, client): pn
+                    for pn in ocr_needed
+                }
+                for future in as_completed(future_to_page):
+                    pn = future_to_page[future]
+                    text = future.result()
+                    page_texts[pn] = text
+                    cache[str(pn)] = text
+                    ocr_pages += 1
+
+        for page_num in sorted(page_texts):
+            text = page_texts[page_num]
+            if text:
+                text_parts.append(f"[Page {page_num}]\n{fix_text(text)}")
+
+        _ocr.save_cache(file_path, cache)
         extracted_text = "\n\n".join(text_parts)
 
         if not extracted_text.strip():
@@ -77,7 +129,11 @@ def parse_pdf(file_path: Path) -> ParseResult:
             file_type="pdf",
             extracted_text=extracted_text,
             success=True,
-            metadata={"page_count": len(reader.pages)}
+            metadata={
+                "page_count": len(reader.pages),
+                "ocr_pages": ocr_pages,
+                "ocr_cached_pages": ocr_cached_pages,
+            },
         )
     except Exception as e:
         logger.error(f"Failed to parse PDF {file_path}: {e}")

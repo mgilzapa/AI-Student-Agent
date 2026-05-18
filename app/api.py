@@ -6,6 +6,8 @@ import glob as _glob
 import re
 import shutil
 import tempfile
+import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional
 
@@ -435,6 +437,10 @@ async def roadmap_generate(body: RoadmapGenerateRequest):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Roadmap-Generation fehlgeschlagen: {exc}")
 
+    # Scale topic hours to reflect the available study time before the exam.
+    if body.exam_date:
+        rm.scale_hours_to_exam_date(data, body.exam_date)
+
     new_md = rm.render_md(body.module_name, data)
     _PENDING_ROADMAPS[body.module_name] = new_md
     return {
@@ -465,20 +471,16 @@ def roadmap_get(module_name: str):
     md = rm.load_roadmap_md(module_name)
     if not md:
         return {"exists": False}
-    return {"exists": True, **rm.parse_md(md)}
+    parsed = rm.parse_md(md)
+    if parsed.get("exam_date"):
+        rm.scale_hours_to_exam_date(parsed, parsed["exam_date"])
+    return {"exists": True, **parsed}
 
 
 @app.patch("/roadmap/{module_name}/topic/{topic_id}")
 def roadmap_update_status(module_name: str, topic_id: str, body: RoadmapStatusRequest):
     if body.status not in ("todo", "doing", "done"):
         raise HTTPException(status_code=400, detail="status muss todo|doing|done sein.")
-    if body.status == "done":
-        open_count = dt.has_open_tasks_for_topic(module_name, topic_id)
-        if open_count > 0:
-            raise HTTPException(
-                status_code=403,
-                detail=f"Noch {open_count} Tasks für dieses Topic offen.",
-            )
     md = rm.load_roadmap_md(module_name)
     if not md:
         raise HTTPException(status_code=404, detail="Keine Roadmap gefunden.")
@@ -539,7 +541,9 @@ async def upload_module(
     if not saved_paths:
         raise HTTPException(status_code=400, detail="Keine unterstuetzten Dateien hochgeladen.")
 
-    results = [process_document(path, config["processed_path"], skip_lecture_processing=True) for path in saved_paths]
+    with ThreadPoolExecutor(max_workers=min(len(saved_paths), 4)) as pool:
+        futures = {pool.submit(process_document, path, config["processed_path"], True): path for path in saved_paths}
+        results = [f.result() for f in as_completed(futures)]
     index_chunks(config)
 
     processed = sum(1 for result in results if result.get("parseSuccess"))
@@ -739,17 +743,29 @@ def delete_module(module_name: str):
     slug = _slug(clean_name)
     clean_lower = clean_name.lower()
 
-    # 1. Raw-Dateien löschen
+    # 1. OCR-Cache-Dateien löschen (vor raw, solange Dateinamen noch bekannt sind)
+    ocr_cache_dir = Path("data/processed/ocr")
     raw = module_dir(clean_name)
+    if raw.exists() and ocr_cache_dir.exists():
+        for f in raw.rglob("*"):
+            if f.is_file():
+                cache_file = ocr_cache_dir / f"{f.stem}.ocr.json"
+                if cache_file.exists():
+                    try:
+                        cache_file.unlink()
+                    except Exception:
+                        pass
+
+    # 2. Raw-Dateien löschen
     if raw.exists():
         shutil.rmtree(raw)
 
-    # 2. Intake-Dateien löschen
+    # 3. Intake-Dateien löschen
     intake_dir = config["raw_path"].parent / "intake" / clean_name
     if intake_dir.exists():
         shutil.rmtree(intake_dir)
 
-    # 3. ChromaDB-Embeddings löschen
+    # 4. ChromaDB-Embeddings löschen
     try:
         results = vector_store.collection.get(where={"module_name": clean_name})
         if results and results.get("ids"):
@@ -757,7 +773,7 @@ def delete_module(module_name: str):
     except Exception:
         pass
 
-    # 4. JSONL-Chunk-Dateien löschen (case-insensitiv)
+    # 5. JSONL-Chunk-Dateien löschen (case-insensitiv)
     chunks_dir = config["processed_path"] / "chunks"
     if chunks_dir.exists():
         for jsonl in list(chunks_dir.glob("*.jsonl")):
@@ -773,7 +789,7 @@ def delete_module(module_name: str):
             except Exception:
                 pass
 
-    # 5. Geparste Dokumente löschen (case-insensitiv)
+    # 6. Geparste Dokumente löschen (case-insensitiv)
     parsed_dir = config["processed_path"] / "parsed"
     if parsed_dir.exists():
         for jf in list(parsed_dir.glob("*.json")):
@@ -784,19 +800,24 @@ def delete_module(module_name: str):
             except Exception:
                 pass
 
-    # 6. Zusammenfassungen löschen
+    # 7. Zusammenfassungen löschen
     summaries_dir = Path("data/processed/summaries") / slug
     if summaries_dir.exists():
         shutil.rmtree(summaries_dir)
 
-    # 7. Modul-Profil löschen
+    # 8. Daily-Tasks löschen
+    daily_tasks_dir = Path("data/processed/daily_tasks") / slug
+    if daily_tasks_dir.exists():
+        shutil.rmtree(daily_tasks_dir)
+
+    # 9. Modul-Profil löschen
     modules_dir = Path("data/modules")
     for fname in [f"{slug}.json", f"{slug}-exam-profile.md", f"{slug}-history.md"]:
         f = modules_dir / fname
         if f.exists():
             f.unlink()
 
-    # 8. Roadmap löschen
+    # 10. Roadmap löschen
     roadmap_dir = Path("data/processed/roadmaps") / slug
     if roadmap_dir.exists():
         shutil.rmtree(roadmap_dir)
@@ -895,22 +916,21 @@ def daily_get(module_name: str):
 @app.post("/daily/{module_name}/generate")
 async def daily_generate(module_name: str, body: DailyGenerateRequest):
     """Generate a new daily plan. Archives old plan and applies carryover."""
-    clean = sanitize_module_name(module_name)
-    if body.mode not in ("konkret", "grob"):
-        raise HTTPException(status_code=400, detail="mode muss 'konkret' oder 'grob' sein.")
-    if body.daily_hours < 0.5 or body.daily_hours > 12:
-        raise HTTPException(status_code=400, detail="daily_hours muss zwischen 0.5 und 12 liegen.")
-
-    roadmap_md = rm.load_roadmap_md(clean)
-    if not roadmap_md:
-        raise HTTPException(status_code=404, detail="Keine Roadmap gefunden. Erst Roadmap generieren.")
-    roadmap_data = rm.parse_md(roadmap_md)
-
-    def rag_fn(question: str, module_name: str, top_k: int = 8) -> str:
-        result = rag.ask(question, module_name=module_name, top_k=top_k)
-        return result.get("answer", "") or ""
-
     try:
+        clean = sanitize_module_name(module_name)
+        if body.mode not in ("konkret", "grob"):
+            raise HTTPException(status_code=400, detail="mode muss 'konkret' oder 'grob' sein.")
+        if body.daily_hours < 0.5 or body.daily_hours > 12:
+            raise HTTPException(status_code=400, detail="daily_hours muss zwischen 0.5 und 12 liegen.")
+
+        roadmap_md = rm.load_roadmap_md(clean)
+        if not roadmap_md:
+            raise HTTPException(status_code=404, detail="Keine Roadmap gefunden. Erst Roadmap generieren.")
+        roadmap_data = rm.parse_md(roadmap_md)
+
+        def rag_fn(question: str, _module: str = clean, top_k: int = 8) -> str:
+            return ""
+
         new_md = dt.generate(
             clean,
             mode=body.mode,
@@ -918,11 +938,13 @@ async def daily_generate(module_name: str, body: DailyGenerateRequest):
             roadmap_data=roadmap_data,
             rag_fn=rag_fn,
         )
+        parsed = dt.parse_plan(new_md)
+        return {"success": True, **parsed}
+    except HTTPException:
+        raise
     except Exception as exc:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Plan-Generierung fehlgeschlagen: {exc}")
-
-    parsed = dt.parse_plan(new_md)
-    return {"success": True, **parsed}
 
 
 @app.patch("/daily/{module_name}/task")
@@ -937,3 +959,27 @@ def daily_task_patch(module_name: str, body: DailyTaskPatchRequest):
         raise HTTPException(status_code=500, detail=str(exc))
     parsed = dt.parse_plan(updated_md)
     return {"success": True, "progress": parsed["progress"]}
+
+
+@app.get("/daily/{module_name}/stats")
+def daily_stats(module_name: str):
+    """Return completion stats: total tasks done, per-topic counts, per-day counts."""
+    clean = sanitize_module_name(module_name)
+    return dt.get_stats(clean)
+
+
+@app.get("/daily/{module_name}/review")
+def daily_review(module_name: str, count: int = 2):
+    """Return `count` randomly-sampled completed tasks for spaced-repetition display."""
+    clean = sanitize_module_name(module_name)
+    return {"tasks": dt.get_review_tasks(clean, count)}
+
+
+@app.delete("/daily/{module_name}/history")
+def daily_history_delete(module_name: str):
+    """Delete the completed-task history for a module."""
+    clean = sanitize_module_name(module_name)
+    p = dt.task_history_path(clean)
+    if p.exists():
+        p.unlink()
+    return {"success": True}

@@ -12,7 +12,7 @@ from openai import OpenAI
 from . import module_profile as mp
 
 client = OpenAI()
-MODEL = "gpt-4o"
+MODEL = "gpt-4o-mini"
 
 EXAM_ANALYSIS_PROMPT = """Du analysierst {n} Altklausur(en) für das Modul "{modul}".
 

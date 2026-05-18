@@ -8,3 +8,4 @@ notebooks/
 .worktrees/
 chroma/
 chroma.sqlite3
+.impeccable/
