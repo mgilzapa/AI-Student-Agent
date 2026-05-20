@@ -27,7 +27,7 @@ from anthropic import Anthropic
 from . import module_profile as mp
 
 DAILY_DIR = Path("data/processed/daily_tasks")
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-haiku-4-5-20251001"
 
 _client: Optional[Anthropic] = None
 
@@ -382,30 +382,64 @@ def _pick_review_topic(roadmap_data: Dict[str, Any]) -> Optional[Dict]:
     return random.choice(done_topics) if done_topics else None
 
 
+# ─────────────────────────── File classification ────────────────────────────
+
+_EXERCISE_FILE_RE = re.compile(
+    r"\b(blatt|übung|uebung|aufgabe|exercise|sheet|hw|hausaufgabe|tut|tutorial|assignment)\b",
+    re.IGNORECASE,
+)
+
+
+def _split_files(files: List[str], exercises: List[str]) -> tuple[List[str], List[str]]:
+    """Separate lecture/script files from exercise sheets.
+
+    Anything in `files` that looks like an exercise sheet is promoted to `exercises`
+    so it never ends up as a [Theorie] task.
+    """
+    lecture_files: List[str] = []
+    promoted: List[str] = []
+    for f in files:
+        if _EXERCISE_FILE_RE.search(f):
+            promoted.append(f)
+        else:
+            lecture_files.append(f)
+    merged_exercises = promoted + [e for e in exercises if e not in promoted]
+    return lecture_files, merged_exercises
+
+
 # ─────────────────────────── LLM task generation ────────────────────────────
 
 _CONCRETE_PROMPT = """\
-Du bist ein universitärer Lerncoach.
-Erstelle Lernaufgaben für Topic "{topic_name}" im Kurs "{module}".
+Du bist ein universitärer Lerncoach. Erstelle KONKRETE, detaillierte Lernaufgaben für das Topic \
+"{topic_name}" im Kurs "{module}".
 
-ZEITBUDGET HEUTE: {daily_hours}h (das ist die verfügbare Zeit für heute — nicht die Gesamt-Kartenzeit)
+ZEITBUDGET HEUTE: {daily_hours}h
 VERFÜGBARE DATEIEN: {files}
 AUFGABEN / ÜBUNGSBLÄTTER: {exercises}
 {already_done_section}
-Teile die {daily_hours}h auf in:
-- [Theorie] ca. {theory_hours}h: Lesen/Verstehen aus den Dateien → {theory_count} Task(s)
-- [Praxis] ca. {practice_hours}h: Aufgaben aus den Übungsblättern → {practice_count} Task(s)
+Erstelle genau {theory_count} [Theorie]-Task(s) und {practice_count} [Praxis]-Task(s).
+
+AUSGABEFORMAT — jeder Task als String mit genau zwei " :: " Trennern:
+  "[Typ] :: [Aktion] :: [Fokus]"
+
+  [Typ]    → "[Theorie]" oder "[Praxis]"
+  [Aktion] → kurze Handlung mit exaktem Dateinamen, z.B. "Lies Vorlesung_3.pdf, Kap. 2–3" oder "Löse Blatt 4, Aufgaben 1–3"
+  [Fokus]  → spezifisches Lernziel mit Zeithinweis, z.B. "Fokus: Normalformen definieren & skizzieren (~{theory_hours}h)"
+
+Beispiele (NUR als Format-Vorlage, nicht wörtlich kopieren):
+  "[Theorie] :: Lies [Dateiname], Abschnitt zu {topic_name} :: Fokus: Kerndefinitionen; notiere 3 Konzepte in eigenen Worten (~{theory_hours}h)"
+  "[Praxis] :: Löse [Übungsblattname], Aufgaben 1–3 :: Fokus: Verfahren zu {topic_name} anwenden; überprüfe jeden Schritt (~{practice_hours}h)"
 
 REGELN (strikt):
 - Jede Aufgabe referenziert genau eine Datei ODER ein Übungsblatt aus den obigen Listen.
-- Jeder Task beginnt mit [Theorie] oder [Praxis].
-- Erfinde KEINE eigenen Aufgaben oder Inhalte.
-- Ein Task = ein kurzer Satz, max. eine Zeile.
-- Wenn keine Dateien vorhanden: nur [Praxis]-Tasks. Wenn keine Aufgaben vorhanden: nur [Theorie]-Tasks.
+- Erfinde KEINE Dateinamen oder Inhalte, die nicht in den Listen stehen.
+- [Theorie]-Tasks dürfen NUR Vorlesungsfolien, Skripte oder Zusammenfassungen referenzieren — NIEMALS Übungsblätter oder Aufgabenblätter.
+- [Praxis]-Tasks referenzieren ausschließlich Übungsblätter/Aufgaben aus der AUFGABEN-Liste.
+- Wenn keine Dateien vorhanden: nur [Praxis]-Tasks. Wenn keine Übungsblätter: nur [Theorie]-Tasks.
 - Erstelle KEINE Tasks, die in BEREITS ERLEDIGT aufgelistet sind.
+- Jeder String enthält genau zwei " :: " — kein Markdown, kein weiterer Text.
 
-Antworte NUR als JSON-Array von Strings:
-["[Theorie] Lies: ...", "[Praxis] Bearbeite: ..."]"""
+Antworte NUR als JSON-Array von Strings."""
 
 
 def _task_counts(daily_hours: float) -> tuple[int, int]:
@@ -424,8 +458,10 @@ def _build_tasks_from_metadata(
     completed_texts: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Build tasks directly from topic files/exercises without LLM."""
-    files = topic.get("dateien") or topic.get("files") or []
-    exercises = topic.get("aufgaben") or topic.get("exercises") or []
+    files, exercises = _split_files(
+        topic.get("dateien") or topic.get("files") or [],
+        topic.get("aufgaben") or topic.get("exercises") or [],
+    )
     theory_count, practice_count = _task_counts(daily_hours)
     done_set = set(completed_texts or [])
 
@@ -434,7 +470,7 @@ def _build_tasks_from_metadata(
     for f in files:
         if added_theory >= theory_count:
             break
-        text = f"[Theorie] Lies: {f}"
+        text = f"[Theorie] :: Lies: {f} :: Lese und verstehe den Inhalt"
         if text not in done_set:
             tasks.append({"text": text, "done": False})
             added_theory += 1
@@ -443,7 +479,7 @@ def _build_tasks_from_metadata(
     for ex in exercises:
         if added_practice >= practice_count:
             break
-        text = f"[Praxis] Bearbeite: {ex}"
+        text = f"[Praxis] :: Bearbeite: {ex} :: Aufgaben selbstständig lösen"
         if text not in done_set:
             tasks.append({"text": text, "done": False})
             added_practice += 1
@@ -461,8 +497,10 @@ def _generate_tasks_for_topic(
     completed_texts: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Generate concrete tasks referencing uploaded files/exercises, scoped to daily_hours."""
-    files = topic.get("dateien") or topic.get("files") or []
-    exercises = topic.get("aufgaben") or topic.get("exercises") or []
+    files, exercises = _split_files(
+        topic.get("dateien") or topic.get("files") or [],
+        topic.get("aufgaben") or topic.get("exercises") or [],
+    )
 
     if not files and not exercises:
         return [{"text": topic.get("name", "Topic"), "done": False}]
@@ -580,8 +618,8 @@ def generate(
                     "name": f"Wiederholung: {review.get('name', '')}",
                     "tasks": [{
                         "text": (
-                            f"[30 min] Wiederhole {review.get('name', '')} — "
-                            f"gehe die wichtigsten Konzepte nochmal durch"
+                            f"[Praxis] :: Wiederhole: {review.get('name', '')} :: "
+                            f"Fokus: wichtigste Konzepte nochmal durchgehen (~30 min)"
                         ),
                         "done": False,
                     }],

@@ -5,7 +5,7 @@ from typing import AsyncIterator
 
 from app.rag.router import route
 from app.rag.multi_query import decompose
-from app.rag.advanced_pipeline import run as pipeline_run
+from app.rag.advanced_pipeline import run as pipeline_run, run_simple
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,8 @@ async def ask_advanced(
     logger.info("ask_advanced route=%s question=%r", path, question[:60])
 
     if path == "simple":
-        result = await asyncio.to_thread(rag_service.ask, question, None, module_name)
-        yield json.dumps({"type": "token", "content": result.get("answer", "")})
-        yield json.dumps({
-            "type": "done",
-            "sources": result.get("sources", []),
-            "path": "simple",
-        })
+        async for chunk in run_simple(question, initial_hits):
+            yield chunk
     else:
         async for chunk in pipeline_run(question, sub_queries, initial_hits, module_name, rag_service):
             yield chunk

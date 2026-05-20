@@ -115,7 +115,7 @@ Gehe tief ins Detail:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}]
     )

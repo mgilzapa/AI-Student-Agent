@@ -9,7 +9,7 @@ from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
-MODEL_SIMPLE = "claude-sonnet-4-6"
+MODEL_SIMPLE = "claude-haiku-4-5-20251001"
 MODEL_COMPLEX = "claude-sonnet-4-6"
 
 SIMILARITY_SIMPLE_THRESHOLD = 0.75

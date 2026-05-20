@@ -393,6 +393,7 @@
 
   .msg { display: flex; flex-direction: column; gap: 8px; max-width: 860px; animation: fadeUp 0.3s cubic-bezier(0.4,0,0.2,1) both; }
   .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.agent + .msg.user { margin-top: 14px; }
   .label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
   .bubble { padding: 18px 20px; border-radius: 20px; line-height: 1.72; font-size: 0.95rem; word-break: break-word; border: 1px solid rgba(255,255,255,0.08); }
   .msg.user .bubble { background: linear-gradient(135deg, rgba(37,99,235,0.3), rgba(124,58,237,0.25)); border-color: rgba(124,58,237,0.3); box-shadow: 0 4px 20px rgba(124,58,237,0.2); }
@@ -415,8 +416,10 @@
     background: rgba(124,58,237,0.2); padding: 0.2rem 0.5rem; border-radius: 6px;
     color: #c4b5fd; border: 1px solid rgba(124,58,237,0.3);
   }
+  .msg.agent .bubble pre { background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 0; }
+  .msg.agent .bubble pre code { background: none; border: none; padding: 0; color: rgba(255,255,255,0.82); font-size: 0.84em; }
 
-  .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
   .source-tag {
     font-family: 'DM Mono', monospace; font-size: 0.65rem; color: #c4b5fd;
     background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(37,99,235,0.15));
@@ -1181,14 +1184,60 @@ async function sendQuestion() {
   addMsg('user', question);
   const thinking = addThinking();
   try {
-    const res = await fetch('/ask', {
+    const res = await fetch('/ask/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, module_name: state.moduleName }),
     });
-    const data = await res.json();
-    thinking.remove();
-    addMsg('agent', data.answer || 'Ich konnte keine Antwort erzeugen.', data.sources || []);
+    if (!res.ok) throw new Error(res.statusText);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let agentWrap = null, bubble = null, rawText = '', sources = [], buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let msg; try { msg = JSON.parse(line.slice(6)); } catch { continue; }
+        if (msg.type === 'token') {
+          if (!agentWrap) {
+            thinking.remove();
+            agentWrap = document.createElement('div'); agentWrap.className = 'msg agent';
+            const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = 'Agent';
+            bubble = document.createElement('div'); bubble.className = 'bubble';
+            agentWrap.append(lbl, bubble);
+            chat.appendChild(agentWrap);
+          }
+          rawText += msg.content;
+          bubble.textContent = rawText;
+          chat.scrollTop = chat.scrollHeight;
+        } else if (msg.type === 'done') {
+          sources = msg.sources || [];
+        }
+      }
+    }
+    if (agentWrap && bubble) {
+      bubble.innerHTML = renderMarkdown(rawText);
+      renderMathIn(bubble);
+      if (sources.length) {
+        const srcRow = document.createElement('div'); srcRow.className = 'sources';
+        sources.forEach(src => {
+          const tag = document.createElement('div'); tag.className = 'source-tag';
+          const name = String(src.source || '').split(/[\\/]/).pop();
+          tag.textContent = name;
+          tag.title = `${name}${typeof src.score === 'number' ? ` (Relevanz ${(src.score*100).toFixed(0)}%)` : ''}`;
+          srcRow.appendChild(tag);
+        });
+        agentWrap.appendChild(srcRow);
+      }
+      chat.scrollTop = chat.scrollHeight;
+    } else {
+      thinking.remove();
+      addMsg('agent', 'Ich konnte keine Antwort erzeugen.');
+    }
   } catch {
     thinking.remove();
     addMsg('agent', 'Fehler beim Verbinden mit dem Server.');

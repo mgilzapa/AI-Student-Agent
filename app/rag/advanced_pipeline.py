@@ -38,6 +38,41 @@ def _dist_to_score(dist: float | None) -> float:
     return round(max(0.0, 1.0 - (dist / 2.0)), 3)
 
 
+async def run_simple(
+    question: str,
+    hits: list[dict],
+) -> AsyncIterator[str]:
+    top_chunks = hits[:5] if hits else []
+    if not top_chunks:
+        yield json.dumps({"type": "token", "content": "Ich konnte keine relevanten Informationen finden."})
+        yield json.dumps({"type": "done", "sources": [], "path": "simple"})
+        return
+
+    context_block = "\n\n".join(
+        f"[Quelle {i + 1}: {Path(hit['source']).name}]\n{hit['text'].strip()}"
+        for i, hit in enumerate(top_chunks)
+    )
+    user_message = (
+        f"Frage des Studenten:\n{question.strip()}\n\n"
+        f"Lernmaterial-Kontext:\n{context_block}"
+    )
+    sources = [
+        {"source": Path(h["source"]).name, "score": _dist_to_score(h.get("distance"))}
+        for h in top_chunks
+    ]
+
+    async with _get_anthropic().messages.stream(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=512,
+        system=_SYNTH_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        async for text in stream.text_stream:
+            yield json.dumps({"type": "token", "content": text})
+
+    yield json.dumps({"type": "done", "sources": sources, "path": "simple"})
+
+
 async def run(
     question: str,
     sub_queries: list[str],
@@ -87,7 +122,7 @@ async def run(
     ]
 
     async with _get_anthropic().messages.stream(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         system=_SYNTH_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
