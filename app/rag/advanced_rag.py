@@ -14,7 +14,9 @@ async def ask_advanced(
     question: str,
     module_name: str | None = None,
     rag_service=None,
+    chat_history: list[dict] | None = None,
 ) -> AsyncIterator[str]:
+    chat_history = chat_history or []
     sub_queries_task = asyncio.create_task(decompose(question))
     initial_hits_task = asyncio.create_task(
         asyncio.to_thread(rag_service.retrieve, question, None, module_name)
@@ -25,8 +27,8 @@ async def ask_advanced(
     logger.info("ask_advanced route=%s question=%r", path, question[:60])
 
     if path == "simple":
-        async for chunk in run_simple(question, initial_hits):
+        async for chunk in run_simple(question, initial_hits, chat_history):
             yield chunk
     else:
-        async for chunk in pipeline_run(question, sub_queries, initial_hits, module_name, rag_service):
+        async for chunk in pipeline_run(question, sub_queries, initial_hits, module_name, rag_service, chat_history):
             yield chunk

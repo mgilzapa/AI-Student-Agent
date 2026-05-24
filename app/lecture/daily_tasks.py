@@ -6,7 +6,7 @@ Completion history: data/processed/daily_tasks/<slug>/task_history.json
 
 Format:
   # Tagesplan: <Modul>
-  **Generiert:** YYYY-MM-DD · **Modus:** konkret|grob · **Lernzeit:** Xh
+  **Generiert:** YYYY-MM-DD · **Lernzeit:** Xh
   **Fortschritt:** X/Y erledigt
 
   ## <Topic Name> <!-- topic_id:tX -->
@@ -20,7 +20,7 @@ import random
 import re
 from datetime import date
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
 
@@ -162,8 +162,7 @@ def get_review_tasks(module_name: str, count: int = 3) -> List[Dict[str, Any]]:
 # ─────────────────────────── Parsing ────────────────────────────────────────
 
 _HEADER_RE = re.compile(
-    r"^\*\*Generiert:\*\*\s+(?P<date>\S+)\s*·\s*\*\*Modus:\*\*\s+(?P<mode>\S+)"
-    r"\s*·\s*\*\*Lernzeit:\*\*\s+(?P<hours>[\d.]+)h"
+    r"^\*\*Generiert:\*\*\s+(?P<date>\S+)\s*·\s*\*\*Lernzeit:\*\*\s+(?P<hours>[\d.]+)h"
 )
 _PROGRESS_RE = re.compile(r"^\*\*Fortschritt:\*\*\s+(?P<done>\d+)/(?P<total>\d+)")
 _TOPIC_RE = re.compile(r"^## (?P<name>.+?) <!-- topic_id:(?P<id>\S+) -->")
@@ -174,7 +173,6 @@ def parse_plan(md: str) -> Dict[str, Any]:
     """Parse current_plan.md into structured dict."""
     result: Dict[str, Any] = {
         "generated": "",
-        "mode": "",
         "daily_hours": 0.0,
         "progress": {"done": 0, "total": 0},
         "topics": [],
@@ -185,7 +183,6 @@ def parse_plan(md: str) -> Dict[str, Any]:
         h = _HEADER_RE.match(line)
         if h:
             result["generated"] = h.group("date")
-            result["mode"] = h.group("mode")
             try:
                 result["daily_hours"] = float(h.group("hours"))
             except ValueError:
@@ -233,7 +230,7 @@ def has_open_tasks_for_topic(module_name: str, topic_id: str) -> int:
 
 # ─────────────────────────── Rendering ──────────────────────────────────────
 
-def _render_md(module_name: str, mode: str, daily_hours: float, topics: List[Dict]) -> str:
+def _render_md(module_name: str, daily_hours: float, topics: List[Dict]) -> str:
     """Render plan markdown from structured topic list."""
     today = date.today().isoformat()
     total = sum(len(t["tasks"]) for t in topics)
@@ -242,7 +239,7 @@ def _render_md(module_name: str, mode: str, daily_hours: float, topics: List[Dic
     )
     lines: List[str] = [
         f"# Tagesplan: {module_name}",
-        f"**Generiert:** {today} · **Modus:** {mode} · **Lernzeit:** {daily_hours}h",
+        f"**Generiert:** {today} · **Lernzeit:** {daily_hours}h",
         f"**Fortschritt:** {done_count}/{total} erledigt",
         "",
     ]
@@ -346,29 +343,63 @@ _PRIO_ORDER: Dict[str, int] = {
 }
 
 
-def _select_topics(roadmap_data: Dict[str, Any], daily_hours: float) -> List[Dict]:
-    """Select exactly one topic for the day: first 'doing' card, else first 'todo' card."""
+_PRIO_WEIGHTS: Dict[str, int] = {
+    "high": 3, "hoch": 3,
+    "medium": 2, "mittel": 2,
+    "low": 1, "niedrig": 1,
+}
+
+
+def _select_topics(roadmap_data: Dict[str, Any], daily_hours: float) -> List[Tuple[Dict, float]]:
+    """
+    Select topics and allocate study hours for today.
+
+    - 1 doing topic  → full focus, all hours go to it.
+    - N doing topics → distribute hours proportionally by priority weight.
+    - 0 doing topics → pick the highest-priority todo topic from the first phase that has any.
+
+    Returns list of (topic_dict, allocated_hours).
+    """
     phases = roadmap_data.get("phases", [])
 
-    # 1) First doing card (in phase order)
-    for phase in phases:
-        for topic in (phase.get("topics") or []):
-            if topic.get("status") == "doing":
-                return [topic]
+    doing = [
+        topic
+        for phase in phases
+        for topic in (phase.get("topics") or [])
+        if topic.get("status") == "doing"
+    ]
 
-    # 2) First todo card (priority-sorted within each phase)
-    for phase in phases:
-        todo_topics = [t for t in (phase.get("topics") or []) if t.get("status") == "todo"]
-        sorted_topics = sorted(
-            todo_topics,
-            key=lambda t: _PRIO_ORDER.get(
-                (t.get("pruefungsrelevanz") or t.get("relevance") or "medium").lower(), 1
-            ),
+    if not doing:
+        for phase in phases:
+            todo = [t for t in (phase.get("topics") or []) if t.get("status") == "todo"]
+            if todo:
+                best = min(todo, key=lambda t: _PRIO_ORDER.get(
+                    (t.get("pruefungsrelevanz") or t.get("relevance") or "medium").lower(), 1
+                ))
+                return [(best, daily_hours)]
+        return []
+
+    if len(doing) == 1:
+        return [(doing[0], daily_hours)]
+
+    # Multiple doing topics: distribute hours by priority weight
+    weights = [
+        _PRIO_WEIGHTS.get(
+            (t.get("pruefungsrelevanz") or t.get("relevance") or "medium").lower(), 2
         )
-        if sorted_topics:
-            return [sorted_topics[0]]
-
-    return []
+        for t in doing
+    ]
+    total_weight = sum(weights)
+    result: List[Tuple[Dict, float]] = []
+    remaining = daily_hours
+    for i, (topic, w) in enumerate(zip(doing, weights)):
+        if i == len(doing) - 1:
+            alloc = max(0.5, round(remaining, 1))
+        else:
+            alloc = max(0.5, round(w / total_weight * daily_hours, 1))
+            remaining -= alloc
+        result.append((topic, alloc))
+    return result
 
 
 def _pick_review_topic(roadmap_data: Dict[str, Any]) -> Optional[Dict]:
@@ -409,137 +440,132 @@ def _split_files(files: List[str], exercises: List[str]) -> tuple[List[str], Lis
 
 # ─────────────────────────── LLM task generation ────────────────────────────
 
-_CONCRETE_PROMPT = """\
-Du bist ein universitärer Lerncoach. Erstelle KONKRETE, detaillierte Lernaufgaben für das Topic \
-"{topic_name}" im Kurs "{module}".
+_TASK_PROMPT = """\
+Du bist ein universitärer Lerncoach. Erstelle {n} Lernaufgaben für heute.
 
-ZEITBUDGET HEUTE: {daily_hours}h
+THEMA: {topic_name}
+SUBTOPICS: {subtopics}
+LERNZEIT HEUTE: {hours}h
 VERFÜGBARE DATEIEN: {files}
-AUFGABEN / ÜBUNGSBLÄTTER: {exercises}
-{already_done_section}
-Erstelle genau {theory_count} [Theorie]-Task(s) und {practice_count} [Praxis]-Task(s).
+ÜBUNGSBLÄTTER: {exercises}
+{rag_section}{already_done_section}
+Jede Aufgabe ist ein kurzer Titel/Referenz — kein langer Satz, keine Aufgabenstellung.
+Wenn möglich: Übungsblatt-Aufgaben priorisieren.
 
-AUSGABEFORMAT — jeder Task als String mit genau zwei " :: " Trennern:
-  "[Typ] :: [Aktion] :: [Fokus]"
+FORMAT (kurze Referenz, max. 6–8 Wörter):
+✓ "Blatt3 – Aufgabe 1"
+✓ "Blatt3 – Aufgaben 2–4"
+✓ "VL5 – Normalformen (1NF/2NF/3NF)"
+✓ "Skript Kap. 4 – Algorithmus X"
+✓ "Wiederholung: Transaktionen"
+✗ "Löse Aufgabe 3 aus Blatt3 vollständig und überprüfe jeden Schritt (~40 min)"
+✗ "Erkläre den Unterschied zwischen X und Y in eigenen Worten"
 
-  [Typ]    → "[Theorie]" oder "[Praxis]"
-  [Aktion] → kurze Handlung mit exaktem Dateinamen, z.B. "Lies Vorlesung_3.pdf, Kap. 2–3" oder "Löse Blatt 4, Aufgaben 1–3"
-  [Fokus]  → spezifisches Lernziel mit Zeithinweis, z.B. "Fokus: Normalformen definieren & skizzieren (~{theory_hours}h)"
-
-Beispiele (NUR als Format-Vorlage, nicht wörtlich kopieren):
-  "[Theorie] :: Lies [Dateiname], Abschnitt zu {topic_name} :: Fokus: Kerndefinitionen; notiere 3 Konzepte in eigenen Worten (~{theory_hours}h)"
-  "[Praxis] :: Löse [Übungsblattname], Aufgaben 1–3 :: Fokus: Verfahren zu {topic_name} anwenden; überprüfe jeden Schritt (~{practice_hours}h)"
-
-REGELN (strikt):
-- Jede Aufgabe referenziert genau eine Datei ODER ein Übungsblatt aus den obigen Listen.
-- Erfinde KEINE Dateinamen oder Inhalte, die nicht in den Listen stehen.
-- [Theorie]-Tasks dürfen NUR Vorlesungsfolien, Skripte oder Zusammenfassungen referenzieren — NIEMALS Übungsblätter oder Aufgabenblätter.
-- [Praxis]-Tasks referenzieren ausschließlich Übungsblätter/Aufgaben aus der AUFGABEN-Liste.
-- Wenn keine Dateien vorhanden: nur [Praxis]-Tasks. Wenn keine Übungsblätter: nur [Theorie]-Tasks.
-- Erstelle KEINE Tasks, die in BEREITS ERLEDIGT aufgelistet sind.
-- Jeder String enthält genau zwei " :: " — kein Markdown, kein weiterer Text.
-
-Antworte NUR als JSON-Array von Strings."""
+Antworte NUR als JSON-Array mit genau {n} Strings.\
+"""
 
 
-def _task_counts(daily_hours: float) -> tuple[int, int]:
-    """Return (theory_count, practice_count) based on available study time."""
-    if daily_hours < 2:
-        return 1, 1
-    elif daily_hours < 4:
-        return 2, 1
+def _task_count_for_hours(hours: float) -> int:
+    """Return number of tasks to generate for the given study time."""
+    if hours < 1.0:
+        return 2
+    elif hours < 2.0:
+        return 3
+    elif hours < 3.5:
+        return 4
     else:
-        return 2, 2
+        return min(6, 4 + round(hours - 3.5))
 
 
 def _build_tasks_from_metadata(
     topic: Dict[str, Any],
-    daily_hours: float = 2.0,
+    hours: float = 2.0,
     completed_texts: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
-    """Build tasks directly from topic files/exercises without LLM."""
+    """Fallback: build tasks from topic metadata without LLM."""
     files, exercises = _split_files(
         topic.get("dateien") or topic.get("files") or [],
         topic.get("aufgaben") or topic.get("exercises") or [],
     )
-    theory_count, practice_count = _task_counts(daily_hours)
+    n = _task_count_for_hours(hours)
     done_set = set(completed_texts or [])
+    name = topic.get("name", "Topic")
+    subtopics = [str(s).strip() for s in (topic.get("subtopics") or topic.get("untergruppen") or []) if str(s).strip()]
+    focus = f"Fokus: {', '.join(subtopics[:2])}" if subtopics else "Kernkonzepte erarbeiten"
+    theory_min = round(hours * 0.5 * 60)
+    practice_min = round(hours * 0.4 * 60)
 
     tasks: List[Dict[str, Any]] = []
-    added_theory = 0
-    for f in files:
-        if added_theory >= theory_count:
-            break
-        text = f"[Theorie] :: Lies: {f} :: Lese und verstehe den Inhalt"
-        if text not in done_set:
-            tasks.append({"text": text, "done": False})
-            added_theory += 1
 
-    added_practice = 0
     for ex in exercises:
-        if added_practice >= practice_count:
+        if len(tasks) >= n:
             break
-        text = f"[Praxis] :: Bearbeite: {ex} :: Aufgaben selbstständig lösen"
+        text = ex
         if text not in done_set:
             tasks.append({"text": text, "done": False})
-            added_practice += 1
+
+    for f in files:
+        if len(tasks) >= n:
+            break
+        label = f"{f} – {subtopics[0]}" if subtopics else f"{f} – {name}"
+        if label not in done_set:
+            tasks.append({"text": label, "done": False})
 
     if not tasks:
-        tasks = [{"text": topic.get("name", "Topic"), "done": False}]
-    return tasks
+        tasks.append({"text": f"{name}" + (f" – {subtopics[0]}" if subtopics else ""), "done": False})
+
+    return tasks[:n]
 
 
 def _generate_tasks_for_topic(
     topic: Dict[str, Any],
     module_name: str,
     rag_fn: Callable,
-    daily_hours: float = 2.0,
+    hours: float = 2.0,
     completed_texts: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
-    """Generate concrete tasks referencing uploaded files/exercises, scoped to daily_hours."""
+    """Generate content-grounded tasks using RAG + topic metadata."""
+    name = topic.get("name", "")
+    subtopics = [str(s).strip() for s in (topic.get("subtopics") or topic.get("untergruppen") or []) if str(s).strip()]
     files, exercises = _split_files(
         topic.get("dateien") or topic.get("files") or [],
         topic.get("aufgaben") or topic.get("exercises") or [],
     )
 
-    if not files and not exercises:
-        return [{"text": topic.get("name", "Topic"), "done": False}]
+    # Query RAG: topic name + subtopics for richer, content-grounded tasks
+    rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
+    rag_content = rag_fn(rag_query, module_name, 6) if rag_fn else ""
 
-    theory_count, practice_count = _task_counts(daily_hours)
-    max_tasks = theory_count + practice_count
-    theory_hours = round(daily_hours * 0.6, 1)
-    practice_hours = round(daily_hours * 0.4, 1)
-
-    # Only expose files/exercises that fit within today's budget to the LLM
-    files_for_prompt = files[:theory_count] if files else []
-    exercises_for_prompt = exercises[:practice_count] if exercises else []
-
+    n = _task_count_for_hours(hours)
     done_list = completed_texts or []
+
+    rag_section = ""
+    if rag_content:
+        rag_section = f"INHALT AUS DEM LERNMATERIAL:\n{rag_content[:3000]}\n\n"
+
+    already_done_section = ""
     if done_list:
         already_done_section = (
-            "BEREITS ERLEDIGT (diese Tasks NICHT wiederholen):\n"
+            "BEREITS ERLEDIGT (nicht wiederholen):\n"
             + "\n".join(f"- {t}" for t in done_list)
-            + "\n"
+            + "\n\n"
         )
-    else:
-        already_done_section = ""
+
+    prompt = _TASK_PROMPT.format(
+        n=n,
+        topic_name=name,
+        subtopics=", ".join(subtopics) if subtopics else "—",
+        hours=hours,
+        files=", ".join(files) if files else "—",
+        exercises=", ".join(exercises) if exercises else "—",
+        rag_section=rag_section,
+        already_done_section=already_done_section,
+    )
 
     try:
-        prompt = _CONCRETE_PROMPT.format(
-            topic_name=topic.get("name", ""),
-            module=module_name,
-            daily_hours=daily_hours,
-            theory_hours=theory_hours,
-            practice_hours=practice_hours,
-            theory_count=theory_count,
-            practice_count=practice_count,
-            files=", ".join(files_for_prompt) if files_for_prompt else "—",
-            exercises=", ".join(exercises_for_prompt) if exercises_for_prompt else "—",
-            already_done_section=already_done_section,
-        )
         resp = _get_client().messages.create(
             model=MODEL,
-            max_tokens=400,
+            max_tokens=600,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = resp.content[0].text.strip()
@@ -549,13 +575,13 @@ def _generate_tasks_for_topic(
         if not isinstance(task_texts, list):
             raise ValueError("Expected list")
         return [
-            {"text": str(txt).strip(), "done": False}
-            for txt in task_texts[:max_tasks]
-            if str(txt).strip()
+            {"text": str(t).strip(), "done": False}
+            for t in task_texts[:n]
+            if str(t).strip()
         ]
     except Exception as exc:
-        print(f"[daily_tasks] LLM task gen failed for {topic.get('name')}: {exc}")
-        return _build_tasks_from_metadata(topic, daily_hours, completed_texts)
+        print(f"[daily_tasks] LLM task gen failed for {name}: {exc}")
+        return _build_tasks_from_metadata(topic, hours, completed_texts)
 
 
 # ─────────────────────────── Main generate ──────────────────────────────────
@@ -563,7 +589,6 @@ def _generate_tasks_for_topic(
 def generate(
     module_name: str,
     *,
-    mode: str,
     daily_hours: float,
     roadmap_data: Dict[str, Any],
     rag_fn: Callable,
@@ -575,6 +600,8 @@ def generate(
     seen_carry: set = set()
     carry_topics: List[Dict] = []
     for t in raw_carry:
+        if t["id"].endswith("_review"):
+            continue  # review tasks are optional — never carry over
         if t["id"] not in seen_carry:
             seen_carry.add(t["id"])
             carry_topics.append(t)
@@ -582,21 +609,18 @@ def generate(
     # 2) Archive old plan
     archive_current_plan(module_name)
 
-    # 3) Select fresh topics from roadmap
+    # 3) Select fresh topics from roadmap (each with allocated hours)
     selected = _select_topics(roadmap_data, daily_hours)
     carry_ids = {t["id"] for t in carry_topics}
 
     # 4) Build new topic list (carryover first, then new)
     new_topics: List[Dict] = []
-    for topic in selected:
+    for topic, alloc_hours in selected:
         tid = str(topic.get("id") or "")
         if tid in carry_ids:
             continue
         completed_texts = get_completed_texts_for_topic(module_name, tid)
-        if mode == "grob":
-            tasks = _build_tasks_from_metadata(topic, daily_hours, completed_texts)
-        else:
-            tasks = _generate_tasks_for_topic(topic, module_name, rag_fn, daily_hours, completed_texts)
+        tasks = _generate_tasks_for_topic(topic, module_name, rag_fn, alloc_hours, completed_texts)
         new_topics.append({
             "id": tid,
             "name": str(topic.get("name", "")),
@@ -618,14 +642,14 @@ def generate(
                     "name": f"Wiederholung: {review.get('name', '')}",
                     "tasks": [{
                         "text": (
-                            f"[Praxis] :: Wiederhole: {review.get('name', '')} :: "
-                            f"Fokus: wichtigste Konzepte nochmal durchgehen (~30 min)"
+                            f"Wiederhole '{review.get('name', '')}': fasse die 3 wichtigsten Konzepte "
+                            f"in eigenen Worten zusammen und beantworte 2 typische Prüfungsfragen dazu (~30 min)"
                         ),
                         "done": False,
                     }],
                 })
 
     # 7) Save
-    md = _render_md(module_name, mode, daily_hours, all_topics)
+    md = _render_md(module_name, daily_hours, all_topics)
     save_plan(module_name, md)
     return md

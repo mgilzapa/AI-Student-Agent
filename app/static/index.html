@@ -16,21 +16,21 @@
 <script defer src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <style>
   :root {
-    --bg: #FAFAF8;
-    --panel: #F4F0EB;
-    --panel-soft: #EDE8E2;
-    --border: #DDD8D2;
-    --text: #1C1917;
-    --muted: #78716C;
+    --bg: #F5F1EB;
+    --panel: #EDE7DC;
+    --panel-soft: #E0D9CE;
+    --border: #C4BAB0;
+    --text: #1A1614;
+    --muted: #5C5450;
     --accent: #C2410C;
     --accent-2: #B45309;
-    --accent-soft: rgba(194,65,12,0.09);
-    --accent-glow: rgba(194,65,12,0.22);
-    --accent-border: rgba(194,65,12,0.32);
+    --accent-soft: rgba(194,65,12,0.10);
+    --accent-glow: rgba(194,65,12,0.26);
+    --accent-border: rgba(194,65,12,0.38);
     --success: #16A34A;
     --danger: #DC2626;
     --amber: #D97706;
-    --shadow: 0 4px 24px rgba(28,25,23,0.08), 0 1px 4px rgba(28,25,23,0.05);
+    --shadow: 0 4px 24px rgba(26,22,20,0.10), 0 1px 4px rgba(26,22,20,0.07);
     --ease-out: cubic-bezier(0.4,0,0.2,1);
   }
 
@@ -268,9 +268,103 @@
 
   /* ── Course cards ── */
   .courses-grid {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* ── Featured module card ── */
+  .featured-card {
+    position: relative;
+    display: grid; grid-template-columns: 1fr 130px; gap: 20px;
+    padding: 22px 24px 20px;
+    background: var(--panel);
+    border: 1px solid var(--accent-border);
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(28,25,23,0.08), 0 1px 4px rgba(28,25,23,0.05);
+    cursor: pointer; width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .featured-card:hover {
+    box-shadow: 0 8px 32px rgba(28,25,23,0.12), 0 4px 16px rgba(194,65,12,0.22);
+    transform: translateY(-2px);
+  }
+  .featured-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .featured-card-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    border-radius: 999px; padding: 3px 9px;
+    align-self: flex-start; user-select: none;
+  }
+  .featured-module-name {
+    font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 600;
+    color: var(--text); line-height: 1.25; margin-top: 2px;
+  }
+  .featured-doing-row { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+  .featured-doing-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    flex-shrink: 0;
+  }
+  .featured-doing-topic {
+    font-size: 0.875rem; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 36ch;
+  }
+  .featured-exam-line {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem;
+    color: var(--accent); letter-spacing: 0.03em;
+  }
+  .featured-action { margin-top: 8px; align-self: flex-start; min-height: 38px; padding: 0 20px; font-size: 0.875rem; }
+  .featured-right {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px; flex-shrink: 0;
+  }
+  .ring-svg { display: block; }
+  .featured-pct {
+    font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 400;
+    color: var(--text); line-height: 1; text-align: center; margin-top: 4px;
+  }
+  .featured-pct-unit { font-size: 1.1rem; color: var(--muted); }
+  .featured-pct-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    text-align: center; margin-top: 2px;
+  }
+
+  /* ── Mini module cards ── */
+  .mini-modules-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .mini-card {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 16px 14px 14px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .mini-card:hover { border-color: var(--accent-border); box-shadow: 0 4px 16px rgba(194,65,12,0.10); transform: translateY(-2px); }
+  .mini-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .mini-card-name {
+    font-family: 'Lora', serif; font-size: 0.9375rem; font-weight: 600;
+    color: var(--text); line-height: 1.3; flex: 1;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .star-module-btn {
+    background: none; border: none; padding: 0; font-size: 0.95rem; color: var(--muted);
+    cursor: pointer; line-height: 1; opacity: 0.3;
+    transition: opacity 0.15s ease, color 0.15s ease; flex-shrink: 0; margin-top: 1px;
+  }
+  .mini-card:hover .star-module-btn { opacity: 0.7; }
+  .star-module-btn.starred { opacity: 1; color: var(--accent); }
+  .mini-bar-track { height: 3px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.4s ease; }
+  .mini-pct {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.06em; color: var(--muted); text-align: right;
   }
 
   .existing-module {
@@ -299,7 +393,7 @@
   .existing-module strong {
     font-family: 'Lora', serif; font-size: 1rem; font-weight: 600;
     color: var(--text); line-height: 1.25;
-    padding-right: 24px;
+    padding-right: 56px;
   }
   .existing-module > span {
     font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em;
@@ -315,8 +409,20 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
   }
-  .existing-module:hover .delete-module-btn { opacity: 1; }
+  .existing-module:hover .delete-module-btn,
+  .existing-module:hover .star-module-btn { opacity: 1; }
   .delete-module-btn:hover { background: rgba(220,38,38,0.1) !important; color: var(--danger) !important; border-color: rgba(220,38,38,0.28) !important; }
+
+  .star-module-btn {
+    position: absolute; top: 9px; right: 36px; z-index: 3;
+    width: 22px; height: 22px;
+    background: var(--panel-soft); border: 1px solid var(--border);
+    border-radius: 5px; color: var(--muted); font-size: 0.85rem; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .star-module-btn.starred { opacity: 1; color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+  .star-module-btn:hover { background: var(--accent-soft) !important; color: var(--accent) !important; border-color: var(--accent-border) !important; }
 
   .no-courses-hint {
     color: var(--muted); font-size: 0.875rem; line-height: 1.65;
@@ -414,6 +520,8 @@
     background: var(--bg); border: 1px solid var(--border); font-size: 0.875rem;
   }
   .selected-file small { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; }
+  .selected-file.in-folder { margin-left: 14px; border-style: dashed; }
+  .selected-folder-header { font-size: 0.72rem; font-weight: 600; color: var(--muted); padding: 6px 4px 2px; display: flex; align-items: center; gap: 5px; }
   .selected-remove-btn {
     background: var(--panel-soft); border: 1px solid var(--border);
     color: var(--muted); font-size: 0.9rem; line-height: 1;
@@ -611,15 +719,32 @@
   @keyframes dotBounce { 0%,80%,100% { opacity: 0.3; transform: scale(0.7) translateY(0); } 40% { opacity: 1; transform: scale(1) translateY(-4px); } }
 
   .chat-footer { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--panel); }
-  .chat-form { display: flex; gap: 8px; }
+  .chat-form { display: flex; flex-direction: column; gap: 8px; }
   #input {
-    flex: 1; resize: none; min-height: 44px; max-height: 150px;
+    width: 100%; box-sizing: border-box; resize: none;
+    min-height: 44px; max-height: 200px; overflow-y: auto;
     background: var(--bg); border: 1px solid var(--border);
     border-radius: 10px; color: var(--text); padding: 11px 14px;
     font: inherit; font-size: 0.9rem; outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   #input:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .chat-actions { display: flex; justify-content: space-between; align-items: center; }
+  .chat-icon-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); cursor: not-allowed; opacity: 0.45;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .chat-send-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px; border: none;
+    background: var(--accent); color: #fff; cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  }
+  .chat-send-btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); filter: brightness(1.1); }
+  .chat-send-btn:not(:disabled):active { transform: scale(0.94); }
+  .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* ════════════════════════════════════════
      MODAL
@@ -853,9 +978,7 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.5rem; letter-spacing: 0.07em;
     text-transform: uppercase; line-height: 1;
-    display: none;
   }
-  .rail-tab.active .rail-tab-label { display: block; }
 
   /* ── Files Drawer ── */
   .files-drawer {
@@ -2268,11 +2391,13 @@
                 <input id="file-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple>
                 <div class="drop-copy">
                   <div class="drop-icon">↑</div>
-                  <div class="drop-title">Dateien hier ablegen oder auswählen</div>
-                  <div class="drop-subtitle">Lade alle Folien, Skripte oder Notizen zu einem Kurs gesammelt hoch.</div>
+                  <div class="drop-title">Dateien oder Ordner ablegen</div>
+                  <div class="drop-subtitle">Lade Folien, Skripte oder ganze Ordner auf einmal hoch.</div>
                   <div class="drop-hint">PDF · PPTX · MD · TXT</div>
                 </div>
               </div>
+              <input id="folder-input" type="file" webkitdirectory multiple style="display:none">
+              <button class="secondary-btn" id="folder-pick-btn" type="button" style="font-size:0.79rem;padding:5px 14px;align-self:flex-start;">📁 Ordner auswählen</button>
 
               <div class="selected-files" id="selected-files"></div>
 
@@ -2356,7 +2481,14 @@
           <div class="chat-footer">
             <div class="chat-form">
               <textarea id="input" placeholder="Frage stellen…" rows="1"></textarea>
-              <button class="primary-btn" id="send">Senden</button>
+              <div class="chat-actions">
+                <button class="chat-icon-btn" id="mic-btn" title="Spracheingabe" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+                </button>
+                <button class="chat-send-btn" id="send" title="Senden">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
             </div>
           </div>
         </aside>
@@ -2367,9 +2499,17 @@
         <div class="files-drawer-header" id="files-drawer-module-name">Kein Kurs</div>
         <div class="files-drawer-section">
           <span class="drawer-section-label">Materialien</span>
-          <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="opacity:1;width:24px;height:24px;font-size:0.95rem;">+</button>
+          <div style="display:flex;gap:3px;">
+            <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="opacity:1;width:26px;height:26px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </button>
+            <button class="file-action-btn" id="add-folder-btn" type="button" title="Ordner hinzufügen" style="opacity:1;width:26px;height:26px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 9 12 14"/><polyline points="9.5 11.5 12 9 14.5 11.5"/></svg>
+            </button>
+          </div>
         </div>
         <input id="add-files-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple hidden>
+        <input id="add-folder-input" type="file" webkitdirectory multiple hidden>
         <div class="files-drawer-body" id="files-panel"></div>
       </div>
     </section>
@@ -2936,36 +3076,56 @@ function setProcessingState(active, title = '', text = '') {
 
 function renderSelectedFiles() {
   selectedFilesEl.innerHTML = '';
-  state.selectedFiles.forEach((file, idx) => {
-    const row = document.createElement('div');
-    row.className = 'selected-file';
-    row.innerHTML = `
-      <div style="min-width:0;flex:1;">
-        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(file.name)}</div>
-        <small>${escHtml(file.type||'Datei')}</small>
-      </div>
-      <div class="selected-meta">
-        <small>${formatBytes(file.size)}</small>
-        <button class="selected-remove-btn" type="button" data-idx="${idx}" title="Entfernen">×</button>
-      </div>
-    `;
-    row.querySelector('.selected-remove-btn').addEventListener('click', () => {
-      state.selectedFiles.splice(idx, 1);
-      renderSelectedFiles();
-      updateUploadButton();
+  // Group by top-level folder (first component of relativePath)
+  const byFolder = new Map();
+  state.selectedFiles.forEach((item, idx) => {
+    const rp = item.relativePath || '';
+    const parts = rp.split('/');
+    const folder = parts.length > 1 ? parts[0] : '';
+    if (!byFolder.has(folder)) byFolder.set(folder, []);
+    byFolder.get(folder).push({ item, idx });
+  });
+
+  byFolder.forEach((entries, folder) => {
+    if (folder) {
+      const header = document.createElement('div');
+      header.className = 'selected-folder-header';
+      header.textContent = `📁 ${folder}`;
+      selectedFilesEl.appendChild(header);
+    }
+    entries.forEach(({ item, idx }) => {
+      const row = document.createElement('div');
+      row.className = 'selected-file' + (folder ? ' in-folder' : '');
+      const displayName = item.relativePath ? item.relativePath.split('/').pop() : item.file.name;
+      row.innerHTML = `
+        <div style="min-width:0;flex:1;">
+          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(displayName)}</div>
+          <small>${escHtml(item.file.type||'Datei')}</small>
+        </div>
+        <div class="selected-meta">
+          <small>${formatBytes(item.file.size)}</small>
+          <button class="selected-remove-btn" type="button" data-idx="${idx}" title="Entfernen">×</button>
+        </div>
+      `;
+      row.querySelector('.selected-remove-btn').addEventListener('click', () => {
+        state.selectedFiles.splice(idx, 1);
+        renderSelectedFiles();
+        updateUploadButton();
+      });
+      selectedFilesEl.appendChild(row);
     });
-    selectedFilesEl.appendChild(row);
   });
 }
 
 function applySelectedFiles(fileList) {
-  // Accumulate: dedupe by name+size, append to existing selection.
+  // Accumulate: dedupe by relativePath+size, append to existing selection.
   const incoming = Array.from(fileList || []);
-  const existing = new Set(state.selectedFiles.map(f => `${f.name}::${f.size}`));
+  const existing = new Set(state.selectedFiles.map(item => `${item.relativePath || item.file.name}::${item.file.size}`));
   for (const f of incoming) {
-    const key = `${f.name}::${f.size}`;
+    const rp = f.webkitRelativePath || '';
+    const key = `${rp || f.name}::${f.size}`;
     if (!existing.has(key)) {
-      state.selectedFiles.push(f);
+      state.selectedFiles.push({ file: f, relativePath: rp });
       existing.add(key);
     }
   }
@@ -2973,6 +3133,73 @@ function applySelectedFiles(fileList) {
   fileInput.value = '';
   renderSelectedFiles();
   updateUploadButton();
+}
+
+// Read a FileSystemEntry (file or directory) recursively into {file, relativePath} items.
+async function readFsEntry(entry, basePath) {
+  if (entry.isFile) {
+    const file = await new Promise((res, rej) => entry.file(res, rej));
+    const relativePath = basePath ? `${basePath}/${entry.name}` : entry.name;
+    return [{ file, relativePath }];
+  } else if (entry.isDirectory) {
+    const dirPath = basePath ? `${basePath}/${entry.name}` : entry.name;
+    const reader = entry.createReader();
+    const allEntries = [];
+    let batch;
+    do {
+      batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+      allEntries.push(...batch);
+    } while (batch.length === 100);
+    const results = [];
+    for (const sub of allEntries) {
+      results.push(...await readFsEntry(sub, dirPath));
+    }
+    return results;
+  }
+  return [];
+}
+
+async function applySelectedEntries(fsEntries) {
+  const supported = new Set(['.pdf', '.pptx', '.md', '.txt']);
+  const allItems = [];
+  for (const entry of fsEntries) {
+    allItems.push(...await readFsEntry(entry, ''));
+  }
+  const existing = new Set(state.selectedFiles.map(item => `${item.relativePath || item.file.name}::${item.file.size}`));
+  for (const item of allItems) {
+    const ext = '.' + item.file.name.split('.').pop().toLowerCase();
+    if (!supported.has(ext)) continue;
+    const key = `${item.relativePath || item.file.name}::${item.file.size}`;
+    if (!existing.has(key)) {
+      state.selectedFiles.push(item);
+      existing.add(key);
+    }
+  }
+  renderSelectedFiles();
+  updateUploadButton();
+}
+
+// Auto-populate the localStorage folder config from server-returned relative_path values.
+function autoPopulateFolderConfig(module, files) {
+  const config = loadFolderConfig(module);
+  const assigned = new Set();
+  for (const [k, v] of Object.entries(config)) {
+    if (k === '__collapsed__' || !Array.isArray(v)) continue;
+    v.forEach(p => assigned.add(p));
+  }
+  for (const file of files) {
+    const rp = (file.relative_path || '').replace(/\\/g, '/');
+    const parts = rp.split('/');
+    if (parts.length > 1 && !assigned.has(rp)) {
+      const folderName = parts[0];
+      if (!config[folderName]) config[folderName] = [];
+      if (!config[folderName].includes(rp)) {
+        config[folderName].push(rp);
+        assigned.add(rp);
+      }
+    }
+  }
+  saveFolderConfig(module, config);
 }
 
 function resetUploadForm() {
@@ -2991,7 +3218,8 @@ async function uploadModule() {
   setStatus('Deine Dateien werden vorbereitet ...');
   const formData = new FormData();
   formData.append('module_name', moduleName);
-  state.selectedFiles.forEach(file => formData.append('files', file));
+  state.selectedFiles.forEach(item => formData.append('files', item.file));
+  formData.append('paths', JSON.stringify(state.selectedFiles.map(item => item.relativePath || item.file.name)));
   try {
     const res = await fetch('/modules/upload', { method: 'POST', body: formData });
     const data = await res.json();
@@ -3002,6 +3230,7 @@ async function uploadModule() {
     if (data.skipped_count) notes.push(`${data.skipped_count} schon vorhanden.`);
     setStatus(notes.join(' '), data.failed_files?.length ? 'error' : 'success');
     await loadModules();
+    autoPopulateFolderConfig(data.module_name, data.files || []);
     openWorkspace(data.module_name, data.files || []);
     resetUploadForm();
     if (data.needs_onboarding) openOnboardingModal('profile_only');
@@ -3108,12 +3337,46 @@ function renameFolder(module, oldName, newName) {
   saveFolderConfig(module, config);
   renderWorkspaceFiles(state.moduleFiles);
 }
-function deleteFolder(module, name) {
+async function deleteFolder(module, folderName) {
   const config = loadFolderConfig(module);
-  delete config[name];
-  if (config['__collapsed__']) config['__collapsed__'] = config['__collapsed__'].filter(f => f !== name);
-  saveFolderConfig(module, config);
-  renderWorkspaceFiles(state.moduleFiles);
+
+  // Collect all file paths: from config + from state.moduleFiles matching the folder prefix
+  const pathSet = new Set(Array.isArray(config[folderName]) ? config[folderName] : []);
+  const prefix = folderName + '/';
+  for (const f of state.moduleFiles) {
+    const rp = (f.relative_path || f.name).replace(/\\/g, '/');
+    if (rp === folderName || rp.startsWith(prefix)) pathSet.add(rp);
+  }
+  const filePaths = Array.from(pathSet);
+
+  const confirmMsg = filePaths.length > 0
+    ? `Ordner „${folderName}" und alle ${filePaths.length} enthaltenen Datei(en) werden unwiderruflich gelöscht.`
+    : `Ordner „${folderName}" wird gelöscht.`;
+  if (!await showConfirm('Ordner löschen', confirmMsg)) return;
+
+  // Delete each file from the server
+  for (const filePath of filePaths) {
+    try {
+      await fetch(`/modules/${encodeURIComponent(module)}/file?path=${encodeURIComponent(filePath)}`, { method: 'DELETE' });
+    } catch { /* non-fatal: continue with rest */ }
+    // Clean up caches and open tabs
+    delete state.parsedTextCache[filePath];
+    disposePdfFrame(filePath);
+    state.panes.forEach((pane, i) => {
+      if (!pane) return;
+      pane.tabs = pane.tabs.filter(t => t.path !== filePath);
+      if (pane.activeTab === filePath) pane.activeTab = pane.tabs[0]?.path || '';
+      if (i === 1 && pane.tabs.length === 0) { state.panes[1] = null; state.focusedPane = 0; }
+    });
+  }
+
+  // Remove folder from localStorage config
+  const fresh = loadFolderConfig(module);
+  delete fresh[folderName];
+  if (fresh['__collapsed__']) fresh['__collapsed__'] = fresh['__collapsed__'].filter(f => f !== folderName);
+  saveFolderConfig(module, fresh);
+
+  await refreshModuleFiles();
 }
 function moveFileToFolder(module, filePath, targetFolder) {
   const config = loadFolderConfig(module);
@@ -3209,28 +3472,11 @@ function renderWorkspaceFiles(files) {
       return row;
     }
 
-    // Header row with "Dateien" label + folder-create button
+    // Header row with "Dateien" label
     const filesHeaderWrap = document.createElement('div');
     filesHeaderWrap.className = 'files-section-header files-header-row';
-    filesHeaderWrap.innerHTML = `<span>Dateien</span><button class="folder-create-btn" title="Neuen Ordner erstellen">📁+</button>`;
+    filesHeaderWrap.innerHTML = `<span>Dateien</span>`;
     filesPanel.appendChild(filesHeaderWrap);
-
-    // Inline new-folder input (hidden initially)
-    const newFolderInput = document.createElement('input');
-    newFolderInput.className = 'folder-new-input';
-    newFolderInput.placeholder = 'Ordnername …';
-    newFolderInput.style.display = 'none';
-    filesPanel.appendChild(newFolderInput);
-
-    filesHeaderWrap.querySelector('.folder-create-btn').addEventListener('click', () => {
-      newFolderInput.style.display = '';
-      newFolderInput.focus();
-    });
-    newFolderInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { createFolderConfig(module, newFolderInput.value); }
-      if (e.key === 'Escape') { newFolderInput.style.display = 'none'; newFolderInput.value = ''; }
-    });
-    newFolderInput.addEventListener('blur', () => { newFolderInput.style.display = 'none'; newFolderInput.value = ''; });
 
     // Root drop zone (files not in any folder)
     const rootZone = document.createElement('div');
@@ -4460,17 +4706,21 @@ async function refreshModuleFiles() {
   persistWorkspace();
 }
 
-async function addFilesToCurrentModule(fileList) {
-  const files = Array.from(fileList || []);
-  if (!files.length || !state.moduleName) return;
+async function addFilesToCurrentModule(input) {
+  const arr = Array.from(input || []);
+  if (!arr.length || !state.moduleName) return;
+  // Normalize to {file, relativePath} items (input may be File objects or already items)
+  const items = arr.map(x => x instanceof File ? { file: x, relativePath: x.webkitRelativePath || '' } : x);
   setProcessingState(true, 'Dateien werden hinzugefügt', 'Upload + Verarbeitung läuft …');
   const formData = new FormData();
   formData.append('module_name', state.moduleName);
-  files.forEach(f => formData.append('files', f));
+  items.forEach(item => formData.append('files', item.file));
+  formData.append('paths', JSON.stringify(items.map(item => item.relativePath || item.file.name)));
   try {
     const res = await fetch('/modules/upload', { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Upload fehlgeschlagen.');
+    autoPopulateFolderConfig(state.moduleName, data.files || []);
     state.moduleFiles = data.files || state.moduleFiles;
     renderWorkspaceFiles(state.moduleFiles);
     renderPanes();
@@ -5289,6 +5539,129 @@ function startSplitDrag(e, handle) {
 }
 
 // ── Modules ────────────────────────────────────────────────────────────────────
+// ── Module progress helpers ────────────────────────────────────────────────────
+
+function calcKernProgress(roadmap) {
+  if (!roadmap || !roadmap.exists || !roadmap.phases || !roadmap.phases.length) return null;
+  const phases = roadmap.phases;
+  const kernIdx = phases.findIndex(p => p.title.toLowerCase().includes('kern'));
+  const startIdx = kernIdx !== -1 ? kernIdx : 0;
+  let done = 0, total = 0;
+  for (const phase of phases.slice(startIdx)) {
+    for (const topic of (phase.topics || [])) {
+      total++;
+      if (topic.status === 'done') done++;
+    }
+  }
+  return total > 0 ? { done, total, pct: Math.round(done / total * 100) } : null;
+}
+
+function getDoingTopic(roadmap) {
+  if (!roadmap?.phases) return null;
+  for (const phase of roadmap.phases) {
+    for (const topic of (phase.topics || [])) {
+      if (topic.status === 'doing') return topic.name;
+    }
+  }
+  const kernIdx = roadmap.phases.findIndex(p => p.title.toLowerCase().includes('kern'));
+  const start = kernIdx !== -1 ? kernIdx : 0;
+  for (const phase of roadmap.phases.slice(start)) {
+    for (const topic of (phase.topics || [])) {
+      if (topic.status === 'todo') return topic.name;
+    }
+  }
+  return null;
+}
+
+function daysUntilExam(examDate) {
+  if (!examDate) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.ceil((new Date(examDate) - today) / 86400000);
+}
+
+function renderFeaturedCard(moduleName, roadmap) {
+  const prog = calcKernProgress(roadmap);
+  const doingTopic = getDoingTopic(roadmap);
+  const days = daysUntilExam(roadmap?.exam_date);
+  const RING_R = 38, RING_CIRC = +(2 * Math.PI * RING_R).toFixed(2);
+  const pct = prog ? prog.pct : null;
+  const offset = pct !== null ? (RING_CIRC - pct / 100 * RING_CIRC).toFixed(2) : RING_CIRC;
+
+  const examHtml = days !== null
+    ? `<div class="featured-exam-line">${days > 0 ? `Prüfung in ${days} Tag${days !== 1 ? 'en' : ''}` : days === 0 ? 'Prüfung heute' : 'Prüfung vorbei'}</div>`
+    : '';
+
+  const card = document.createElement('div');
+  card.className = 'featured-card';
+  card.innerHTML = `
+    <div class="featured-left">
+      <span class="featured-card-chip">★ Favorit</span>
+      <div class="featured-module-name">${escHtml(moduleName)}</div>
+      ${doingTopic ? `<div class="featured-doing-row"><span class="featured-doing-label">Aktuell</span><span class="featured-doing-topic">${escHtml(doingTopic)}</span></div>` : ''}
+      ${examHtml}
+      <button class="primary-btn featured-action" type="button">Weiterlernen</button>
+    </div>
+    <div class="featured-right">
+      ${pct !== null ? `
+        <svg class="ring-svg" viewBox="0 0 100 100" width="110" height="110" aria-hidden="true">
+          <circle cx="50" cy="50" r="${RING_R}" fill="none" stroke="var(--border)" stroke-width="10" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="${RING_R}" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="${RING_CIRC}" stroke-dashoffset="${offset}" transform="rotate(-90 50 50)"/>
+        </svg>
+        <div class="featured-pct">${pct}<span class="featured-pct-unit">%</span></div>
+        <div class="featured-pct-sub">${prog.done}/${prog.total} Kernthemen</div>
+      ` : `<div class="featured-pct-sub" style="margin-top:8px;">Kein Lernplan</div>`}
+    </div>`;
+
+  card.querySelector('.featured-action').addEventListener('click', e => {
+    e.stopPropagation();
+    loadModuleWorkspace(moduleName);
+  });
+  card.addEventListener('click', () => loadModuleWorkspace(moduleName));
+  return card;
+}
+
+function renderMiniCard(moduleName, roadmap) {
+  const isFav = localStorage.getItem('studyAgent.favorite') === moduleName;
+  const prog = calcKernProgress(roadmap);
+  const pct = prog ? prog.pct : null;
+
+  const card = document.createElement('button');
+  card.className = 'existing-module';
+  card.type = 'button';
+  card.innerHTML = `
+    <strong>${escHtml(moduleName)}</strong>
+    ${pct !== null ? `
+      <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mini-pct">${pct}%</div>
+    ` : ''}`;
+
+  const starBtn = document.createElement('button');
+  starBtn.className = 'star-module-btn' + (isFav ? ' starred' : '');
+  starBtn.type = 'button';
+  starBtn.title = 'Als Favorit setzen';
+  starBtn.textContent = '★';
+  starBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const current = localStorage.getItem('studyAgent.favorite');
+    if (current === moduleName) localStorage.removeItem('studyAgent.favorite');
+    else localStorage.setItem('studyAgent.favorite', moduleName);
+    loadModules();
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'delete-module-btn';
+  delBtn.type = 'button';
+  delBtn.title = 'Kurs löschen';
+  delBtn.textContent = '×';
+  delBtn.addEventListener('click', e => { e.stopPropagation(); deleteModule(moduleName); });
+
+  card.appendChild(starBtn);
+  card.appendChild(delBtn);
+  card.addEventListener('click', () => loadModuleWorkspace(moduleName));
+  return card;
+}
+
 async function loadModules() {
   try {
     const res = await fetch('/modules');
@@ -5297,28 +5670,29 @@ async function loadModules() {
     existingModulesEl.innerHTML = '';
     emptyModulesEl.hidden = modules.length > 0;
 
-    if (modules.length === 0) {
-      toggleNewCourse(true);
+    if (modules.length === 0) { toggleNewCourse(true); return; }
+
+    const favorite = localStorage.getItem('studyAgent.favorite');
+    let favIdx = modules.indexOf(favorite);
+    if (favIdx === -1) favIdx = 0;
+
+    const roadmaps = await Promise.all(
+      modules.map(m =>
+        fetch(`/roadmap/${encodeURIComponent(m)}`)
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+      )
+    );
+
+    existingModulesEl.appendChild(renderFeaturedCard(modules[favIdx], roadmaps[favIdx]));
+
+    const nonFavModules = modules.filter((_, i) => i !== favIdx);
+    const nonFavRoadmaps = roadmaps.filter((_, i) => i !== favIdx);
+    if (nonFavModules.length > 0) {
+      const grid = document.createElement('div');
+      grid.className = 'mini-modules-grid';
+      nonFavModules.forEach((m, i) => grid.appendChild(renderMiniCard(m, nonFavRoadmaps[i])));
+      existingModulesEl.appendChild(grid);
     }
-
-    modules.forEach((moduleName, i) => {
-      const card = document.createElement('div');
-      card.className = 'existing-module';
-      card.style.animationDelay = `${0.5 + i * 0.07}s`;
-      card.innerHTML = `<strong>${escHtml(moduleName)}</strong><span>Öffnen</span>`;
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'delete-module-btn';
-      delBtn.type = 'button';
-      delBtn.title = 'Kurs löschen';
-      delBtn.textContent = '×';
-      delBtn.addEventListener('click', e => { e.stopPropagation(); deleteModule(moduleName); });
-      card.appendChild(delBtn);
-
-      card.addEventListener('click', () => loadModuleWorkspace(moduleName));
-      add3DTilt(card);
-      existingModulesEl.appendChild(card);
-    });
   } catch {
     emptyModulesEl.hidden = false;
     emptyModulesEl.textContent = 'Kurse konnten nicht geladen werden.';
@@ -5531,19 +5905,6 @@ function addMsg(role, content, sources) {
     bubble.textContent = content;
   }
   wrap.append(label, bubble);
-  if (sources?.length) {
-    const srcRow = document.createElement('div');
-    srcRow.className = 'sources';
-    sources.forEach(src => {
-      const tag = document.createElement('div');
-      tag.className = 'source-tag';
-      const name = String(src.source || '').split(/[\\/]/).pop();
-      tag.textContent = name;
-      tag.title = `${name}${typeof src.score === 'number' ? ` (Relevanz ${(src.score*100).toFixed(0)}%)` : ''}`;
-      srcRow.appendChild(tag);
-    });
-    wrap.appendChild(srcRow);
-  }
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -5622,6 +5983,7 @@ async function sendQuestion() {
   const question = input.value.trim();
   if (!question || !state.moduleName) return;
   input.value = '';
+  input.style.height = '';
   sendBtn.disabled = true;
   addMsg('user', question);
   const thinking = addThinking();
@@ -5676,17 +6038,6 @@ async function sendQuestion() {
     if (agentWrap && bubble) {
       bubble.innerHTML = renderMarkdown(rawText);
       renderMathIn(bubble);
-      if (sources.length) {
-        const srcRow = document.createElement('div'); srcRow.className = 'sources';
-        sources.forEach(src => {
-          const tag = document.createElement('div'); tag.className = 'source-tag';
-          const name = String(src.source || '').split(/[\\/]/).pop();
-          tag.textContent = name;
-          tag.title = `${name}${typeof src.score === 'number' ? ` (Relevanz ${(src.score*100).toFixed(0)}%)` : ''}`;
-          srcRow.appendChild(tag);
-        });
-        agentWrap.appendChild(srcRow);
-      }
       chat.scrollTop = chat.scrollHeight;
     } else {
       thinking.remove();
@@ -5803,15 +6154,30 @@ function renderMarkdown(text) {
 // ── Event listeners ────────────────────────────────────────────────────────────
 moduleNameInput.addEventListener('input', updateUploadButton);
 fileInput.addEventListener('change', e => applySelectedFiles(e.target.files));
+document.getElementById('folder-input').addEventListener('change', e => { applySelectedFiles(e.target.files); e.target.value = ''; });
+document.getElementById('folder-pick-btn').addEventListener('click', e => { e.stopPropagation(); document.getElementById('folder-input').click(); });
 clearBtn.addEventListener('click', resetUploadForm);
 uploadBtn.addEventListener('click', uploadModule);
 newModuleBtn.addEventListener('click', showSetup);
 document.getElementById('brand-home-btn').addEventListener('click', showSetup);
 sendBtn.addEventListener('click', sendQuestion);
 input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); } });
+input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 200) + 'px'; });
+
 dropZone.addEventListener('dragover',  e => { if (state.isUploading) return; e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => { if (state.isUploading) return; e.preventDefault(); dropZone.classList.remove('dragover'); applySelectedFiles(e.dataTransfer.files); });
+dropZone.addEventListener('drop', async e => {
+  if (state.isUploading) return;
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const items = Array.from(e.dataTransfer.items || []);
+  const entries = items.map(item => item.webkitGetAsEntry?.()).filter(Boolean);
+  if (entries.some(en => en && en.isDirectory)) {
+    await applySelectedEntries(entries.filter(Boolean));
+  } else {
+    applySelectedFiles(e.dataTransfer.files);
+  }
+});
 modalCloseBtn.addEventListener('click', closeModal);
 lectureModal.addEventListener('click', e => { if (e.target === lectureModal) closeModal(); });
 onboardingSubmit.addEventListener('click', () => { if (state.onboardingMode === 'profile_only') saveProfileOnly(); else runSummarize(false); });
@@ -6159,6 +6525,15 @@ document.getElementById('roadmap-btn').addEventListener('click', () => {
     addInput.addEventListener('change', e => {
       addFilesToCurrentModule(e.target.files);
       addInput.value = '';
+    });
+  }
+  const addFolderBtn = document.getElementById('add-folder-btn');
+  const addFolderInput = document.getElementById('add-folder-input');
+  if (addFolderBtn && addFolderInput) {
+    addFolderBtn.addEventListener('click', () => addFolderInput.click());
+    addFolderInput.addEventListener('change', e => {
+      addFilesToCurrentModule(e.target.files);
+      addFolderInput.value = '';
     });
   }
 }

@@ -9,6 +9,7 @@ import re
 import shutil
 import tempfile
 import traceback
+from datetime import date as _date
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional
@@ -69,6 +70,7 @@ rag = create_query_service(vector_store=vector_store, embedder=embedder, top_k=c
 class Question(BaseModel):
     question: str
     module_name: Optional[str] = None
+    chat_history: List[dict] = []
 
 class LectureSummarizeRequest(BaseModel):
     filename: str
@@ -86,7 +88,6 @@ class ExamGenerateRequest(BaseModel):
     total_points: int = 50
 
 class DailyGenerateRequest(BaseModel):
-    mode: str = "konkret"   # "konkret" | "grob"
     daily_hours: float = 2.0
 
 class DailyTaskPatchRequest(BaseModel):
@@ -131,7 +132,7 @@ def list_module_files(module_name: str) -> List[dict]:
     files = []
     for file_path in sorted(base.rglob("*")):
         if file_path.is_file():
-            rel = str(file_path.relative_to(base))
+            rel = str(file_path.relative_to(base)).replace("\\", "/")
             files.append({
                 "name": file_path.name,
                 "relative_path": rel,
@@ -140,6 +141,13 @@ def list_module_files(module_name: str) -> List[dict]:
                 "is_exam": _is_exam_file(rel, profile),
             })
     return files
+
+
+def _safe_rel_path(rel: str) -> Path:
+    """Sanitize a relative path preventing directory traversal attacks."""
+    parts = Path(rel.replace("\\", "/")).parts
+    safe = [p for p in parts if p not in ("..", ".", "") and "/" not in p and "\\" not in p]
+    return Path(*safe) if safe else Path(Path(rel).name)
 
 def _find_file(module_name: str, filename: str) -> Path:
     """Sucht Datei im Modul-Verzeichnis."""
@@ -158,6 +166,47 @@ def _slug(name: str) -> str:
     s = name.lower().strip()
     s = re.sub(r"[äöüß]", lambda m: {"ä":"ae","ö":"oe","ü":"ue","ß":"ss"}[m.group()], s)
     return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+def _index_generated_content(text: str, source_path: str, module_name: str) -> int:
+    """Chunk, embed und indiziere generierten Inhalt in ChromaDB. Gibt Chunk-Anzahl zurück."""
+    from app.chunking.chunker import chunk_document
+    from app.storage.persister import save_chunks
+
+    doc_id = hashlib.md5(source_path.encode()).hexdigest()
+    chunks = chunk_document(
+        text=text,
+        document_id=doc_id,
+        file_type="md",
+        metadata={"source": source_path, "module_name": module_name},
+    )
+    if not chunks:
+        return 0
+
+    chunks_dir = config["processed_path"] / "chunks"
+    save_chunks(chunks, chunks_dir, doc_id)
+
+    existing_ids = set(vector_store.collection.get()["ids"])
+    new_chunks = [c for c in chunks if c.chunk_id not in existing_ids]
+    if not new_chunks:
+        return 0
+
+    embeddings = embedder.embed_batch([c.chunk_text for c in new_chunks])
+    vector_store.add(
+        ids=[c.chunk_id for c in new_chunks],
+        embeddings=embeddings,
+        documents=[c.chunk_text for c in new_chunks],
+        metadatas=[
+            {
+                "document_id": doc_id,
+                "source": source_path,
+                "module_name": module_name,
+                "chunk_index": str(c.chunk_index),
+            }
+            for c in new_chunks
+        ],
+    )
+    return len(new_chunks)
 
 
 # ── Exam-style cache ──────────────────────────────────────────────────────────
@@ -250,7 +299,7 @@ async def ask(body: Question):
     answer_parts: List[str] = []
     sources: list = []
     path = "simple"
-    async for raw in ask_advanced(body.question, body.module_name, rag):
+    async for raw in ask_advanced(body.question, body.module_name, rag, body.chat_history):
         data = json.loads(raw)
         if data["type"] == "token":
             answer_parts.append(data["content"])
@@ -263,7 +312,7 @@ async def ask(body: Question):
 @app.post("/ask/stream")
 async def ask_stream(body: Question):
     async def event_stream():
-        async for raw in ask_advanced(body.question, body.module_name, rag):
+        async for raw in ask_advanced(body.question, body.module_name, rag, body.chat_history):
             yield f"data: {raw}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
@@ -275,6 +324,38 @@ def get_modules():
     if RAW_DIR.exists():
         modules = sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir())
     return {"modules": modules}
+
+
+_SETTINGS_PATH = Path("data/settings.json")
+
+def _load_settings() -> dict:
+    if _SETTINGS_PATH.exists():
+        try:
+            return json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+def _save_settings(data: dict) -> None:
+    _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _SETTINGS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.get("/settings/favorite-module")
+def get_favorite_module():
+    s = _load_settings()
+    return {"module": s.get("favorite_module")}
+
+
+class FavoriteModuleRequest(BaseModel):
+    module: str
+
+@app.post("/settings/favorite-module")
+def set_favorite_module(body: FavoriteModuleRequest):
+    s = _load_settings()
+    s["favorite_module"] = sanitize_module_name(body.module)
+    _save_settings(s)
+    return {"ok": True}
 
 
 @app.get("/modules/{module_name}/files")
@@ -656,7 +737,8 @@ def get_module_text(module_name: str, path: str):
 @app.post("/modules/upload")
 async def upload_module(
     module_name: str = Form(...),
-    files: List[UploadFile] = File(...)
+    files: List[UploadFile] = File(...),
+    paths: Optional[str] = Form(None),
 ):
     clean_module = sanitize_module_name(module_name)
     target_dir = module_dir(clean_module)
@@ -665,18 +747,32 @@ async def upload_module(
     if not files:
         raise HTTPException(status_code=400, detail="Keine Dateien uebergeben.")
 
+    # Optional JSON array of relative paths (one per file, preserves folder structure)
+    rel_paths: list = []
+    if paths:
+        try:
+            rel_paths = json.loads(paths)
+        except Exception:
+            rel_paths = []
+
     saved_paths: List[Path] = []
     skipped_files: List[str] = []
 
-    for uploaded in files:
+    for i, uploaded in enumerate(files):
         if not uploaded.filename:
             continue
 
-        target_path = target_dir / Path(uploaded.filename).name
+        if i < len(rel_paths) and rel_paths[i]:
+            save_rel = _safe_rel_path(rel_paths[i])
+        else:
+            save_rel = Path(Path(uploaded.filename).name)
+
+        target_path = target_dir / save_rel
         if not is_supported(target_path):
             skipped_files.append(uploaded.filename)
             continue
 
+        target_path.parent.mkdir(parents=True, exist_ok=True)
         content = await uploaded.read()
         with open(target_path, "wb") as handle:
             handle.write(content)
@@ -780,6 +876,11 @@ async def lecture_summarize(body: LectureSummarizeRequest):
     # Zwei-Stufen-Zusammenfassung
     result = summarize(body.module_name, parsed.extracted_text)
 
+    try:
+        _index_generated_content(result["summary"], result["saved_to"], body.module_name)
+    except Exception as exc:
+        print(f"[summarize] RAG-Indizierung fehlgeschlagen (nicht fatal): {exc}")
+
     return {
         "needs_onboarding": False,
         "modul_slug": profile["slug"],
@@ -862,6 +963,27 @@ async def solve_sheet(body: SolveSheetRequest):
     models_used: dict = {}
     for r in results:
         models_used[r.model_used] = models_used.get(r.model_used, 0) + 1
+
+    # Gelöstes Blatt speichern und in RAG indizieren
+    try:
+        md_lines = [f"# Gelöstes Übungsblatt — {body.module_id}", f"**Datum:** {_date.today()}", ""]
+        for r in results:
+            md_lines += [
+                f"---", f"## Aufgabe {r.aufgabe_nr}", "",
+                "**Aufgabentext:**", r.aufgabe_text.strip(), "",
+                "**Lösung:**", r.loesung.strip(), "",
+            ]
+        md_content = "\n".join(md_lines)
+
+        sheet_dir = Path("data/processed/solved_sheets") / _slug(body.module_id)
+        sheet_dir.mkdir(parents=True, exist_ok=True)
+        sheet_hash = hashlib.md5(body.sheet_text.encode()).hexdigest()[:8]
+        sheet_path = sheet_dir / f"{_date.today()}_{sheet_hash}.md"
+        sheet_path.write_text(md_content, encoding="utf-8")
+
+        await asyncio.to_thread(_index_generated_content, md_content, str(sheet_path), body.module_id)
+    except Exception as exc:
+        print(f"[solve_sheet] Speichern/Indizieren fehlgeschlagen (nicht fatal): {exc}")
 
     return {
         "results": [
@@ -1018,6 +1140,11 @@ async def exam_generate(body: ExamGenerateRequest):
         raise HTTPException(status_code=500, detail=f"Generierung fehlgeschlagen: {exc}")
 
     n = eg.save_exam(clean_name, md_content)
+    try:
+        exam_path = str(eg._exams_dir(clean_name) / f"exam_{n}.md")
+        _index_generated_content(md_content, exam_path, clean_name)
+    except Exception as exc:
+        print(f"[exam_generate] RAG-Indizierung fehlgeschlagen (nicht fatal): {exc}")
     return {"success": True, "n": n, "module_name": clean_name}
 
 
@@ -1068,6 +1195,11 @@ async def exam_generate_stream(body: ExamGenerateRequest):
             )
 
             n = eg.save_exam(clean_name, md_content)
+            try:
+                exam_path = str(eg._exams_dir(clean_name) / f"exam_{n}.md")
+                await asyncio.to_thread(_index_generated_content, md_content, exam_path, clean_name)
+            except Exception as exc:
+                print(f"[exam_stream] RAG-Indizierung fehlgeschlagen (nicht fatal): {exc}")
             yield f"data: {json.dumps({'type': 'result', 'data': {'success': True, 'n': n, 'module_name': clean_name}})}\n\n"
 
         except Exception as exc:
@@ -1117,8 +1249,6 @@ async def daily_generate(module_name: str, body: DailyGenerateRequest):
     """Generate a new daily plan. Archives old plan and applies carryover."""
     try:
         clean = sanitize_module_name(module_name)
-        if body.mode not in ("konkret", "grob"):
-            raise HTTPException(status_code=400, detail="mode muss 'konkret' oder 'grob' sein.")
         if body.daily_hours < 0.5 or body.daily_hours > 12:
             raise HTTPException(status_code=400, detail="daily_hours muss zwischen 0.5 und 12 liegen.")
 
@@ -1127,12 +1257,18 @@ async def daily_generate(module_name: str, body: DailyGenerateRequest):
             raise HTTPException(status_code=404, detail="Keine Roadmap gefunden. Erst Roadmap generieren.")
         roadmap_data = rm.parse_md(roadmap_md)
 
-        def rag_fn(question: str, _module: str = clean, top_k: int = 8) -> str:
-            return ""
+        def rag_fn(question: str, module: str = clean, top_k: int = 6) -> str:
+            from pathlib import Path as _Path
+            hits = rag.retrieve(question, top_k=top_k, module_name=module)
+            if not hits:
+                return ""
+            return "\n\n".join(
+                f"[{_Path(h['source']).name}]\n{h['text'].strip()}"
+                for h in hits
+            )
 
         new_md = dt.generate(
             clean,
-            mode=body.mode,
             daily_hours=body.daily_hours,
             roadmap_data=roadmap_data,
             rag_fn=rag_fn,

@@ -41,6 +41,7 @@ def _dist_to_score(dist: float | None) -> float:
 async def run_simple(
     question: str,
     hits: list[dict],
+    chat_history: list[dict] | None = None,
 ) -> AsyncIterator[str]:
     top_chunks = hits[:5] if hits else []
     if not top_chunks:
@@ -61,11 +62,13 @@ async def run_simple(
         for h in top_chunks
     ]
 
+    messages = [*(chat_history or []), {"role": "user", "content": user_message}]
+
     async with _get_anthropic().messages.stream(
         model="claude-haiku-4-5-20251001",
         max_tokens=512,
         system=_SYNTH_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
+        messages=messages,
     ) as stream:
         async for text in stream.text_stream:
             yield json.dumps({"type": "token", "content": text})
@@ -79,6 +82,7 @@ async def run(
     initial_hits: list[dict],
     module_name: str | None,
     rag_service,
+    chat_history: list[dict] | None = None,
 ) -> AsyncIterator[str]:
     async def fetch(q: str) -> list[dict]:
         return await asyncio.to_thread(rag_service.retrieve, q, None, module_name)
@@ -121,11 +125,13 @@ async def run(
         for h in top_chunks
     ]
 
+    messages = [*(chat_history or []), {"role": "user", "content": user_message}]
+
     async with _get_anthropic().messages.stream(
         model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         system=_SYNTH_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
+        messages=messages,
     ) as stream:
         async for text in stream.text_stream:
             yield json.dumps({"type": "token", "content": text})
