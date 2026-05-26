@@ -95,6 +95,14 @@ class DailyTaskPatchRequest(BaseModel):
     task_index: int
     done: bool
 
+class FileTypeRequest(BaseModel):
+    path: str
+    file_type: str  # "klausur" | "übungsblatt" | "vorlesung" | "sonstiges"
+
+class FileRenameRequest(BaseModel):
+    path: str
+    new_name: str
+
 def sanitize_module_name(name: str) -> str:
     name = name.strip()
     name = re.sub(r"\s+", " ", name)
@@ -129,6 +137,7 @@ def list_module_files(module_name: str) -> List[dict]:
         return []
 
     profile = mp.load(module_name) or {}
+    file_types = profile.get("file_types") or {}
     files = []
     for file_path in sorted(base.rglob("*")):
         if file_path.is_file():
@@ -139,6 +148,7 @@ def list_module_files(module_name: str) -> List[dict]:
                 "file_type": file_path.suffix.lower().lstrip("."),
                 "size": file_path.stat().st_size,
                 "is_exam": _is_exam_file(rel, profile),
+                "file_category": file_types.get(rel),
             })
     return files
 
@@ -507,6 +517,80 @@ def toggle_exam_flag(module_name: str, path: str):
     profile["manual_not_exam_files"] = manual_not_exam
     mp.save(profile)
     return {"success": True, "is_exam": desired}
+
+
+@app.patch("/modules/{module_name}/file/type")
+def set_file_type(module_name: str, body: FileTypeRequest):
+    """Persist the semantic category of a file (klausur/übungsblatt/vorlesung/sonstiges)."""
+    target = _resolve_module_file(module_name, body.path)
+    rel = str(target.relative_to(module_dir(module_name).resolve())).replace("\\", "/")
+
+    profile = mp.load(module_name)
+    if not profile:
+        profile = mp.create_from_onboarding({
+            "name": module_name, "schwerpunkte": [], "stil": "mixed", "pruefungsrelevant": [],
+        })
+
+    file_types = dict(profile.get("file_types") or {})
+    if body.file_type == "sonstiges":
+        file_types.pop(rel, None)
+    else:
+        file_types[rel] = body.file_type
+    profile["file_types"] = file_types
+
+    manual_exam = list(profile.get("manual_exam_files") or [])
+    manual_not_exam = list(profile.get("manual_not_exam_files") or [])
+    auto_detected = bool(EXAM_FILE_PATTERN.search(rel))
+
+    if body.file_type == "klausur":
+        manual_not_exam = [f for f in manual_not_exam if f != rel]
+        if not auto_detected and rel not in manual_exam:
+            manual_exam.append(rel)
+    else:
+        manual_exam = [f for f in manual_exam if f != rel]
+        if auto_detected and rel not in manual_not_exam:
+            manual_not_exam.append(rel)
+
+    profile["manual_exam_files"] = manual_exam
+    profile["manual_not_exam_files"] = manual_not_exam
+    mp.save(profile)
+    return {"success": True, "file_type": body.file_type}
+
+
+@app.post("/modules/{module_name}/file/rename")
+def rename_module_file(module_name: str, body: FileRenameRequest):
+    """Rename a file within its module directory and update profile references."""
+    target = _resolve_module_file(module_name, body.path)
+    new_name = body.new_name.strip()
+    if not new_name or "/" in new_name or "\\" in new_name or ".." in new_name:
+        raise HTTPException(status_code=400, detail="Ungültiger Dateiname.")
+
+    new_path = target.parent / new_name
+    if new_path.exists():
+        raise HTTPException(status_code=409, detail="Eine Datei mit diesem Namen existiert bereits.")
+
+    base = module_dir(module_name).resolve()
+    rel_old = str(target.relative_to(base)).replace("\\", "/")
+    target.rename(new_path)
+    rel_new = str(new_path.relative_to(base)).replace("\\", "/")
+
+    profile = mp.load(module_name) or {}
+
+    def swap(lst: list) -> list:
+        return [rel_new if x == rel_old else x for x in lst]
+
+    def swap_dict(d: dict) -> dict:
+        return {(rel_new if k == rel_old else k): v for k, v in d.items()}
+
+    if "manual_exam_files" in profile:
+        profile["manual_exam_files"] = swap(profile["manual_exam_files"])
+    if "manual_not_exam_files" in profile:
+        profile["manual_not_exam_files"] = swap(profile["manual_not_exam_files"])
+    if "file_types" in profile:
+        profile["file_types"] = swap_dict(profile["file_types"])
+    mp.save(profile)
+
+    return {"success": True, "old_path": rel_old, "new_path": rel_new, "new_name": new_name}
 
 
 # ─────────────────────── Roadmap endpoints ────────────────────────────────────

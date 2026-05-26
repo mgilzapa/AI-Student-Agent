@@ -40,7 +40,9 @@ ROADMAPS_DIR = Path("data/processed/roadmaps")
 
 # ─────────────────────────── Generation prompt ──────────────────────────────
 
-_GENERATE_PROMPT = """Du bist ein erfahrener universitärer Lerncoach.
+_GENERATE_PROMPT = """Erkenne die Sprache der Kursinhalte im KONTEXT-Abschnitt und antworte vollständig in dieser Sprache. Alle Phasennamen, Themen-Namen, Zusammenfassungen und sonstigen Inhalte müssen in der erkannten Sprache verfasst sein.
+
+Du bist ein erfahrener universitärer Lerncoach.
 Erstelle eine Lern-Roadmap als visuell darstellbarer Skill-Graph (roadmap.sh-Stil) für Modul "{modul}".
 {user_focus_section}
 KONTEXT

@@ -95,58 +95,13 @@
   /* ── Shell ── */
   .app-shell { height: 100dvh; display: flex; flex-direction: column; position: relative; z-index: 1; }
 
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 11px 22px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-    position: relative; z-index: 20; flex-shrink: 0;
+  .rail-course-name {
+    flex: 1; min-width: 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-
-  .brand {
-    display: flex; align-items: center; gap: 10px;
-    background: none; border: none; padding: 0;
-    cursor: pointer; text-align: left;
-    border-radius: 8px;
-    transition: opacity 0.18s ease;
-  }
-  .brand:hover { opacity: 0.72; }
-  .brand-mark {
-    width: 28px; height: 28px;
-    background: var(--accent);
-    border-radius: 7px;
-    display: grid; place-items: center;
-    font-family: 'Lora', serif;
-    font-size: 0.85rem; color: #fff; font-style: italic;
-    flex-shrink: 0;
-  }
-  .brand-text h1 {
-    font-family: 'Lora', serif; font-size: 1.05rem; font-weight: 600;
-    color: var(--text);
-    letter-spacing: -0.01em;
-  }
-  .brand-sub {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
-  }
-  .header-right {
-    display: flex; align-items: center; gap: 12px;
-  }
-  .header-status {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
-  }
-  .theme-toggle {
-    width: 30px; height: 30px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    display: grid; place-items: center;
-    font-size: 0.85rem; cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
-    flex-shrink: 0;
-  }
-  .theme-toggle:hover { background: var(--panel-soft); border-color: var(--accent-border); }
+  .ws-grid.sidebar-collapsed .rail-course-name { display: none; }
 
   main { flex: 1; min-height: 0; overflow: hidden; }
   .screen { display: none; height: 100%; }
@@ -249,6 +204,15 @@
     color: var(--muted); display: flex; align-items: center; gap: 5px;
   }
   .hero-feat::before { content: '◦'; color: var(--accent); font-size: 0.8rem; }
+
+  .page-title {
+    font-family: 'Lora', serif;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    animation: fadeIn 0.35s var(--ease-out) both;
+  }
 
   @keyframes heroIn {
     from { opacity: 0; transform: translateY(14px); }
@@ -839,30 +803,26 @@
      WORKSPACE — 3-pane grid (Desktop)
   ════════════════════════════════════════ */
   .ws-grid {
+    --sidebar-w: 240px;
     flex: 1; min-height: 0;
     display: grid;
     grid-template-columns:
-      56px
-      0px
+      var(--sidebar-w)
       minmax(420px, 1fr)
       4px
       var(--w-right, 360px);
     background: transparent;
     position: relative;
-    transition: grid-template-columns 0.22s var(--ease-out);
+    transition: grid-template-columns 0.25s var(--ease-out);
   }
-  .ws-grid.drawer-open {
-    grid-template-columns: 56px 280px minmax(0, 1fr) 4px var(--w-right, 360px);
+  .ws-grid.sidebar-collapsed {
+    --sidebar-w: 56px;
   }
   .ws-grid.right-collapsed {
-    grid-template-columns: 56px 0px minmax(0, 1fr) 0px 0px;
-  }
-  .ws-grid.drawer-open.right-collapsed {
-    grid-template-columns: 56px 280px minmax(0, 1fr) 0px 0px;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr) 0px 0px;
   }
   .ws-grid.right-collapsed .ws-split,
   .ws-grid.right-collapsed .ws-right { overflow: hidden; }
-  .ws-drawer-spacer { min-width: 0; overflow: hidden; }
 
   /* Splitter handles */
   .ws-split {
@@ -903,30 +863,41 @@
     border-color: var(--accent-border);
     color: var(--accent);
   }
-  /* ── Icon Rail (left panel) ── */
+  /* ── Sidebar (left panel) ── */
   .ws-left {
     background: var(--panel);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 14px 0 12px;
-    gap: 4px;
     min-height: 0;
     overflow: visible;
     position: relative;
     z-index: 11;
+    width: 100%;
   }
 
-  .rail-avatar-wrap { position: relative; margin-bottom: 10px; }
+  /* ── Rail header (avatar + collapse toggle) ── */
+  .rail-header {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 10px 10px 12px;
+    gap: 8px;
+  }
+  .ws-grid.sidebar-collapsed .rail-header {
+    flex-direction: column; align-items: center;
+    padding: 13px 0 8px;
+    gap: 6px;
+  }
+
+  .rail-avatar-wrap { position: relative; }
   .rail-avatar {
-    width: 32px; height: 32px;
+    width: 30px; height: 30px;
     background: var(--accent);
     border: none;
     border-radius: 8px;
     color: #fff;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem; font-weight: 500;
+    font-size: 0.68rem; font-weight: 500;
     letter-spacing: 0.02em;
     cursor: pointer;
     display: grid; place-items: center;
@@ -962,78 +933,267 @@
   }
   .rail-avatar-dropdown li button:hover { background: var(--accent-soft); color: var(--accent); }
 
+  .rail-collapse-btn {
+    width: 28px; height: 28px; flex-shrink: 0;
+    background: none; border: 1px solid transparent;
+    border-radius: 7px; color: var(--muted);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    padding: 0;
+  }
+  .rail-collapse-btn:hover {
+    background: var(--panel-soft); border-color: var(--border); color: var(--text);
+  }
+
+  /* ── Rail body (nav tabs + files, non-scrolling container) ── */
+  .rail-body {
+    flex: 1; min-height: 0;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    padding: 4px 8px;
+    gap: 2px;
+  }
+
+  /* ── Rail tabs ── */
   .rail-tab {
-    width: 40px; height: 46px;
-    background: none; border: none; border-radius: 10px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; cursor: pointer;
+    width: 100%;
+    background: none; border: none; border-radius: 9px;
+    display: flex; flex-direction: row; align-items: center;
+    gap: 10px; cursor: pointer;
     color: var(--muted);
+    padding: 9px 10px;
     transition: color 0.15s ease, background 0.15s ease;
-    padding: 0; flex-shrink: 0;
+    flex-shrink: 0;
+    white-space: nowrap; overflow: hidden;
+    text-align: left;
   }
   .rail-tab:hover { color: var(--text); background: var(--panel-soft); }
-  .rail-tab.active { color: var(--accent); }
+  .rail-tab.active { color: var(--accent); background: var(--accent-soft); }
   .rail-tab svg { flex-shrink: 0; }
   .rail-tab-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.5rem; letter-spacing: 0.07em;
-    text-transform: uppercase; line-height: 1;
+    font-size: 0.875rem; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis;
+    transition: opacity 0.15s;
   }
+  .ws-grid.sidebar-collapsed .rail-tab {
+    justify-content: center;
+    padding: 11px 0;
+  }
+  .ws-grid.sidebar-collapsed .rail-tab-label { display: none; }
 
-  /* ── Files Drawer ── */
-  .files-drawer {
-    position: fixed;
-    left: 56px;
-    width: 280px;
-    z-index: 9;
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    box-shadow: 4px 0 20px rgba(28,25,23,0.10);
-    transform: translateX(-110%);
-    transition: transform 0.22s var(--ease-out);
-    display: grid;
-    grid-template-rows: auto auto minmax(0,1fr);
-    overflow: hidden;
-    pointer-events: none;
+  /* ── Rail files section (inline) ── */
+  .rail-files-section {
+    display: flex; flex-direction: column;
+    border-top: 1px solid var(--border);
+    margin-top: 6px; padding-top: 6px;
+    min-height: 0; flex: 1;
   }
-  [data-theme="dark"] .files-drawer { box-shadow: 4px 0 24px rgba(0,0,0,0.38); }
-  .files-drawer.open { transform: translateX(0); pointer-events: auto; }
+  .ws-grid.sidebar-collapsed .rail-files-section { display: none; }
 
-  .files-drawer-header {
-    padding: 13px 14px 11px;
-    border-bottom: 1px solid var(--border);
-    font-family: 'Lora', serif; font-size: 0.9rem; font-weight: 500;
-    color: var(--text);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .files-drawer-section {
-    padding: 8px 12px 4px;
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  .rail-files-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px 4px;
+    color: var(--muted);
     flex-shrink: 0;
   }
-  .drawer-section-label {
+  .rail-files-header svg { flex-shrink: 0; }
+  .rail-files-header-label {
+    flex: 1; font-size: 0.82rem; font-weight: 500; color: var(--muted);
     font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
-    letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
+    letter-spacing: 0.09em; text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .files-drawer-body {
+  .rail-files-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+  .rail-files-body {
     min-height: 0; overflow-y: auto; overflow-x: hidden;
-    display: grid; align-content: start; gap: 6px;
-    padding: 4px 10px 12px;
+    display: grid; align-content: start; gap: 3px;
+    padding: 2px 4px 8px;
+    flex: 1;
   }
-  .files-drawer-body::-webkit-scrollbar { width: 3px; }
-  .files-drawer-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
-  .files-drawer-ai-divider {
+  .rail-files-body::-webkit-scrollbar { width: 3px; }
+  .rail-files-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+  /* ── Rail profile (fixed bottom) ── */
+  .rail-profile {
+    flex-shrink: 0; position: relative;
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    min-width: 0;
+  }
+  .rail-profile-trigger {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 10px;
+    background: none; border: none; border-radius: 8px;
+    cursor: pointer; padding: 4px 4px; margin: -4px -4px;
+    text-align: left;
+    transition: background 0.13s;
+  }
+  .rail-profile-trigger:hover { background: var(--accent-soft); }
+  .rail-profile-avatar {
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; font-weight: 500; color: var(--accent);
+    pointer-events: none;
+  }
+  .rail-profile-info {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 1px;
+    pointer-events: none;
+  }
+  .rail-profile-name {
+    font-size: 0.84rem; font-weight: 500; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rail-profile-plan {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+  .rail-upgrade-btn {
+    flex-shrink: 0;
+    padding: 5px 9px;
+    background: var(--accent-soft); border: 1px solid var(--accent-border);
+    border-radius: 6px; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .rail-upgrade-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .ws-grid.sidebar-collapsed .rail-profile-info,
+  .ws-grid.sidebar-collapsed .rail-upgrade-btn { display: none; }
+  .ws-grid.sidebar-collapsed .rail-profile { justify-content: center; padding: 11px 0; }
+  .ws-grid.sidebar-collapsed .rail-profile-trigger { flex: none; margin: 0; padding: 0; }
+
+  /* ── Profile popup menu ── */
+  .rail-profile-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 8px; right: 8px;
+    min-width: 200px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 5px;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    z-index: 200;
+  }
+  .ws-grid.sidebar-collapsed .rail-profile-menu { left: 0; right: auto; width: 220px; }
+  .rail-profile-menu.open { display: flex; }
+  .rail-profile-menu-email {
+    padding: 8px 10px 9px;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rail-profile-menu-item {
+    width: 100%; background: none; border: none;
+    padding: 8px 10px;
+    text-align: left;
+    font-family: 'Inter', sans-serif; font-size: 0.84rem;
+    color: var(--text);
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 9px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .rail-profile-menu-item:hover { background: var(--accent-soft); color: var(--accent); }
+  .rail-profile-menu-item svg { flex-shrink: 0; opacity: 0.7; }
+  .rail-profile-menu-item:hover svg { opacity: 1; }
+  .rail-profile-menu-item.danger { color: var(--danger); }
+  .rail-profile-menu-item.danger:hover { background: rgba(220,38,38,0.08); color: var(--danger); }
+  .rail-profile-menu-divider { height: 1px; background: var(--border); margin: 3px 4px; }
+
+  /* ── Language submenu flyout ── */
+  .lang-item-wrap { position: relative; }
+  .lang-item-wrap:hover .lang-trigger { background: var(--accent-soft); color: var(--accent); }
+  .lang-item-wrap:hover .lang-trigger svg { opacity: 1; }
+  .lang-chevron { margin-left: auto; flex-shrink: 0; opacity: 0.45; transition: opacity 0.12s; }
+  .lang-item-wrap:hover .lang-chevron { opacity: 0.9; }
+  .lang-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 155px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 4px;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    z-index: 201;
+  }
+  .lang-item-wrap:hover .lang-submenu { display: flex; }
+  .lang-submenu-item {
+    width: 100%; background: none; border: none;
+    padding: 7px 10px;
+    text-align: left;
+    font-family: 'Inter', sans-serif; font-size: 0.84rem;
+    color: var(--text);
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 9px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .lang-submenu-item:hover { background: var(--accent-soft); color: var(--accent); }
+  .lang-submenu-item.active { color: var(--accent); font-weight: 500; }
+  .lang-check { margin-left: auto; opacity: 0; flex-shrink: 0; }
+  .lang-submenu-item.active .lang-check { opacity: 1; }
+
+  /* files-drawer styles removed — files are now inline in the sidebar */
+
+  /* ── Settings modal ── */
+  .settings-modal { max-width: 460px; }
+  .settings-section {
+    display: grid; gap: 6px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+  }
+  .settings-section:first-of-type { border-top: none; padding-top: 4px; }
+  .settings-section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .settings-row-label { font-size: 0.875rem; color: var(--text); }
+  .theme-segmented {
+    display: flex; gap: 4px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 9px; padding: 3px;
+  }
+  .theme-seg-btn {
     display: flex; align-items: center; gap: 6px;
-    padding: 8px 0 2px;
-  }
-  .files-drawer-ai-divider::before, .files-drawer-ai-divider::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
-  .files-drawer-ai-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.57rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    padding: 6px 12px;
+    background: none; border: none; border-radius: 6px;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem;
+    color: var(--muted); cursor: pointer;
+    transition: background 0.15s, color 0.15s;
     white-space: nowrap;
   }
+  .theme-seg-btn.active {
+    background: var(--panel); color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .theme-seg-btn svg { flex-shrink: 0; }
 
   .files-panel-new {
     min-height: 0;
@@ -1098,10 +1258,10 @@
   .file-row {
     position: relative;
     display: flex; align-items: center; gap: 8px;
-    padding: 8px 9px;
+    padding: 5px 8px;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 7px;
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
     min-width: 0;
@@ -1111,16 +1271,13 @@
     border-color: var(--accent);
     background: var(--accent-soft);
   }
-  .file-icon { font-size: 0.9rem; opacity: 0.6; flex-shrink: 0; }
-  .file-meta { flex: 1; min-width: 0; display: grid; gap: 1px; }
+  .file-icon { font-size: 0.85rem; opacity: 0.6; flex-shrink: 0; }
+  .file-meta { flex: 1; min-width: 0; display: grid; gap: 0; }
   .file-name {
-    font-size: 0.82rem; color: var(--text); font-weight: 500;
+    font-size: 0.8rem; color: var(--text); font-weight: 500;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .file-sub {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
-    color: var(--muted); letter-spacing: 0.04em;
-  }
+  .file-sub { display: none; }
   .file-actions {
     display: flex; gap: 4px; flex-shrink: 0;
     opacity: 0; transition: opacity 0.15s ease;
@@ -1670,7 +1827,12 @@
   /* ════════════════════════════════════════
      PROBEKLAUSUR
   ════════════════════════════════════════ */
-  .is-probeklausur .file-icon { color: var(--accent-2); }
+  .file-row.is-probeklausur {
+    background: rgba(217,119,6,0.07);
+    border-color: rgba(217,119,6,0.22);
+  }
+  .file-row.is-probeklausur .file-icon { color: var(--amber); opacity: 1; }
+  .file-row.is-probeklausur .file-name { color: var(--amber); }
 
   /* Probeklausur modal */
   #pk-modal .form-group { display: grid; gap: 6px; }
@@ -1756,11 +1918,11 @@
 
   /* Summary file rows in the left panel */
   .file-row.is-summary {
-    background: rgba(217,119,6,0.06);
-    border-color: rgba(217,119,6,0.2);
+    background: rgba(139,92,246,0.07);
+    border-color: rgba(139,92,246,0.25);
   }
-  .file-row.is-summary .file-icon { color: var(--amber); opacity: 1; }
-  .file-row.is-summary .file-name { color: var(--amber); }
+  .file-row.is-summary .file-icon { color: #8B5CF6; opacity: 1; }
+  .file-row.is-summary .file-name { color: #8B5CF6; }
   .files-section-header {
     font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
     letter-spacing: 0.1em; text-transform: uppercase;
@@ -2042,6 +2204,52 @@
   .is-solution .file-icon { color:var(--success); opacity:1; }
   .is-solution .file-name { color:var(--success); }
 
+  /* ── File action popup ── */
+  .file-popup {
+    position: fixed; z-index: 9999;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow);
+    padding: 5px; min-width: 196px;
+    flex-direction: column; gap: 1px;
+  }
+  .fap-type-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 9px; border-radius: 7px; cursor: pointer;
+    transition: background 0.13s;
+  }
+  .fap-type-row:hover { background: var(--accent-soft); }
+  .fap-type-label { font-size: 0.74rem; color: var(--muted); flex-shrink: 0; }
+  .fap-type-value { font-size: 0.78rem; font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fap-chevron { color: var(--muted); font-size: 1rem; flex-shrink: 0; line-height: 1; }
+  .fap-divider { height: 1px; background: var(--border); margin: 3px 2px; flex-shrink: 0; }
+  .fap-action-btn {
+    width: 100%; background: none; border: none; border-radius: 7px;
+    padding: 7px 9px; text-align: left;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--text);
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .fap-action-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  .fap-action-btn.danger { color: var(--danger); }
+  .fap-action-btn.danger:hover { background: rgba(220,38,38,0.08); color: var(--danger); }
+  .fap-back-btn {
+    display: flex; align-items: center; gap: 5px; width: 100%;
+    background: none; border: none; border-radius: 7px;
+    padding: 6px 9px; font-size: 0.78rem; color: var(--muted);
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: background 0.12s;
+  }
+  .fap-back-btn:hover { background: var(--panel-soft); }
+  .fap-type-option {
+    width: 100%; background: none; border: none; border-radius: 7px;
+    padding: 7px 9px; text-align: left;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: var(--text);
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .fap-type-option:hover { background: var(--accent-soft); }
+  .fap-type-option.active { color: var(--accent); font-weight: 600; }
+
   /* ════════════════════════════════════════
      EXAM MODAL (3-step form)
   ════════════════════════════════════════ */
@@ -2301,19 +2509,7 @@
 <div class="fw-layer" id="fw-layer"></div>
 
 <div class="app-shell">
-  <header>
-    <button class="brand" id="brand-home-btn" type="button" title="Zur Startseite" aria-label="Zur Startseite">
-      <div class="brand-mark">S</div>
-      <div class="brand-text">
-        <h1>Study Agent</h1>
-        <div class="brand-sub">Lernassistent</div>
-      </div>
-    </button>
-    <div class="header-right">
-      <div class="header-status" id="header-status">Noch kein Kurs geöffnet</div>
-      <button class="theme-toggle" id="theme-toggle" title="Design wechseln" aria-label="Design wechseln">☀</button>
-    </div>
-  </header>
+
 
   <main>
     <!-- ── Setup Screen ── -->
@@ -2323,46 +2519,25 @@
       <div class="processing-overlay" id="processing-overlay" aria-live="polite">
         <div class="processing-card">
           <div class="processing-spinner"></div>
-          <div class="processing-title" id="processing-title">Dein Kurs wird vorbereitet</div>
-          <div class="processing-text"  id="processing-text">Das kann einen Moment dauern.</div>
+          <div class="processing-title" id="processing-title" data-i18n="proc-title">Dein Kurs wird vorbereitet</div>
+          <div class="processing-text"  id="processing-text" data-i18n="proc-text">Das kann einen Moment dauern.</div>
           <div class="processing-steps">
-            <div class="processing-step"><span class="processing-step-dot"></span><span>Dateien werden hochgeladen</span></div>
-            <div class="processing-step"><span class="processing-step-dot"></span><span>Texte werden eingelesen und in Abschnitte zerlegt</span></div>
-            <div class="processing-step"><span class="processing-step-dot"></span><span>Inhalte werden für den Chat durchsuchbar gemacht</span></div>
+            <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step1">Dateien werden hochgeladen</span></div>
+            <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step2">Texte werden eingelesen und in Abschnitte zerlegt</span></div>
+            <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step3">Inhalte werden für den Chat durchsuchbar gemacht</span></div>
           </div>
         </div>
       </div>
 
       <div class="setup-scroll">
 
-        <!-- Hero -->
-        <div class="setup-hero">
-          <span class="hero-eyebrow">
-            <span class="live-dot"></span>
-            KI-Lernassistent
-          </span>
-          <h2 class="setup-headline">
-            <em>Dein</em> <span class="accent-grad">Lernbegleiter</span><br>für das Studium
-          </h2>
-          <p class="setup-desc">
-            Stelle Fragen zu deinen Unterlagen, lass Vorlesungen automatisch zusammenfassen und finde die wichtigsten Klausurthemen.
-          </p>
-          <div class="hero-features">
-            <span class="hero-feat">Fragen stellen</span>
-            <span class="hero-feat">Vorlesungen zusammenfassen</span>
-            <span class="hero-feat">Klausurthemen finden</span>
-          </div>
-        </div>
+        <!-- Page title -->
+        <h1 class="page-title" data-i18n="page-title">Wo willst du weitermachen?</h1>
 
         <!-- Existing courses -->
         <div class="section-block" id="courses-section">
-          <div class="section-heading">
-            <span class="section-line r"></span>
-            <span class="section-label-text">Kurs öffnen</span>
-            <span class="section-line"></span>
-          </div>
           <div class="courses-grid" id="existing-modules"></div>
-          <p class="no-courses-hint" id="empty-modules" hidden>
+          <p class="no-courses-hint" id="empty-modules" hidden data-i18n="empty-courses">
             Noch keine Kurse vorhanden — lege deinen ersten Kurs unten an.
           </p>
         </div>
@@ -2371,39 +2546,39 @@
         <div class="section-block">
           <div class="section-heading">
             <span class="section-line r"></span>
-            <span class="section-label-text">Neuen Kurs anlegen</span>
+            <span class="section-label-text" data-i18n="new-course-section">Neuen Kurs anlegen</span>
             <span class="section-line"></span>
           </div>
 
           <div class="new-course-toggle" id="new-course-toggle" role="button" tabindex="0" aria-expanded="false">
-            <span class="toggle-title">Materialien hochladen</span>
+            <span class="toggle-title" data-i18n="upload-toggle">Materialien hochladen</span>
             <span class="toggle-icon">+</span>
           </div>
 
           <div class="upload-panel" id="new-course-panel">
             <div class="upload-panel-inner">
               <div>
-                <label class="field-label" for="module-name">Kursname</label>
-                <input id="module-name" type="text" placeholder="Zum Beispiel: Lineare Algebra">
+                <label class="field-label" for="module-name" data-i18n="course-name-label">Kursname</label>
+                <input id="module-name" type="text" placeholder="Zum Beispiel: Lineare Algebra" data-i18n-ph="course-name-ph">
               </div>
 
               <div id="drop-zone">
                 <input id="file-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple>
                 <div class="drop-copy">
                   <div class="drop-icon">↑</div>
-                  <div class="drop-title">Dateien oder Ordner ablegen</div>
-                  <div class="drop-subtitle">Lade Folien, Skripte oder ganze Ordner auf einmal hoch.</div>
-                  <div class="drop-hint">PDF · PPTX · MD · TXT</div>
+                  <div class="drop-title" data-i18n="drop-title">Dateien oder Ordner ablegen</div>
+                  <div class="drop-subtitle" data-i18n="drop-subtitle">Lade Folien, Skripte oder ganze Ordner auf einmal hoch.</div>
+                  <div class="drop-hint" data-i18n="drop-hint">PDF · PPTX · MD · TXT</div>
                 </div>
               </div>
               <input id="folder-input" type="file" webkitdirectory multiple style="display:none">
-              <button class="secondary-btn" id="folder-pick-btn" type="button" style="font-size:0.79rem;padding:5px 14px;align-self:flex-start;">📁 Ordner auswählen</button>
+              <button class="secondary-btn" id="folder-pick-btn" type="button" style="font-size:0.79rem;padding:5px 14px;align-self:flex-start;" data-i18n="folder-btn">📁 Ordner auswählen</button>
 
               <div class="selected-files" id="selected-files"></div>
 
               <div class="actions">
-                <button class="primary-btn" id="upload-btn" disabled>Kurs vorbereiten</button>
-                <button class="secondary-btn" id="clear-btn" type="button">Auswahl leeren</button>
+                <button class="primary-btn" id="upload-btn" disabled data-i18n="upload-btn">Kurs vorbereiten</button>
+                <button class="secondary-btn" id="clear-btn" type="button" data-i18n="clear-btn">Auswahl leeren</button>
               </div>
               <div class="status-line" id="upload-status"></div>
             </div>
@@ -2417,42 +2592,134 @@
     <section class="screen" id="workspace-screen">
       <div class="ws-grid" id="ws-grid">
 
-        <!-- LEFT: Icon Rail -->
+        <!-- LEFT: Sidebar -->
         <aside class="ws-left" id="ws-rail">
-          <!-- Kurs Avatar -->
-          <div class="rail-avatar-wrap">
-            <button class="rail-avatar" id="rail-avatar-btn" title="Kurs-Menü" aria-haspopup="true" aria-expanded="false">—</button>
-            <div class="rail-avatar-dropdown" id="rail-avatar-dropdown" role="menu">
-              <ul>
-                <li><button id="new-module-btn" type="button" role="menuitem">Kurs wechseln</button></li>
-              </ul>
+
+          <!-- Header: avatar + course name + collapse toggle -->
+          <div class="rail-header">
+            <div class="rail-avatar-wrap">
+              <button class="rail-avatar" id="rail-avatar-btn" title="Kurs-Menü" data-i18n-title="new-module-menu" aria-haspopup="true" aria-expanded="false">—</button>
+              <div class="rail-avatar-dropdown" id="rail-avatar-dropdown" role="menu">
+                <ul>
+                  <li><button id="new-module-btn" type="button" role="menuitem" data-i18n="switch-course">Kurs wechseln</button></li>
+                </ul>
+              </div>
+            </div>
+            <span class="rail-course-name" id="header-status"></span>
+            <button class="rail-collapse-btn" id="rail-collapse-btn" title="Sidebar einklappen" data-i18n-title="collapse-sidebar" type="button" aria-label="Sidebar einklappen">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          </div>
+
+          <!-- Scrollable body: nav tabs + files -->
+          <div class="rail-body">
+            <!-- Nav tabs: Roadmap, Klausur, Tasks, Chat -->
+            <button class="rail-tab" id="roadmap-btn" data-tab="roadmap" title="Lernplan" type="button" aria-label="Lernplan">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+              <span class="rail-tab-label" data-i18n="tab-roadmap">Lernplan</span>
+            </button>
+            <button class="rail-tab" id="pk-btn" data-tab="pk" title="Probeklausur" type="button" aria-label="Probeklausur">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <span class="rail-tab-label" data-i18n="tab-exam">Klausur</span>
+            </button>
+            <button class="rail-tab" id="daily-btn" data-tab="daily" title="Tasks" type="button" aria-label="Tasks">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+              <span class="rail-tab-label" data-i18n="tab-tasks">Tasks</span>
+            </button>
+            <button class="rail-tab" id="rail-tab-chat" data-tab="chat" title="Chat" type="button" aria-label="Chat">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span class="rail-tab-label" data-i18n="tab-chat">Chat</span>
+            </button>
+
+            <!-- Files section: always visible when expanded -->
+            <div class="rail-files-section">
+              <div class="rail-files-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="rail-files-header-label" data-i18n="files-label">Dateien</span>
+                <div class="rail-files-actions">
+                  <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="width:22px;height:22px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </button>
+                  <button class="file-action-btn" id="add-folder-btn" type="button" title="Ordner hinzufügen" style="width:22px;height:22px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 9 12 14"/><polyline points="9.5 11.5 12 9 14.5 11.5"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="rail-files-body files-drawer-body" id="files-panel"></div>
+              <input id="add-files-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple hidden>
+              <input id="add-folder-input" type="file" webkitdirectory multiple hidden>
             </div>
           </div>
-          <!-- Tabs -->
-          <button class="rail-tab" id="rail-tab-files" data-tab="files" title="Dateien" type="button" aria-label="Dateien">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span class="rail-tab-label">Dateien</span>
-          </button>
-          <button class="rail-tab" id="roadmap-btn" data-tab="roadmap" title="Lernplan" type="button" aria-label="Lernplan">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-            <span class="rail-tab-label">Lernplan</span>
-          </button>
-          <button class="rail-tab" id="pk-btn" data-tab="pk" title="Probeklausur" type="button" aria-label="Probeklausur">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            <span class="rail-tab-label">Klausur</span>
-          </button>
-          <button class="rail-tab" id="daily-btn" data-tab="daily" title="Tagesplan" type="button" aria-label="Tagesplan">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-            <span class="rail-tab-label">Tasks</span>
-          </button>
-          <button class="rail-tab" id="rail-tab-chat" data-tab="chat" title="Chat" type="button" aria-label="Chat">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span class="rail-tab-label">Chat</span>
-          </button>
-        </aside>
 
-        <!-- Drawer spacer: reserves grid space when drawer is open so center pane is pushed right -->
-        <div class="ws-drawer-spacer" id="ws-drawer-spacer" aria-hidden="true"></div>
+          <!-- Profile: always fixed at bottom -->
+          <div class="rail-profile" id="rail-profile">
+            <!-- Popup menu (appears above on click) -->
+            <div class="rail-profile-menu" id="rail-profile-menu" role="menu" aria-label="Profileinstellungen">
+              <div class="rail-profile-menu-email">gzapatamiguel33@gmail.com</div>
+              <button class="rail-profile-menu-item" type="button" role="menuitem">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span data-i18n="settings">Einstellungen</span>
+              </button>
+              <div class="lang-item-wrap">
+                <button class="rail-profile-menu-item lang-trigger" type="button" role="menuitem" aria-haspopup="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  <span data-i18n="language">Sprache</span>
+                  <svg class="lang-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div class="lang-submenu" role="menu" aria-label="Sprache wählen">
+                  <button class="lang-submenu-item active" type="button" data-lang="de" role="menuitem">
+                    Deutsch
+                    <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button class="lang-submenu-item" type="button" data-lang="en" role="menuitem">
+                    Englisch
+                    <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button class="lang-submenu-item" type="button" data-lang="es" role="menuitem">
+                    Spanisch
+                    <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button class="lang-submenu-item" type="button" data-lang="fr" role="menuitem">
+                    Französisch
+                    <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                </div>
+              </div>
+              <button class="rail-profile-menu-item" type="button" role="menuitem">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span data-i18n="help">Hilfe erhalten</span>
+              </button>
+              <button class="rail-profile-menu-item" type="button" role="menuitem">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span data-i18n="upgrade-plan">Tarif upgraden</span>
+              </button>
+              <div class="rail-profile-menu-divider"></div>
+              <button class="rail-profile-menu-item" type="button" role="menuitem">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                <span data-i18n="gift">Verschenken</span>
+              </button>
+              <button class="rail-profile-menu-item" type="button" role="menuitem">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span data-i18n="learn-more">Mehr erfahren</span>
+              </button>
+              <div class="rail-profile-menu-divider"></div>
+              <button class="rail-profile-menu-item danger" type="button" role="menuitem">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span data-i18n="logout">Abmelden</span>
+              </button>
+            </div>
+            <!-- Clickable trigger: avatar + name -->
+            <button class="rail-profile-trigger" id="rail-profile-trigger" type="button" aria-haspopup="true" aria-expanded="false" title="Profileinstellungen">
+              <div class="rail-profile-avatar">M</div>
+              <div class="rail-profile-info">
+                <span class="rail-profile-name">Miguel</span>
+                <span class="rail-profile-plan">Pro</span>
+              </div>
+            </button>
+            <button class="rail-upgrade-btn" type="button" data-i18n="upgrade-btn">Upgrade</button>
+          </div>
+
+        </aside>
 
         <!-- CENTER: Multi-pane workspace (built by JS — supports split via drag) -->
         <section class="ws-center" id="ws-center"></section>
@@ -2465,22 +2732,22 @@
           <div class="chat-topbar">
             <div>
               <h3>Chat</h3>
-              <p id="chat-subtitle">Antworten basieren auf den Materialien des Kurses.</p>
+              <p id="chat-subtitle" data-i18n="chat-subtitle">Antworten basieren auf den Materialien des Kurses.</p>
             </div>
-            <button class="chat-close-btn" id="toggle-right" type="button" title="Chat zuklappen" aria-label="Chat zuklappen">✕</button>
+            <button class="chat-close-btn" id="toggle-right" type="button" title="Chat zuklappen" data-i18n-title="chat-close" aria-label="Chat zuklappen">✕</button>
           </div>
           <div id="chat">
             <div class="chat-empty" id="empty">
               <div class="chat-empty-inner">
                 <span class="empty-icon">✦</span>
-                <strong>Bereit für deine Fragen</strong>
-                <p>Frag nach Definitionen, Beispielen oder klausurrelevanten Themen.</p>
+                <strong data-i18n="chat-empty-title">Bereit für deine Fragen</strong>
+                <p data-i18n="chat-empty-desc">Frag nach Definitionen, Beispielen oder klausurrelevanten Themen.</p>
               </div>
             </div>
           </div>
           <div class="chat-footer">
             <div class="chat-form">
-              <textarea id="input" placeholder="Frage stellen…" rows="1"></textarea>
+              <textarea id="input" placeholder="Frage stellen…" rows="1" data-i18n-ph="chat-ph"></textarea>
               <div class="chat-actions">
                 <button class="chat-icon-btn" id="mic-btn" title="Spracheingabe" disabled>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
@@ -2494,32 +2761,14 @@
         </aside>
       </div>
 
-      <!-- Files Drawer (absolute within workspace-screen, overlays grid) -->
-      <div class="files-drawer" id="files-drawer" aria-label="Dateien">
-        <div class="files-drawer-header" id="files-drawer-module-name">Kein Kurs</div>
-        <div class="files-drawer-section">
-          <span class="drawer-section-label">Materialien</span>
-          <div style="display:flex;gap:3px;">
-            <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="opacity:1;width:26px;height:26px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            </button>
-            <button class="file-action-btn" id="add-folder-btn" type="button" title="Ordner hinzufügen" style="opacity:1;width:26px;height:26px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 9 12 14"/><polyline points="9.5 11.5 12 9 14.5 11.5"/></svg>
-            </button>
-          </div>
-        </div>
-        <input id="add-files-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple hidden>
-        <input id="add-folder-input" type="file" webkitdirectory multiple hidden>
-        <div class="files-drawer-body" id="files-panel"></div>
-      </div>
     </section>
 
     <!-- Desktop-only hint -->
     <div class="desktop-hint">
       <div class="desktop-hint-card">
         <div class="icon">🖥️</div>
-        <h3>Desktop empfohlen</h3>
-        <p>Study Agent ist für Desktop-Bildschirme optimiert. Bitte öffne die App auf einem Bildschirm mit mindestens 1024 px Breite, damit der Workspace, die Chat-Spalte und die Datei-Liste nebeneinander Platz haben.</p>
+        <h3 data-i18n="desktop-title">Desktop empfohlen</h3>
+        <p data-i18n="desktop-desc">Study Agent ist für Desktop-Bildschirme optimiert. Bitte öffne die App auf einem Bildschirm mit mindestens 1024 px Breite, damit der Workspace, die Chat-Spalte und die Datei-Liste nebeneinander Platz haben.</p>
       </div>
     </div>
   </main>
@@ -2529,38 +2778,38 @@
 <div class="modal-overlay" id="lecture-modal">
   <div class="modal-card">
     <div class="modal-header">
-      <h2 id="modal-title">Vorlesung zusammenfassen</h2>
-      <button class="modal-close" id="modal-close-btn" title="Schließen">✕</button>
+      <h2 id="modal-title" data-i18n="lecture-title">Vorlesung zusammenfassen</h2>
+      <button class="modal-close" id="modal-close-btn" title="Schließen" data-i18n-title="close">✕</button>
     </div>
 
     <!-- State 1: Onboarding -->
     <div class="modal-state" id="state-onboarding">
-      <p id="onboarding-desc" style="color:var(--muted);font-size:0.88rem;line-height:1.65;">Dieses Modul ist noch nicht eingerichtet. Beantworte kurz ein paar Fragen damit die Zusammenfassung optimal auf dein Modul abgestimmt wird.</p>
+      <p id="onboarding-desc" style="color:var(--muted);font-size:0.88rem;line-height:1.65;" data-i18n="onboarding-desc">Dieses Modul ist noch nicht eingerichtet. Beantworte kurz ein paar Fragen damit die Zusammenfassung optimal auf dein Modul abgestimmt wird.</p>
       <div class="form-group">
-        <label class="form-label">Schwerpunkte (Enter zum Hinzufügen)</label>
+        <label class="form-label" data-i18n="focus-label">Schwerpunkte (Enter zum Hinzufügen)</label>
         <div class="tags-input-wrap" id="tags-schwerpunkte">
-          <input class="tags-input" id="input-schwerpunkte" placeholder="z.B. Laufzeitanalyse, Graphen...">
+          <input class="tags-input" id="input-schwerpunkte" placeholder="z.B. Laufzeitanalyse, Graphen..." data-i18n-ph="focus-ph">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Stil des Moduls</label>
+        <label class="form-label" data-i18n="style-label">Stil des Moduls</label>
         <select class="form-select" id="select-stil">
-          <option value="mixed">Gemischt</option>
-          <option value="informatik">Informatik (Code, Algorithmen)</option>
-          <option value="mathe">Mathematik / Naturwissenschaft</option>
-          <option value="geistes">Geisteswissenschaft</option>
-          <option value="bwl">BWL / Wirtschaft</option>
+          <option value="mixed" data-i18n="style-mixed">Gemischt</option>
+          <option value="informatik" data-i18n="style-cs">Informatik (Code, Algorithmen)</option>
+          <option value="mathe" data-i18n="style-math">Mathematik / Naturwissenschaft</option>
+          <option value="geistes" data-i18n="style-hum">Geisteswissenschaft</option>
+          <option value="bwl" data-i18n="style-biz">BWL / Wirtschaft</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Prüfungsrelevante Themen (Enter zum Hinzufügen)</label>
+        <label class="form-label" data-i18n="exam-topics-label">Prüfungsrelevante Themen (Enter zum Hinzufügen)</label>
         <div class="tags-input-wrap" id="tags-pruefung">
-          <input class="tags-input" id="input-pruefung" placeholder="z.B. O-Notation, Dijkstra...">
+          <input class="tags-input" id="input-pruefung" placeholder="z.B. O-Notation, Dijkstra..." data-i18n-ph="exam-topics-ph">
         </div>
       </div>
       <div class="modal-actions">
-        <button class="secondary-btn" id="onboarding-skip-btn"   style="min-height:40px;padding:0 16px;font-size:0.86rem;">Überspringen</button>
-        <button class="primary-btn"   id="onboarding-submit-btn" style="min-height:40px;padding:0 16px;font-size:0.86rem;">Weiter & Zusammenfassen</button>
+        <button class="secondary-btn" id="onboarding-skip-btn"   style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="skip">Überspringen</button>
+        <button class="primary-btn"   id="onboarding-submit-btn" style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="next-summarize">Weiter & Zusammenfassen</button>
       </div>
     </div>
 
@@ -2568,8 +2817,8 @@
     <div class="modal-state" id="state-loading">
       <div class="modal-loading">
         <div class="modal-spinner"></div>
-        <div class="modal-loading-text">Deine Vorlesung wird analysiert...</div>
-        <div class="modal-loading-status" id="loading-status">Konzepte werden extrahiert...</div>
+        <div class="modal-loading-text" data-i18n="analyzing">Deine Vorlesung wird analysiert...</div>
+        <div class="modal-loading-status" id="loading-status" data-i18n="extracting">Konzepte werden extrahiert...</div>
       </div>
     </div>
 
@@ -2578,7 +2827,7 @@
       <div style="text-align:center; display:grid; gap:14px; padding:6px 0;">
         <div style="font-size:2.4rem;">⚠️</div>
         <div style="font-family:'Lora',serif; font-size:1.18rem; font-weight:600; color:var(--amber);">
-          Zusammenfassung fehlgeschlagen
+          <span data-i18n="summary-failed">Zusammenfassung fehlgeschlagen</span>
         </div>
         <div id="error-msg" style="color:var(--muted); font-size:0.88rem; line-height:1.65;
                                     background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.18);
@@ -2588,25 +2837,25 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="secondary-btn" id="error-close-btn" type="button" style="min-height:40px;padding:0 16px;font-size:0.86rem;">Schließen</button>
-        <button class="primary-btn"   id="error-retry-btn" type="button" style="min-height:40px;padding:0 16px;font-size:0.86rem;">Nochmal versuchen</button>
+        <button class="secondary-btn" id="error-close-btn" type="button" style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="close">Schließen</button>
+        <button class="primary-btn"   id="error-retry-btn" type="button" style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="retry">Nochmal versuchen</button>
       </div>
     </div>
 
     <!-- State 3: Result -->
     <div class="modal-state" id="state-result">
       <div>
-        <div class="field-label" style="margin-bottom:8px;">Extrahierte Konzepte</div>
+        <div class="field-label" style="margin-bottom:8px;" data-i18n="concepts-label">Extrahierte Konzepte</div>
         <div class="concept-chips" id="concept-chips"></div>
       </div>
       <div>
-        <div class="field-label" style="margin-bottom:8px;">Zusammenfassung</div>
+        <div class="field-label" style="margin-bottom:8px;" data-i18n="summary-label">Zusammenfassung</div>
         <div class="summary-result" id="summary-result"></div>
       </div>
       <div class="modal-actions">
-        <span class="success-badge">✓ Gespeichert</span>
-        <button class="secondary-btn" id="result-chat-btn"  style="min-height:40px;padding:0 16px;font-size:0.86rem;">Im Chat öffnen</button>
-        <button class="primary-btn"   id="result-close-btn" style="min-height:40px;padding:0 16px;font-size:0.86rem;">Schließen</button>
+        <span class="success-badge" data-i18n="saved-badge">✓ Gespeichert</span>
+        <button class="secondary-btn" id="result-chat-btn"  style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="open-chat">Im Chat öffnen</button>
+        <button class="primary-btn"   id="result-close-btn" style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="close">Schließen</button>
       </div>
     </div>
   </div>
@@ -2616,8 +2865,8 @@
 <div class="modal-overlay" id="exam-modal">
   <div class="modal-card" style="max-width:520px;">
     <div class="modal-header">
-      <h2>Lernplan erstellen</h2>
-      <button class="modal-close" id="exam-modal-close-btn" title="Schließen">✕</button>
+      <h2 data-i18n="exam-modal-title">Lernplan erstellen</h2>
+      <button class="modal-close" id="exam-modal-close-btn" title="Schließen" data-i18n-title="close">✕</button>
     </div>
 
     <!-- Step indicator -->
@@ -2633,20 +2882,20 @@
     <div class="modal-state active" id="exam-step-1">
       <div class="exam-step-content">
         <div class="exam-step-icon">📚</div>
-        <div class="exam-step-title">Was wird in der Prüfung gefragt?</div>
-        <p class="exam-step-desc">Beschreibe kurz das Thema der Prüfung — z.B. welche Kapitel, Methoden oder Schwerpunkte erwartet werden.</p>
+        <div class="exam-step-title" data-i18n="exam-step1-title">Was wird in der Prüfung gefragt?</div>
+        <p class="exam-step-desc" data-i18n="exam-step1-desc">Beschreibe kurz das Thema der Prüfung — z.B. welche Kapitel, Methoden oder Schwerpunkte erwartet werden.</p>
         <div class="form-group">
-          <label class="form-label">Prüfungsthema / Schwerpunkte</label>
-          <textarea class="exam-textarea" id="exam-topic-input" placeholder="z.B. Kapitel 1–5, Lineare Gleichungssysteme, Eigenwerte und Eigenvektoren..." rows="3"></textarea>
+          <label class="form-label" data-i18n="exam-topic-label">Prüfungsthema / Schwerpunkte</label>
+          <textarea class="exam-textarea" id="exam-topic-input" placeholder="z.B. Kapitel 1–5, Lineare Gleichungssysteme, Eigenwerte und Eigenvektoren..." rows="3" data-i18n-ph="exam-topic-ph"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Prüfungsdatum (optional)</label>
+          <label class="form-label" data-i18n="exam-date-label">Prüfungsdatum (optional)</label>
           <input class="form-input" id="exam-date-input" type="date">
         </div>
       </div>
       <div class="modal-actions" style="margin-top:6px;">
-        <button class="secondary-btn" id="exam-skip-btn" style="min-height:40px;padding:0 14px;font-size:0.85rem;">Später</button>
-        <button class="primary-btn"   id="exam-s1-next" style="min-height:40px;padding:0 20px;font-size:0.85rem;">Weiter →</button>
+        <button class="secondary-btn" id="exam-skip-btn" style="min-height:40px;padding:0 14px;font-size:0.85rem;" data-i18n="later">Später</button>
+        <button class="primary-btn"   id="exam-s1-next" style="min-height:40px;padding:0 20px;font-size:0.85rem;" data-i18n="next">Weiter →</button>
       </div>
     </div>
 
@@ -2654,10 +2903,10 @@
     <div class="modal-state" id="exam-step-2">
       <div class="exam-step-content">
         <div class="exam-step-icon">⏰</div>
-        <div class="exam-step-title">Wie viel Zeit hast du zum Lernen?</div>
-        <p class="exam-step-desc">Das hilft uns, den Plan realistisch aufzuteilen und Themen entsprechend zu priorisieren.</p>
+        <div class="exam-step-title" data-i18n="exam-step2-title">Wie viel Zeit hast du zum Lernen?</div>
+        <p class="exam-step-desc" data-i18n="exam-step2-desc">Das hilft uns, den Plan realistisch aufzuteilen und Themen entsprechend zu priorisieren.</p>
         <div class="form-group">
-          <label class="form-label">Stunden pro Tag</label>
+          <label class="form-label" data-i18n="hours-per-day">Stunden pro Tag</label>
           <div class="time-options">
             <button class="time-opt" data-val="1 Stunde pro Tag">1h / Tag</button>
             <button class="time-opt" data-val="2 Stunden pro Tag">2h / Tag</button>
@@ -2666,13 +2915,13 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Oder eigene Angabe</label>
-          <input class="form-input" id="exam-time-input" type="text" placeholder="z.B. 20 Stunden insgesamt, 2 Wochen, 1 Wochenende...">
+          <label class="form-label" data-i18n="custom-time">Oder eigene Angabe</label>
+          <input class="form-input" id="exam-time-input" type="text" placeholder="z.B. 20 Stunden insgesamt, 2 Wochen, 1 Wochenende..." data-i18n-ph="custom-time-ph">
         </div>
       </div>
       <div class="modal-actions" style="margin-top:6px;">
-        <button class="secondary-btn" id="exam-s2-back" style="min-height:40px;padding:0 14px;font-size:0.85rem;">← Zurück</button>
-        <button class="primary-btn"   id="exam-s2-next" style="min-height:40px;padding:0 20px;font-size:0.85rem;">Weiter →</button>
+        <button class="secondary-btn" id="exam-s2-back" style="min-height:40px;padding:0 14px;font-size:0.85rem;" data-i18n="back">← Zurück</button>
+        <button class="primary-btn"   id="exam-s2-next" style="min-height:40px;padding:0 20px;font-size:0.85rem;" data-i18n="next">Weiter →</button>
       </div>
     </div>
 
@@ -2680,16 +2929,16 @@
     <div class="modal-state" id="exam-step-3">
       <div class="exam-step-content">
         <div class="exam-step-icon">📝</div>
-        <div class="exam-step-title">Hast du alte oder ähnliche Prüfungen?</div>
-        <p class="exam-step-desc">Typische Aufgaben aus alten Klausuren helfen dem Agenten, die wichtigsten Themen noch gezielter zu priorisieren. Das ist optional.</p>
+        <div class="exam-step-title" data-i18n="exam-step3-title">Hast du alte oder ähnliche Prüfungen?</div>
+        <p class="exam-step-desc" data-i18n="exam-step3-desc">Typische Aufgaben aus alten Klausuren helfen dem Agenten, die wichtigsten Themen noch gezielter zu priorisieren. Das ist optional.</p>
         <div class="form-group">
-          <label class="form-label">Aufgabentypen oder Themen aus alten Prüfungen (optional)</label>
-          <textarea class="exam-textarea" id="exam-old-input" placeholder="z.B. immer eine Matrixaufgabe, Eigenwertberechnung, Beweis per Induktion..." rows="4"></textarea>
+          <label class="form-label" data-i18n="old-exams-label">Aufgabentypen oder Themen aus alten Prüfungen (optional)</label>
+          <textarea class="exam-textarea" id="exam-old-input" placeholder="z.B. immer eine Matrixaufgabe, Eigenwertberechnung, Beweis per Induktion..." rows="4" data-i18n-ph="old-exams-ph"></textarea>
         </div>
       </div>
       <div class="modal-actions" style="margin-top:6px;">
-        <button class="secondary-btn" id="exam-s3-back"     style="min-height:40px;padding:0 14px;font-size:0.85rem;">← Zurück</button>
-        <button class="primary-btn"   id="exam-generate-btn" style="min-height:40px;padding:0 20px;font-size:0.85rem;">Lernplan erstellen ✦</button>
+        <button class="secondary-btn" id="exam-s3-back"     style="min-height:40px;padding:0 14px;font-size:0.85rem;" data-i18n="back">← Zurück</button>
+        <button class="primary-btn"   id="exam-generate-btn" style="min-height:40px;padding:0 20px;font-size:0.85rem;" data-i18n="create-plan">Lernplan erstellen ✦</button>
       </div>
     </div>
 
@@ -2697,8 +2946,8 @@
     <div class="modal-state" id="exam-loading">
       <div class="modal-loading">
         <div class="modal-spinner"></div>
-        <div class="modal-loading-text">Dein persönlicher Lernplan wird erstellt ...</div>
-        <div class="modal-loading-status" id="exam-loading-status">Kursinhalte werden analysiert ...</div>
+        <div class="modal-loading-text" data-i18n="plan-creating">Dein persönlicher Lernplan wird erstellt ...</div>
+        <div class="modal-loading-status" id="exam-loading-status" data-i18n="analyzing-course">Kursinhalte werden analysiert ...</div>
       </div>
     </div>
   </div>
@@ -2708,45 +2957,45 @@
 <div class="modal-overlay" id="roadmap-gen-modal">
   <div class="modal-card" style="max-width:480px;">
     <div class="modal-header">
-      <h2 id="roadmap-gen-title">Roadmap erstellen</h2>
-      <button class="modal-close" id="roadmap-gen-close-btn" title="Schließen">✕</button>
+      <h2 id="roadmap-gen-title" data-i18n="roadmap-gen-title">Roadmap erstellen</h2>
+      <button class="modal-close" id="roadmap-gen-close-btn" title="Schließen" data-i18n-title="close">✕</button>
     </div>
     <div id="roadmap-gen-form" class="modal-state active">
       <p style="color:var(--muted);font-size:0.88rem;line-height:1.65;">
-        Der Agent nutzt deine hochgeladenen Materialien + auto-erkannte Klausuren. Optional kannst du Datum + Fokus angeben.
+        <span data-i18n="roadmap-gen-desc">Der Agent nutzt deine hochgeladenen Materialien + auto-erkannte Klausuren. Optional kannst du Datum + Fokus angeben.</span>
       </p>
       <div class="form-group">
-        <label class="form-label">Prüfungsdatum (optional)</label>
+        <label class="form-label" data-i18n="exam-date-label">Prüfungsdatum (optional)</label>
         <input class="form-input" id="rg-exam-date" type="date">
       </div>
       <div class="form-group">
-        <label class="form-label">Fokus / worauf vorbereiten (optional)</label>
-        <textarea class="exam-textarea" id="rg-focus" placeholder="z.B. Kapitel 1–5, Pattern Matching, Beweise" rows="3"></textarea>
+        <label class="form-label" data-i18n="focus-label2">Fokus / worauf vorbereiten (optional)</label>
+        <textarea class="exam-textarea" id="rg-focus" placeholder="z.B. Kapitel 1–5, Pattern Matching, Beweise" rows="3" data-i18n-ph="focus-ph2"></textarea>
       </div>
       <div class="modal-actions">
-        <button class="secondary-btn" id="rg-cancel-btn" type="button" style="min-height:40px;padding:0 14px;font-size:0.85rem;">Abbrechen</button>
-        <button class="primary-btn" id="rg-generate-btn" type="button" style="min-height:40px;padding:0 18px;font-size:0.85rem;">Generieren ✦</button>
+        <button class="secondary-btn" id="rg-cancel-btn" type="button" style="min-height:40px;padding:0 14px;font-size:0.85rem;" data-i18n="cancel">Abbrechen</button>
+        <button class="primary-btn" id="rg-generate-btn" type="button" style="min-height:40px;padding:0 18px;font-size:0.85rem;" data-i18n="generate">Generieren ✦</button>
       </div>
     </div>
     <div id="roadmap-gen-loading" class="modal-state">
       <div class="modal-loading">
-        <div class="modal-loading-text" style="margin-bottom:12px;">Roadmap wird erstellt…</div>
+        <div class="modal-loading-text" style="margin-bottom:12px;" data-i18n="roadmap-creating">Roadmap wird erstellt…</div>
         <div class="gen-steps" id="rg-steps">
-          <div class="gen-step pending" data-key="rag"><span class="gen-step-icon">○</span><span class="gen-step-label">Kursinhalte laden…</span></div>
-          <div class="gen-step pending" data-key="analyze"><span class="gen-step-icon">○</span><span class="gen-step-label">Klausurstil analysieren…</span></div>
-          <div class="gen-step pending" data-key="generate"><span class="gen-step-icon">○</span><span class="gen-step-label">Roadmap generieren…</span></div>
+          <div class="gen-step pending" data-key="rag"><span class="gen-step-icon">○</span><span class="gen-step-label" data-i18n="rg-step-rag">Kursinhalte laden…</span></div>
+          <div class="gen-step pending" data-key="analyze"><span class="gen-step-icon">○</span><span class="gen-step-label" data-i18n="rg-step-analyze">Klausurstil analysieren…</span></div>
+          <div class="gen-step pending" data-key="generate"><span class="gen-step-icon">○</span><span class="gen-step-label" data-i18n="rg-step-generate">Roadmap generieren…</span></div>
         </div>
       </div>
     </div>
     <div id="roadmap-gen-error" class="modal-state">
       <div style="text-align:center; display:grid; gap:14px; padding:6px 0;">
         <div style="font-size:2.4rem;">⚠️</div>
-        <div style="font-family:'Lora',serif;font-size:1.1rem;font-weight:600;color:var(--amber);">Roadmap-Generation fehlgeschlagen</div>
+        <div style="font-family:'Lora',serif;font-size:1.1rem;font-weight:600;color:var(--amber);" data-i18n="roadmap-failed">Roadmap-Generation fehlgeschlagen</div>
         <div id="rg-error-msg" style="color:var(--muted);font-size:0.86rem;line-height:1.6;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:10px;padding:11px 13px;text-align:left;word-break:break-word;">—</div>
       </div>
       <div class="modal-actions">
-        <button class="secondary-btn" id="rg-error-close-btn" type="button" style="min-height:40px;padding:0 14px;font-size:0.85rem;">Schließen</button>
-        <button class="primary-btn" id="rg-error-retry-btn" type="button" style="min-height:40px;padding:0 18px;font-size:0.85rem;">Nochmal versuchen</button>
+        <button class="secondary-btn" id="rg-error-close-btn" type="button" style="min-height:40px;padding:0 14px;font-size:0.85rem;" data-i18n="close">Schließen</button>
+        <button class="primary-btn" id="rg-error-retry-btn" type="button" style="min-height:40px;padding:0 18px;font-size:0.85rem;" data-i18n="retry">Nochmal versuchen</button>
       </div>
     </div>
   </div>
@@ -2756,39 +3005,39 @@
 <div class="modal-overlay" id="pk-modal">
   <div class="modal-card" style="max-width:460px;">
     <div class="modal-header">
-      <h2>Probeklausur generieren</h2>
-      <button class="modal-close" id="pk-modal-close" title="Schließen">✕</button>
+      <h2 data-i18n="pk-title">Probeklausur generieren</h2>
+      <button class="modal-close" id="pk-modal-close" title="Schließen" data-i18n-title="close">✕</button>
     </div>
 
     <!-- State: form -->
     <div class="modal-state active" id="pk-state-form">
       <p style="color:var(--muted);font-size:0.86rem;line-height:1.65;margin-bottom:4px;">
-        Die KI analysiert den Stil deiner Altklausuren (falls vorhanden) und generiert eine stilkonsistente Probeklausur mit versteckten Musterlösungen.
+        <span data-i18n="pk-desc">Die KI analysiert den Stil deiner Altklausuren (falls vorhanden) und generiert eine stilkonsistente Probeklausur mit versteckten Musterlösungen.</span>
       </p>
       <div class="pk-num-row">
         <div class="form-group">
-          <label class="form-label">Anzahl Aufgaben</label>
+          <label class="form-label" data-i18n="num-tasks">Anzahl Aufgaben</label>
           <input class="form-input" id="pk-num-tasks" type="number" min="1" max="20" value="5" style="width:100%;">
         </div>
         <div class="form-group">
-          <label class="form-label">Gesamtpunkte</label>
+          <label class="form-label" data-i18n="total-points">Gesamtpunkte</label>
           <input class="form-input" id="pk-total-points" type="number" min="5" max="200" value="50" style="width:100%;">
         </div>
       </div>
       <div class="modal-actions" style="margin-top:8px;">
-        <button class="secondary-btn" id="pk-cancel-btn" style="min-height:40px;padding:0 16px;font-size:0.86rem;">Abbrechen</button>
-        <button class="primary-btn" id="pk-generate-btn" style="min-height:40px;padding:0 20px;font-size:0.86rem;">Generieren →</button>
+        <button class="secondary-btn" id="pk-cancel-btn" style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="cancel">Abbrechen</button>
+        <button class="primary-btn" id="pk-generate-btn" style="min-height:40px;padding:0 20px;font-size:0.86rem;" data-i18n="generate-arrow">Generieren →</button>
       </div>
     </div>
 
     <!-- State: loading -->
     <div class="modal-state" id="pk-state-loading">
       <div class="modal-loading">
-        <div class="modal-loading-text" style="margin-bottom:12px;">Probeklausur wird generiert…</div>
+        <div class="modal-loading-text" style="margin-bottom:12px;" data-i18n="pk-creating">Probeklausur wird generiert…</div>
         <div class="gen-steps" id="pk-steps">
-          <div class="gen-step pending" data-key="analyze_style"><span class="gen-step-icon">○</span><span class="gen-step-label">Klausurstil analysieren…</span></div>
-          <div class="gen-step pending" data-key="rag"><span class="gen-step-icon">○</span><span class="gen-step-label">Inhalte laden…</span></div>
-          <div class="gen-step pending" data-key="generate"><span class="gen-step-icon">○</span><span class="gen-step-label">Probeklausur generieren…</span></div>
+          <div class="gen-step pending" data-key="analyze_style"><span class="gen-step-icon">○</span><span class="gen-step-label" data-i18n="pk-step-style">Klausurstil analysieren…</span></div>
+          <div class="gen-step pending" data-key="rag"><span class="gen-step-icon">○</span><span class="gen-step-label" data-i18n="pk-step-rag">Inhalte laden…</span></div>
+          <div class="gen-step pending" data-key="generate"><span class="gen-step-icon">○</span><span class="gen-step-label" data-i18n="pk-step-generate">Probeklausur generieren…</span></div>
         </div>
       </div>
     </div>
@@ -2797,12 +3046,39 @@
     <div class="modal-state" id="pk-state-error">
       <div style="text-align:center;display:grid;gap:14px;padding:6px 0;">
         <div style="font-size:2.4rem;">⚠️</div>
-        <div style="font-family:'Lora',serif;font-size:1.18rem;font-weight:600;color:var(--amber);">Generierung fehlgeschlagen</div>
+        <div style="font-family:'Lora',serif;font-size:1.18rem;font-weight:600;color:var(--amber);" data-i18n="pk-failed">Generierung fehlgeschlagen</div>
         <div id="pk-error-msg" style="color:var(--muted);font-size:0.88rem;line-height:1.65;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:10px;padding:12px 14px;text-align:left;word-break:break-word;">—</div>
       </div>
       <div class="modal-actions">
-        <button class="secondary-btn" id="pk-error-close" style="min-height:40px;padding:0 16px;font-size:0.86rem;">Schließen</button>
-        <button class="primary-btn" id="pk-error-retry" style="min-height:40px;padding:0 20px;font-size:0.86rem;">Nochmal</button>
+        <button class="secondary-btn" id="pk-error-close" style="min-height:40px;padding:0 16px;font-size:0.86rem;" data-i18n="close">Schließen</button>
+        <button class="primary-btn" id="pk-error-retry" style="min-height:40px;padding:0 20px;font-size:0.86rem;" data-i18n="retry-short">Nochmal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ── -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-card settings-modal">
+    <div class="modal-header">
+      <h2 data-i18n="settings-title">Einstellungen</h2>
+      <button class="modal-close" id="settings-modal-close" title="Schließen" data-i18n-title="close">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label" data-i18n="appearance">Erscheinungsbild</div>
+      <div class="settings-row">
+        <span class="settings-row-label" data-i18n="design">Design</span>
+        <div class="theme-segmented" id="settings-theme-seg" role="group" aria-label="Design wählen">
+          <button class="theme-seg-btn" id="settings-theme-light" type="button" aria-pressed="false">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <span data-i18n="light">Hell</span>
+          </button>
+          <button class="theme-seg-btn" id="settings-theme-dark" type="button" aria-pressed="false">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span data-i18n="dark">Dunkel</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2814,13 +3090,13 @@
     <div class="roadmap-brand">
       <span class="roadmap-brand-icon">🗺</span>
       <div>
-        <div class="roadmap-brand-title" id="roadmap-brand-title">Lernplan</div>
-        <div class="roadmap-brand-sub"   id="roadmap-brand-sub">Personalisierter Studienplan</div>
+        <div class="roadmap-brand-title" id="roadmap-brand-title" data-i18n="roadmap-title">Lernplan</div>
+        <div class="roadmap-brand-sub"   id="roadmap-brand-sub" data-i18n="roadmap-sub">Personalisierter Studienplan</div>
       </div>
     </div>
     <div class="roadmap-topbar-actions">
-      <button class="secondary-btn" id="roadmap-edit-btn"  style="min-height:36px;padding:0 14px;font-size:0.82rem;">Anpassen</button>
-      <button class="secondary-btn" id="roadmap-close-btn" style="min-height:36px;padding:0 14px;font-size:0.82rem;">Schließen</button>
+      <button class="secondary-btn" id="roadmap-edit-btn"  style="min-height:36px;padding:0 14px;font-size:0.82rem;" data-i18n="customize">Anpassen</button>
+      <button class="secondary-btn" id="roadmap-close-btn" style="min-height:36px;padding:0 14px;font-size:0.82rem;" data-i18n="close">Schließen</button>
     </div>
   </div>
   <div id="roadmap-overlay-diff-banner" class="roadmap-diff-banner" style="display:none;"></div>
@@ -2830,6 +3106,542 @@
 </div>
 
 <script>
+// ── i18n ───────────────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    'page-title':'Wo willst du weitermachen?','empty-courses':'Noch keine Kurse vorhanden — lege deinen ersten Kurs unten an.',
+    'new-course-section':'Neuen Kurs anlegen','upload-toggle':'Materialien hochladen',
+    'course-name-label':'Kursname','course-name-ph':'Zum Beispiel: Lineare Algebra',
+    'drop-title':'Dateien oder Ordner ablegen','drop-subtitle':'Lade Folien, Skripte oder ganze Ordner auf einmal hoch.',
+    'drop-hint':'PDF · PPTX · MD · TXT','folder-btn':'📁 Ordner auswählen',
+    'upload-btn':'Kurs vorbereiten','clear-btn':'Auswahl leeren',
+    'proc-title':'Dein Kurs wird vorbereitet','proc-text':'Das kann einen Moment dauern.',
+    'proc-step1':'Dateien werden hochgeladen','proc-step2':'Texte werden eingelesen und in Abschnitte zerlegt',
+    'proc-step3':'Inhalte werden für den Chat durchsuchbar gemacht',
+    'tab-roadmap':'Lernplan','tab-exam':'Klausur','tab-tasks':'Tasks','tab-chat':'Chat',
+    'files-label':'Dateien','switch-course':'Kurs wechseln','collapse-sidebar':'Sidebar einklappen',
+    'settings':'Einstellungen','language':'Sprache','help':'Hilfe erhalten',
+    'upgrade-plan':'Tarif upgraden','gift':'Verschenken','learn-more':'Mehr erfahren',
+    'logout':'Abmelden','upgrade-btn':'Upgrade',
+    'chat-subtitle':'Antworten basieren auf den Materialien des Kurses.',
+    'chat-close':'Chat zuklappen','chat-empty-title':'Bereit für deine Fragen',
+    'chat-empty-desc':'Frag nach Definitionen, Beispielen oder klausurrelevanten Themen.',
+    'chat-ph':'Frage stellen…',
+    'desktop-title':'Desktop empfohlen',
+    'desktop-desc':'Study Agent ist für Desktop-Bildschirme optimiert. Bitte öffne die App auf einem Bildschirm mit mindestens 1024 px Breite, damit der Workspace, die Chat-Spalte und die Datei-Liste nebeneinander Platz haben.',
+    'lecture-title':'Vorlesung zusammenfassen','close':'Schließen',
+    'onboarding-desc':'Dieses Modul ist noch nicht eingerichtet. Beantworte kurz ein paar Fragen damit die Zusammenfassung optimal auf dein Modul abgestimmt wird.',
+    'focus-label':'Schwerpunkte (Enter zum Hinzufügen)','focus-ph':'z.B. Laufzeitanalyse, Graphen...',
+    'style-label':'Stil des Moduls','style-mixed':'Gemischt','style-cs':'Informatik (Code, Algorithmen)',
+    'style-math':'Mathematik / Naturwissenschaft','style-hum':'Geisteswissenschaft','style-biz':'BWL / Wirtschaft',
+    'exam-topics-label':'Prüfungsrelevante Themen (Enter zum Hinzufügen)','exam-topics-ph':'z.B. O-Notation, Dijkstra...',
+    'skip':'Überspringen','next-summarize':'Weiter & Zusammenfassen',
+    'analyzing':'Deine Vorlesung wird analysiert...','extracting':'Konzepte werden extrahiert...',
+    'summary-failed':'Zusammenfassung fehlgeschlagen','retry':'Nochmal versuchen',
+    'concepts-label':'Extrahierte Konzepte','summary-label':'Zusammenfassung',
+    'saved-badge':'✓ Gespeichert','open-chat':'Im Chat öffnen',
+    'exam-modal-title':'Lernplan erstellen',
+    'exam-step1-title':'Was wird in der Prüfung gefragt?',
+    'exam-step1-desc':'Beschreibe kurz das Thema der Prüfung — z.B. welche Kapitel, Methoden oder Schwerpunkte erwartet werden.',
+    'exam-topic-label':'Prüfungsthema / Schwerpunkte',
+    'exam-topic-ph':'z.B. Kapitel 1–5, Lineare Gleichungssysteme, Eigenwerte und Eigenvektoren...',
+    'exam-date-label':'Prüfungsdatum (optional)','later':'Später','next':'Weiter →',
+    'exam-step2-title':'Wie viel Zeit hast du zum Lernen?',
+    'exam-step2-desc':'Das hilft uns, den Plan realistisch aufzuteilen und Themen entsprechend zu priorisieren.',
+    'hours-per-day':'Stunden pro Tag','custom-time':'Oder eigene Angabe',
+    'custom-time-ph':'z.B. 20 Stunden insgesamt, 2 Wochen, 1 Wochenende...',
+    'back':'← Zurück','exam-step3-title':'Hast du alte oder ähnliche Prüfungen?',
+    'exam-step3-desc':'Typische Aufgaben aus alten Klausuren helfen dem Agenten, die wichtigsten Themen noch gezielter zu priorisieren. Das ist optional.',
+    'old-exams-label':'Aufgabentypen oder Themen aus alten Prüfungen (optional)',
+    'old-exams-ph':'z.B. immer eine Matrixaufgabe, Eigenwertberechnung, Beweis per Induktion...',
+    'create-plan':'Lernplan erstellen ✦','plan-creating':'Dein persönlicher Lernplan wird erstellt ...',
+    'analyzing-course':'Kursinhalte werden analysiert ...',
+    'roadmap-gen-title':'Roadmap erstellen',
+    'roadmap-gen-desc':'Der Agent nutzt deine hochgeladenen Materialien + auto-erkannte Klausuren. Optional kannst du Datum + Fokus angeben.',
+    'focus-label2':'Fokus / worauf vorbereiten (optional)','focus-ph2':'z.B. Kapitel 1–5, Pattern Matching, Beweise',
+    'cancel':'Abbrechen','generate':'Generieren ✦','roadmap-creating':'Roadmap wird erstellt…',
+    'rg-step-rag':'Kursinhalte laden…','rg-step-analyze':'Klausurstil analysieren…','rg-step-generate':'Roadmap generieren…',
+    'roadmap-failed':'Roadmap-Generation fehlgeschlagen',
+    'pk-title':'Probeklausur generieren',
+    'pk-desc':'Die KI analysiert den Stil deiner Altklausuren (falls vorhanden) und generiert eine stilkonsistente Probeklausur mit versteckten Musterlösungen.',
+    'num-tasks':'Anzahl Aufgaben','total-points':'Gesamtpunkte','generate-arrow':'Generieren →',
+    'pk-creating':'Probeklausur wird generiert…','pk-step-style':'Klausurstil analysieren…',
+    'pk-step-rag':'Inhalte laden…','pk-step-generate':'Probeklausur generieren…',
+    'pk-failed':'Generierung fehlgeschlagen','retry-short':'Nochmal',
+    'settings-title':'Einstellungen','appearance':'Erscheinungsbild','design':'Design','light':'Hell','dark':'Dunkel',
+    'roadmap-title':'Lernplan','roadmap-sub':'Personalisierter Studienplan','customize':'Anpassen',
+    'new-module-menu':'Kurs-Menü',
+    'favorite-chip':'★ Favorit','currently':'Aktuell','continue-learning':'Weiterlernen',
+    'core-topics':'Kernthemen','no-roadmap':'Kein Lernplan',
+    'exam-in-1day':'Prüfung in 1 Tag','exam-in-days':'Prüfung in {n} Tagen',
+    'exam-today':'Prüfung heute','exam-over':'Prüfung vorbei',
+    'set-favorite':'Als Favorit setzen','delete-course':'Kurs löschen',
+    'more-courses':'Weitere Kurse','courses-load-error':'Kurse konnten nicht geladen werden.',
+    'no-materials':'Noch keine Materialien','no-materials-sub':'Für diesen Kurs wurden keine Dateien gefunden.',
+    'summaries-header':'Zusammenfassungen','mock-exams-header':'Probeklausuren',
+    'select-file-title':'Wähle links eine Datei aus',
+    'select-file-desc':'Klick öffnet sie hier als Tab. Tab nach rechts ziehen → Split-View.',
+    'current-course':'Aktueller Kurs','no-course-open':'Noch kein Kurs geöffnet',
+    'rm-load-error':'Fehler beim Laden des Lernplans',
+    'rm-title-prefix':'🗺 Lernplan: ','rm-course-fallback':'Kurs','rm-exam-separator':' · Prüfung: ',
+    'rm-progress':'{done}/{total} fertig · {doing} aktiv','rm-not-generated':'noch keine generiert',
+    'rm-regen':'↥ Neu generieren','rm-create-btn':'✦ Erstellen',
+    'rm-diff-added':'neu','rm-diff-removed':'entfernt','rm-diff-status':'Status erhalten','rm-diff-ready':'Neue Roadmap bereit',
+    'rm-reject':'✗ Verwerfen','rm-accept':'✓ Akzeptieren',
+    'rm-empty-hint':'Klick oben rechts auf Erstellen.',
+    'rm-render-error':'Render-Fehler',
+    'rm-no-phases':'Keine Phasen in diesem Lernplan.','rm-no-topics':'– keine Themen –',
+    'rm-click-node':'Klick einen Knoten im Graph um Details zu sehen.','rm-topic-not-found':'Topic nicht gefunden.',
+    'rm-status-todo':'○ Offen','rm-status-doing':'◐ Dran','rm-status-done':'● Fertig',
+    'rm-label-bedeutung':'Bedeutung','rm-label-warum':'Warum relevant','rm-label-subtopics':'Subtopics',
+    'rm-label-dateien':'Dateien','rm-label-aufgaben':'Aufgaben',
+    'rm-prio-high':'Hoch','rm-prio-low':'Niedrig','rm-prio-medium':'Mittel',
+    'rm-status-fail':'Status-Update fehlgeschlagen','rm-unknown-error':'Unbekannter Fehler.',
+    'rm-file-not-found':'Datei „{name}" nicht im Modul gefunden.',
+    'chat-label-user':'Du','chat-label-agent':'Agent',
+    'upload-preparing':'Deine Dateien werden vorbereitet …',
+    'upload-finishing-title':'Fast geschafft','upload-finishing-sub':'Abschlussarbeiten…',
+    'upload-adding-title':'Dateien werden hinzugefügt','upload-adding-sub':'Upload + Verarbeitung läuft …',
+    'upload-failed':'Upload fehlgeschlagen.','upload-saved':'{n} Datei(en) hinzugefügt.','upload-skipped':'{n} schon vorhanden.',
+    'text-not-loaded':'Text konnte nicht geladen werden',
+    'rm-prio-must':'Pflicht','rm-prio-good':'Wichtig','rm-prio-nice':'Optional',
+    'rm-stat-phases':'Phasen','rm-todo-label':'offen',
+    'daily-tab-name':'Tagesplan','daily-title-prefix':'Tagesplan · ',
+    'daily-progress-fmt':'{done}/{total} erledigt','daily-hours-label':'Lernzeit heute:',
+    'daily-mode-konkret':'Konkret','daily-mode-grob':'Grob',
+    'daily-generate-btn':'✦ Tagesplan generieren','daily-generating':'... wird generiert',
+    'daily-clear-history':'Verlauf löschen','daily-clear-history-title':'Erledigten Task-Verlauf löschen',
+    'daily-empty-hint':'Noch kein Tagesplan erstellt. Klick auf „✦ Tagesplan generieren".',
+    'daily-review-divider':'— Wiederholung —','daily-gen-error':'❌ Tagesplan-Generierung fehlgeschlagen:',
+    'daily-net-error':'❌ Netzwerkfehler:','daily-review-header':'Abgeschlossene Tasks',
+    'daily-review-empty':'Erledige Aufgaben — sie erscheinen hier.',
+    'daily-confirm-clear':'Gesamten erledigten Task-Verlauf für dieses Modul löschen?',
+    'daily-clear-failed':'❌ Verlauf konnte nicht gelöscht werden.','daily-clear-success':'✓ Task-Verlauf gelöscht.',
+    'daily-today-tasks':'Heutige Tasks',
+    'setup-course':'Kurs einrichten',
+    'profile-only-desc':'Beantworte kurz ein paar Fragen, damit der Agent optimal auf deinen Kurs abgestimmt wird. Du kannst das auch überspringen.',
+    'setup-course-save':'Kurs einrichten & Speichern',
+    'saving-profile':'Profil wird gespeichert...',
+    'creating-summary':'Zusammenfassung wird erstellt...',
+    'profile-save-failed':'Profil konnte nicht gespeichert werden.',
+    'summary-error':'Fehler beim Zusammenfassen.',
+    'summary-error-fallback':'Unbekannter Fehler beim Zusammenfassen.',
+    'open-module-first':'Bitte zuerst ein Modul öffnen.',
+  },
+  en: {
+    'page-title':'Where do you want to continue?','empty-courses':'No courses yet — create your first course below.',
+    'new-course-section':'Create new course','upload-toggle':'Upload materials',
+    'course-name-label':'Course name','course-name-ph':'For example: Linear Algebra',
+    'drop-title':'Drop files or folders','drop-subtitle':'Upload slides, scripts, or entire folders at once.',
+    'drop-hint':'PDF · PPTX · MD · TXT','folder-btn':'📁 Choose folder',
+    'upload-btn':'Prepare course','clear-btn':'Clear selection',
+    'proc-title':'Your course is being prepared','proc-text':'This may take a moment.',
+    'proc-step1':'Files are being uploaded','proc-step2':'Texts are being read and split into sections',
+    'proc-step3':'Content is being indexed for chat search',
+    'tab-roadmap':'Study Plan','tab-exam':'Exam','tab-tasks':'Tasks','tab-chat':'Chat',
+    'files-label':'Files','switch-course':'Switch course','collapse-sidebar':'Collapse sidebar',
+    'settings':'Settings','language':'Language','help':'Get help',
+    'upgrade-plan':'Upgrade plan','gift':'Give as gift','learn-more':'Learn more',
+    'logout':'Log out','upgrade-btn':'Upgrade',
+    'chat-subtitle':'Answers are based on your course materials.',
+    'chat-close':'Close chat','chat-empty-title':'Ready for your questions',
+    'chat-empty-desc':'Ask about definitions, examples, or exam-relevant topics.',
+    'chat-ph':'Ask a question…',
+    'desktop-title':'Desktop recommended',
+    'desktop-desc':'Study Agent is optimized for desktop screens. Please open the app on a screen at least 1024 px wide so the workspace, chat column, and file list fit side by side.',
+    'lecture-title':'Summarize lecture','close':'Close',
+    'onboarding-desc':'This module has not been set up yet. Answer a few quick questions so the summary is tailored to your module.',
+    'focus-label':'Focus areas (press Enter to add)','focus-ph':'e.g. runtime analysis, graphs...',
+    'style-label':'Module style','style-mixed':'Mixed','style-cs':'Computer Science (code, algorithms)',
+    'style-math':'Mathematics / Natural Science','style-hum':'Humanities','style-biz':'Business / Economics',
+    'exam-topics-label':'Exam-relevant topics (press Enter to add)','exam-topics-ph':'e.g. O-notation, Dijkstra...',
+    'skip':'Skip','next-summarize':'Next & Summarize',
+    'analyzing':'Your lecture is being analyzed...','extracting':'Extracting concepts...',
+    'summary-failed':'Summary failed','retry':'Try again',
+    'concepts-label':'Extracted concepts','summary-label':'Summary',
+    'saved-badge':'✓ Saved','open-chat':'Open in chat',
+    'exam-modal-title':'Create study plan',
+    'exam-step1-title':'What is covered in the exam?',
+    'exam-step1-desc':'Briefly describe the exam topic — e.g. which chapters, methods, or focus areas are expected.',
+    'exam-topic-label':'Exam topic / focus areas',
+    'exam-topic-ph':'e.g. Chapters 1–5, Linear equations, Eigenvalues and eigenvectors...',
+    'exam-date-label':'Exam date (optional)','later':'Later','next':'Next →',
+    'exam-step2-title':'How much time do you have to study?',
+    'exam-step2-desc':'This helps us distribute the plan realistically and prioritize topics accordingly.',
+    'hours-per-day':'Hours per day','custom-time':'Or custom input',
+    'custom-time-ph':'e.g. 20 hours total, 2 weeks, 1 weekend...',
+    'back':'← Back','exam-step3-title':'Do you have old or similar exams?',
+    'exam-step3-desc':'Typical tasks from old exams help the agent prioritize the most important topics more precisely. This is optional.',
+    'old-exams-label':'Task types or topics from old exams (optional)',
+    'old-exams-ph':'e.g. always a matrix task, eigenvalue calculation, proof by induction...',
+    'create-plan':'Create study plan ✦','plan-creating':'Your personal study plan is being created...',
+    'analyzing-course':'Analyzing course content...',
+    'roadmap-gen-title':'Create roadmap',
+    'roadmap-gen-desc':'The agent uses your uploaded materials + auto-detected exams. You can optionally add a date and focus.',
+    'focus-label2':'Focus / what to prepare for (optional)','focus-ph2':'e.g. Chapters 1–5, Pattern Matching, Proofs',
+    'cancel':'Cancel','generate':'Generate ✦','roadmap-creating':'Creating roadmap…',
+    'rg-step-rag':'Loading course content…','rg-step-analyze':'Analyzing exam style…','rg-step-generate':'Generating roadmap…',
+    'roadmap-failed':'Roadmap generation failed',
+    'pk-title':'Generate mock exam',
+    'pk-desc':'The AI analyzes the style of your past exams (if available) and generates a style-consistent mock exam with hidden sample solutions.',
+    'num-tasks':'Number of tasks','total-points':'Total points','generate-arrow':'Generate →',
+    'pk-creating':'Generating mock exam…','pk-step-style':'Analyzing exam style…',
+    'pk-step-rag':'Loading content…','pk-step-generate':'Generating mock exam…',
+    'pk-failed':'Generation failed','retry-short':'Retry',
+    'settings-title':'Settings','appearance':'Appearance','design':'Theme','light':'Light','dark':'Dark',
+    'roadmap-title':'Study Plan','roadmap-sub':'Personalized study plan','customize':'Customize',
+    'new-module-menu':'Course menu',
+    'favorite-chip':'★ Favorite','currently':'Currently','continue-learning':'Continue learning',
+    'core-topics':'core topics','no-roadmap':'No study plan',
+    'exam-in-1day':'Exam in 1 day','exam-in-days':'Exam in {n} days',
+    'exam-today':'Exam today','exam-over':'Exam over',
+    'set-favorite':'Set as favorite','delete-course':'Delete course',
+    'more-courses':'More courses','courses-load-error':'Courses could not be loaded.',
+    'no-materials':'No materials yet','no-materials-sub':'No files found for this course.',
+    'summaries-header':'Summaries','mock-exams-header':'Mock exams',
+    'select-file-title':'Select a file on the left',
+    'select-file-desc':'Click to open it as a tab. Drag tab to the right → split view.',
+    'current-course':'Current course','no-course-open':'No course open yet',
+    'rm-load-error':'Error loading study plan',
+    'rm-title-prefix':'🗺 Study Plan: ','rm-course-fallback':'Course','rm-exam-separator':' · Exam: ',
+    'rm-progress':'{done}/{total} done · {doing} active','rm-not-generated':'none generated yet',
+    'rm-regen':'↥ Regenerate','rm-create-btn':'✦ Create',
+    'rm-diff-added':'new','rm-diff-removed':'removed','rm-diff-status':'status kept','rm-diff-ready':'New study plan ready',
+    'rm-reject':'✗ Discard','rm-accept':'✓ Accept',
+    'rm-empty-hint':'Click Create in the top right.',
+    'rm-render-error':'Render error',
+    'rm-no-phases':'No phases in this study plan.','rm-no-topics':'– no topics –',
+    'rm-click-node':'Click a node in the graph to see details.','rm-topic-not-found':'Topic not found.',
+    'rm-status-todo':'○ Open','rm-status-doing':'◐ In progress','rm-status-done':'● Done',
+    'rm-label-bedeutung':'Meaning','rm-label-warum':'Why relevant','rm-label-subtopics':'Subtopics',
+    'rm-label-dateien':'Files','rm-label-aufgaben':'Tasks',
+    'rm-prio-high':'High','rm-prio-low':'Low','rm-prio-medium':'Medium',
+    'rm-status-fail':'Status update failed','rm-unknown-error':'Unknown error.',
+    'rm-file-not-found':'File "{name}" not found in module.',
+    'chat-label-user':'You','chat-label-agent':'Agent',
+    'upload-preparing':'Preparing your files …',
+    'upload-finishing-title':'Almost done','upload-finishing-sub':'Finishing up…',
+    'upload-adding-title':'Adding files','upload-adding-sub':'Upload + processing in progress …',
+    'upload-failed':'Upload failed.','upload-saved':'{n} file(s) added.','upload-skipped':'{n} already present.',
+    'text-not-loaded':'Text could not be loaded',
+    'rm-prio-must':'Required','rm-prio-good':'Important','rm-prio-nice':'Optional',
+    'rm-stat-phases':'Phases','rm-todo-label':'open',
+    'daily-tab-name':'Daily Plan','daily-title-prefix':'Daily Plan · ',
+    'daily-progress-fmt':'{done}/{total} done','daily-hours-label':'Study time today:',
+    'daily-mode-konkret':'Concrete','daily-mode-grob':'Rough',
+    'daily-generate-btn':'✦ Generate daily plan','daily-generating':'... generating',
+    'daily-clear-history':'Clear history','daily-clear-history-title':'Delete completed task history',
+    'daily-empty-hint':'No daily plan created yet. Click "✦ Generate daily plan".',
+    'daily-review-divider':'— Review —','daily-gen-error':'❌ Daily plan generation failed:',
+    'daily-net-error':'❌ Network error:','daily-review-header':'Completed Tasks',
+    'daily-review-empty':'Complete tasks — they\'ll appear here.',
+    'daily-confirm-clear':'Delete all completed task history for this module?',
+    'daily-clear-failed':'❌ History could not be deleted.','daily-clear-success':'✓ Task history deleted.',
+    'daily-today-tasks':'Today\'s Tasks',
+    'setup-course':'Set up course',
+    'profile-only-desc':'Answer a few quick questions so the agent is optimally tailored to your course. You can also skip this.',
+    'setup-course-save':'Set up course & Save',
+    'saving-profile':'Saving profile...',
+    'creating-summary':'Creating summary...',
+    'profile-save-failed':'Profile could not be saved.',
+    'summary-error':'Error while summarizing.',
+    'summary-error-fallback':'Unknown error while summarizing.',
+    'open-module-first':'Please open a module first.',
+  },
+  es: {
+    'page-title':'¿Dónde quieres continuar?','empty-courses':'Aún no hay cursos — crea tu primer curso abajo.',
+    'new-course-section':'Crear nuevo curso','upload-toggle':'Subir materiales',
+    'course-name-label':'Nombre del curso','course-name-ph':'Por ejemplo: Álgebra Lineal',
+    'drop-title':'Suelta archivos o carpetas','drop-subtitle':'Sube diapositivas, apuntes o carpetas completas de una vez.',
+    'drop-hint':'PDF · PPTX · MD · TXT','folder-btn':'📁 Elegir carpeta',
+    'upload-btn':'Preparar curso','clear-btn':'Borrar selección',
+    'proc-title':'Tu curso está siendo preparado','proc-text':'Esto puede tardar un momento.',
+    'proc-step1':'Los archivos se están subiendo','proc-step2':'Los textos se están dividiendo en secciones',
+    'proc-step3':'El contenido está siendo indexado para el chat',
+    'tab-roadmap':'Plan de estudio','tab-exam':'Examen','tab-tasks':'Tareas','tab-chat':'Chat',
+    'files-label':'Archivos','switch-course':'Cambiar curso','collapse-sidebar':'Colapsar barra lateral',
+    'settings':'Ajustes','language':'Idioma','help':'Obtener ayuda',
+    'upgrade-plan':'Mejorar plan','gift':'Regalar','learn-more':'Más información',
+    'logout':'Cerrar sesión','upgrade-btn':'Mejorar',
+    'chat-subtitle':'Las respuestas se basan en los materiales del curso.',
+    'chat-close':'Cerrar chat','chat-empty-title':'Listo para tus preguntas',
+    'chat-empty-desc':'Pregunta sobre definiciones, ejemplos o temas relevantes para el examen.',
+    'chat-ph':'Haz una pregunta…',
+    'desktop-title':'Recomendado en escritorio',
+    'desktop-desc':'Study Agent está optimizado para pantallas de escritorio. Abre la aplicación en una pantalla de al menos 1024 px de ancho para que el espacio de trabajo, el chat y la lista de archivos quepan uno al lado del otro.',
+    'lecture-title':'Resumir clase','close':'Cerrar',
+    'onboarding-desc':'Este módulo aún no está configurado. Responde algunas preguntas rápidas para que el resumen se adapte a tu módulo.',
+    'focus-label':'Áreas de enfoque (Enter para añadir)','focus-ph':'p. ej. análisis de complejidad, grafos...',
+    'style-label':'Estilo del módulo','style-mixed':'Mixto','style-cs':'Informática (código, algoritmos)',
+    'style-math':'Matemáticas / Ciencias naturales','style-hum':'Humanidades','style-biz':'Empresa / Economía',
+    'exam-topics-label':'Temas relevantes para el examen (Enter para añadir)','exam-topics-ph':'p. ej. notación O, Dijkstra...',
+    'skip':'Omitir','next-summarize':'Siguiente y resumir',
+    'analyzing':'Tu clase está siendo analizada...','extracting':'Extrayendo conceptos...',
+    'summary-failed':'Error al generar el resumen','retry':'Intentar de nuevo',
+    'concepts-label':'Conceptos extraídos','summary-label':'Resumen',
+    'saved-badge':'✓ Guardado','open-chat':'Abrir en el chat',
+    'exam-modal-title':'Crear plan de estudio',
+    'exam-step1-title':'¿Qué se evalúa en el examen?',
+    'exam-step1-desc':'Describe brevemente el tema del examen — p. ej. qué capítulos, métodos o enfoques se esperan.',
+    'exam-topic-label':'Tema / áreas de enfoque del examen',
+    'exam-topic-ph':'p. ej. Capítulos 1–5, Sistemas de ecuaciones lineales, Valores propios...',
+    'exam-date-label':'Fecha del examen (opcional)','later':'Más tarde','next':'Siguiente →',
+    'exam-step2-title':'¿Cuánto tiempo tienes para estudiar?',
+    'exam-step2-desc':'Esto nos ayuda a distribuir el plan de forma realista y priorizar los temas.',
+    'hours-per-day':'Horas por día','custom-time':'O ingreso personalizado',
+    'custom-time-ph':'p. ej. 20 horas en total, 2 semanas, 1 fin de semana...',
+    'back':'← Atrás','exam-step3-title':'¿Tienes exámenes anteriores o similares?',
+    'exam-step3-desc':'Las tareas típicas de exámenes anteriores ayudan al agente a priorizar los temas más importantes. Es opcional.',
+    'old-exams-label':'Tipos de tareas o temas de exámenes anteriores (opcional)',
+    'old-exams-ph':'p. ej. siempre una tarea de matrices, cálculo de valores propios...',
+    'create-plan':'Crear plan de estudio ✦','plan-creating':'Tu plan de estudio personal está siendo creado...',
+    'analyzing-course':'Analizando el contenido del curso...',
+    'roadmap-gen-title':'Crear hoja de ruta',
+    'roadmap-gen-desc':'El agente usa tus materiales subidos + exámenes detectados automáticamente. Opcionalmente puedes añadir fecha y enfoque.',
+    'focus-label2':'Enfoque / para qué prepararse (opcional)','focus-ph2':'p. ej. Capítulos 1–5, Coincidencia de patrones, Demostraciones',
+    'cancel':'Cancelar','generate':'Generar ✦','roadmap-creating':'Creando hoja de ruta…',
+    'rg-step-rag':'Cargando contenido del curso…','rg-step-analyze':'Analizando estilo del examen…','rg-step-generate':'Generando hoja de ruta…',
+    'roadmap-failed':'Error al generar la hoja de ruta',
+    'pk-title':'Generar examen de práctica',
+    'pk-desc':'La IA analiza el estilo de tus exámenes anteriores (si están disponibles) y genera un examen de práctica coherente con soluciones ocultas.',
+    'num-tasks':'Número de preguntas','total-points':'Puntos totales','generate-arrow':'Generar →',
+    'pk-creating':'Generando examen de práctica…','pk-step-style':'Analizando estilo del examen…',
+    'pk-step-rag':'Cargando contenido…','pk-step-generate':'Generando examen de práctica…',
+    'pk-failed':'Error en la generación','retry-short':'Reintentar',
+    'settings-title':'Ajustes','appearance':'Apariencia','design':'Tema','light':'Claro','dark':'Oscuro',
+    'roadmap-title':'Plan de estudio','roadmap-sub':'Plan de estudio personalizado','customize':'Personalizar',
+    'new-module-menu':'Menú del curso',
+    'favorite-chip':'★ Favorito','currently':'Actual','continue-learning':'Seguir aprendiendo',
+    'core-topics':'temas clave','no-roadmap':'Sin plan de estudio',
+    'exam-in-1day':'Examen en 1 día','exam-in-days':'Examen en {n} días',
+    'exam-today':'Examen hoy','exam-over':'Examen terminado',
+    'set-favorite':'Marcar como favorito','delete-course':'Eliminar curso',
+    'more-courses':'Más cursos','courses-load-error':'No se pudieron cargar los cursos.',
+    'no-materials':'Aún no hay materiales','no-materials-sub':'No se encontraron archivos para este curso.',
+    'summaries-header':'Resúmenes','mock-exams-header':'Exámenes de práctica',
+    'select-file-title':'Selecciona un archivo a la izquierda',
+    'select-file-desc':'Haz clic para abrirlo como pestaña. Arrastra la pestaña a la derecha → vista dividida.',
+    'current-course':'Curso actual','no-course-open':'Ningún curso abierto todavía',
+    'rm-load-error':'Error al cargar el plan de estudio',
+    'rm-title-prefix':'🗺 Plan de estudio: ','rm-course-fallback':'Curso','rm-exam-separator':' · Examen: ',
+    'rm-progress':'{done}/{total} terminadas · {doing} activas','rm-not-generated':'aún no generado',
+    'rm-regen':'↥ Regenerar','rm-create-btn':'✦ Crear',
+    'rm-diff-added':'nuevo','rm-diff-removed':'eliminado','rm-diff-status':'estado conservado','rm-diff-ready':'Nuevo plan de estudio listo',
+    'rm-reject':'✗ Descartar','rm-accept':'✓ Aceptar',
+    'rm-empty-hint':'Haz clic en Crear arriba a la derecha.',
+    'rm-render-error':'Error de renderizado',
+    'rm-no-phases':'No hay fases en este plan de estudio.','rm-no-topics':'– sin temas –',
+    'rm-click-node':'Haz clic en un nodo del grafo para ver los detalles.','rm-topic-not-found':'Tema no encontrado.',
+    'rm-status-todo':'○ Abierto','rm-status-doing':'◐ En progreso','rm-status-done':'● Terminado',
+    'rm-label-bedeutung':'Significado','rm-label-warum':'Por qué es relevante','rm-label-subtopics':'Subtemas',
+    'rm-label-dateien':'Archivos','rm-label-aufgaben':'Tareas',
+    'rm-prio-high':'Alto','rm-prio-low':'Bajo','rm-prio-medium':'Medio',
+    'rm-status-fail':'Error al actualizar el estado','rm-unknown-error':'Error desconocido.',
+    'rm-file-not-found':'Archivo "{name}" no encontrado en el módulo.',
+    'chat-label-user':'Tú','chat-label-agent':'Agente',
+    'upload-preparing':'Preparando tus archivos …',
+    'upload-finishing-title':'Casi listo','upload-finishing-sub':'Finalizando…',
+    'upload-adding-title':'Añadiendo archivos','upload-adding-sub':'Subida + procesamiento en curso …',
+    'upload-failed':'Error en la subida.','upload-saved':'{n} archivo(s) añadido(s).','upload-skipped':'{n} ya presentes.',
+    'text-not-loaded':'No se pudo cargar el texto',
+    'rm-prio-must':'Obligatorio','rm-prio-good':'Importante','rm-prio-nice':'Opcional',
+    'rm-stat-phases':'Fases','rm-todo-label':'abierto',
+    'daily-tab-name':'Plan diario','daily-title-prefix':'Plan diario · ',
+    'daily-progress-fmt':'{done}/{total} completadas','daily-hours-label':'Tiempo de estudio hoy:',
+    'daily-mode-konkret':'Concreto','daily-mode-grob':'General',
+    'daily-generate-btn':'✦ Generar plan diario','daily-generating':'... generando',
+    'daily-clear-history':'Borrar historial','daily-clear-history-title':'Eliminar historial de tareas completadas',
+    'daily-empty-hint':'Aún no se ha creado un plan diario. Haz clic en «✦ Generar plan diario».',
+    'daily-review-divider':'— Repaso —','daily-gen-error':'❌ Error al generar el plan diario:',
+    'daily-net-error':'❌ Error de red:','daily-review-header':'Tareas completadas',
+    'daily-review-empty':'Completa tareas — aparecerán aquí.',
+    'daily-confirm-clear':'¿Eliminar todo el historial de tareas completadas para este módulo?',
+    'daily-clear-failed':'❌ No se pudo borrar el historial.','daily-clear-success':'✓ Historial de tareas eliminado.',
+    'daily-today-tasks':'Tareas de hoy',
+    'setup-course':'Configurar curso',
+    'profile-only-desc':'Responde algunas preguntas rápidas para que el agente se adapte óptimamente a tu curso. También puedes omitir esto.',
+    'setup-course-save':'Configurar curso y guardar',
+    'saving-profile':'Guardando perfil...',
+    'creating-summary':'Creando resumen...',
+    'profile-save-failed':'No se pudo guardar el perfil.',
+    'summary-error':'Error al generar el resumen.',
+    'summary-error-fallback':'Error desconocido al generar el resumen.',
+    'open-module-first':'Por favor, abre primero un módulo.',
+  },
+  fr: {
+    'page-title':'Où veux-tu continuer ?','empty-courses':'Aucun cours pour l\'instant — crée ton premier cours ci-dessous.',
+    'new-course-section':'Créer un nouveau cours','upload-toggle':'Télécharger des matériaux',
+    'course-name-label':'Nom du cours','course-name-ph':'Par exemple : Algèbre linéaire',
+    'drop-title':'Déposer des fichiers ou des dossiers','drop-subtitle':'Télécharge des diapositives, des scripts ou des dossiers entiers en une fois.',
+    'drop-hint':'PDF · PPTX · MD · TXT','folder-btn':'📁 Choisir un dossier',
+    'upload-btn':'Préparer le cours','clear-btn':'Effacer la sélection',
+    'proc-title':'Ton cours est en cours de préparation','proc-text':'Cela peut prendre un moment.',
+    'proc-step1':'Les fichiers sont téléchargés','proc-step2':'Les textes sont lus et divisés en sections',
+    'proc-step3':'Le contenu est indexé pour la recherche dans le chat',
+    'tab-roadmap':'Plan d\'étude','tab-exam':'Examen','tab-tasks':'Tâches','tab-chat':'Chat',
+    'files-label':'Fichiers','switch-course':'Changer de cours','collapse-sidebar':'Réduire la barre latérale',
+    'settings':'Paramètres','language':'Langue','help':'Obtenir de l\'aide',
+    'upgrade-plan':'Améliorer le plan','gift':'Offrir','learn-more':'En savoir plus',
+    'logout':'Se déconnecter','upgrade-btn':'Améliorer',
+    'chat-subtitle':'Les réponses sont basées sur les matériaux du cours.',
+    'chat-close':'Fermer le chat','chat-empty-title':'Prêt pour tes questions',
+    'chat-empty-desc':'Pose des questions sur des définitions, des exemples ou des sujets pertinents pour l\'examen.',
+    'chat-ph':'Poser une question…',
+    'desktop-title':'Bureau recommandé',
+    'desktop-desc':'Study Agent est optimisé pour les écrans de bureau. Ouvre l\'application sur un écran d\'au moins 1024 px de large pour que l\'espace de travail, le chat et la liste de fichiers s\'affichent côte à côte.',
+    'lecture-title':'Résumer le cours','close':'Fermer',
+    'onboarding-desc':'Ce module n\'est pas encore configuré. Réponds à quelques questions rapides pour que le résumé soit adapté à ton module.',
+    'focus-label':'Points clés (Entrée pour ajouter)','focus-ph':'ex. analyse de complexité, graphes...',
+    'style-label':'Style du module','style-mixed':'Mixte','style-cs':'Informatique (code, algorithmes)',
+    'style-math':'Mathématiques / Sciences naturelles','style-hum':'Sciences humaines','style-biz':'Économie / Gestion',
+    'exam-topics-label':'Sujets pertinents pour l\'examen (Entrée pour ajouter)','exam-topics-ph':'ex. notation O, Dijkstra...',
+    'skip':'Ignorer','next-summarize':'Suivant et résumer',
+    'analyzing':'Ton cours est en cours d\'analyse...','extracting':'Extraction des concepts...',
+    'summary-failed':'Échec du résumé','retry':'Réessayer',
+    'concepts-label':'Concepts extraits','summary-label':'Résumé',
+    'saved-badge':'✓ Enregistré','open-chat':'Ouvrir dans le chat',
+    'exam-modal-title':'Créer un plan d\'étude',
+    'exam-step1-title':'Qu\'est-ce qui est évalué à l\'examen ?',
+    'exam-step1-desc':'Décris brièvement le sujet de l\'examen — ex. quels chapitres, méthodes ou points clés sont attendus.',
+    'exam-topic-label':'Sujet / points clés de l\'examen',
+    'exam-topic-ph':'ex. Chapitres 1–5, Systèmes d\'équations linéaires, Valeurs propres...',
+    'exam-date-label':'Date d\'examen (optionnel)','later':'Plus tard','next':'Suivant →',
+    'exam-step2-title':'Combien de temps as-tu pour étudier ?',
+    'exam-step2-desc':'Cela nous aide à répartir le plan de façon réaliste et à prioriser les sujets.',
+    'hours-per-day':'Heures par jour','custom-time':'Ou saisie personnalisée',
+    'custom-time-ph':'ex. 20 heures au total, 2 semaines, 1 week-end...',
+    'back':'← Retour','exam-step3-title':'As-tu d\'anciens examens ou des examens similaires ?',
+    'exam-step3-desc':'Les tâches typiques des anciens examens aident l\'agent à prioriser les sujets les plus importants. C\'est optionnel.',
+    'old-exams-label':'Types de tâches ou sujets d\'anciens examens (optionnel)',
+    'old-exams-ph':'ex. toujours une tâche sur les matrices, calcul de valeurs propres...',
+    'create-plan':'Créer un plan d\'étude ✦','plan-creating':'Ton plan d\'étude personnel est en cours de création...',
+    'analyzing-course':'Analyse du contenu du cours...',
+    'roadmap-gen-title':'Créer une feuille de route',
+    'roadmap-gen-desc':'L\'agent utilise tes matériaux téléchargés + les examens détectés automatiquement. Tu peux optionnellement ajouter une date et un focus.',
+    'focus-label2':'Focus / sur quoi se préparer (optionnel)','focus-ph2':'ex. Chapitres 1–5, Correspondance de motifs, Preuves',
+    'cancel':'Annuler','generate':'Générer ✦','roadmap-creating':'Création de la feuille de route…',
+    'rg-step-rag':'Chargement du contenu du cours…','rg-step-analyze':'Analyse du style d\'examen…','rg-step-generate':'Génération de la feuille de route…',
+    'roadmap-failed':'Échec de la génération de la feuille de route',
+    'pk-title':'Générer un examen blanc',
+    'pk-desc':'L\'IA analyse le style de tes anciens examens (si disponibles) et génère un examen blanc cohérent avec des solutions cachées.',
+    'num-tasks':'Nombre d\'exercices','total-points':'Points totaux','generate-arrow':'Générer →',
+    'pk-creating':'Génération de l\'examen blanc…','pk-step-style':'Analyse du style d\'examen…',
+    'pk-step-rag':'Chargement du contenu…','pk-step-generate':'Génération de l\'examen blanc…',
+    'pk-failed':'Échec de la génération','retry-short':'Réessayer',
+    'settings-title':'Paramètres','appearance':'Apparence','design':'Thème','light':'Clair','dark':'Sombre',
+    'roadmap-title':'Plan d\'étude','roadmap-sub':'Plan d\'étude personnalisé','customize':'Personnaliser',
+    'new-module-menu':'Menu du cours',
+    'favorite-chip':'★ Favori','currently':'En cours','continue-learning':'Continuer à apprendre',
+    'core-topics':'sujets clés','no-roadmap':'Pas de plan d\'étude',
+    'exam-in-1day':'Examen dans 1 jour','exam-in-days':'Examen dans {n} jours',
+    'exam-today':'Examen aujourd\'hui','exam-over':'Examen terminé',
+    'set-favorite':'Définir comme favori','delete-course':'Supprimer le cours',
+    'more-courses':'Autres cours','courses-load-error':'Impossible de charger les cours.',
+    'no-materials':'Pas encore de matériaux','no-materials-sub':'Aucun fichier trouvé pour ce cours.',
+    'summaries-header':'Résumés','mock-exams-header':'Examens blancs',
+    'select-file-title':'Sélectionne un fichier à gauche',
+    'select-file-desc':'Cliquer l\'ouvre comme onglet. Faire glisser l\'onglet vers la droite → vue partagée.',
+    'current-course':'Cours actuel','no-course-open':'Aucun cours ouvert pour l\'instant',
+    'rm-load-error':'Erreur lors du chargement du plan d\'étude',
+    'rm-title-prefix':'🗺 Plan d\'étude : ','rm-course-fallback':'Cours','rm-exam-separator':' · Examen : ',
+    'rm-progress':'{done}/{total} terminé · {doing} actif','rm-not-generated':'pas encore généré',
+    'rm-regen':'↥ Regénérer','rm-create-btn':'✦ Créer',
+    'rm-diff-added':'nouveau','rm-diff-removed':'supprimé','rm-diff-status':'statut conservé','rm-diff-ready':'Nouveau plan d\'étude prêt',
+    'rm-reject':'✗ Rejeter','rm-accept':'✓ Accepter',
+    'rm-empty-hint':'Clique sur Créer en haut à droite.',
+    'rm-render-error':'Erreur de rendu',
+    'rm-no-phases':'Aucune phase dans ce plan d\'étude.','rm-no-topics':'– pas de sujets –',
+    'rm-click-node':'Clique sur un nœud du graphe pour voir les détails.','rm-topic-not-found':'Sujet introuvable.',
+    'rm-status-todo':'○ Ouvert','rm-status-doing':'◐ En cours','rm-status-done':'● Terminé',
+    'rm-label-bedeutung':'Signification','rm-label-warum':'Pourquoi pertinent','rm-label-subtopics':'Sous-sujets',
+    'rm-label-dateien':'Fichiers','rm-label-aufgaben':'Exercices',
+    'rm-prio-high':'Élevé','rm-prio-low':'Faible','rm-prio-medium':'Moyen',
+    'rm-status-fail':'Échec de la mise à jour du statut','rm-unknown-error':'Erreur inconnue.',
+    'rm-file-not-found':'Fichier « {name} » introuvable dans le module.',
+    'chat-label-user':'Toi','chat-label-agent':'Agent',
+    'upload-preparing':'Préparation de tes fichiers …',
+    'upload-finishing-title':'Presque terminé','upload-finishing-sub':'Finitions en cours…',
+    'upload-adding-title':'Ajout de fichiers','upload-adding-sub':'Upload + traitement en cours …',
+    'upload-failed':'Échec de l\'upload.','upload-saved':'{n} fichier(s) ajouté(s).','upload-skipped':'{n} déjà présent(s).',
+    'text-not-loaded':'Le texte n\'a pas pu être chargé',
+    'rm-prio-must':'Obligatoire','rm-prio-good':'Important','rm-prio-nice':'Optionnel',
+    'rm-stat-phases':'Phases','rm-todo-label':'ouvert',
+    'daily-tab-name':'Plan quotidien','daily-title-prefix':'Plan quotidien · ',
+    'daily-progress-fmt':'{done}/{total} terminé','daily-hours-label':'Temps d\'étude aujourd\'hui :',
+    'daily-mode-konkret':'Concret','daily-mode-grob':'Général',
+    'daily-generate-btn':'✦ Générer le plan quotidien','daily-generating':'... en cours de génération',
+    'daily-clear-history':'Effacer l\'historique','daily-clear-history-title':'Supprimer l\'historique des tâches terminées',
+    'daily-empty-hint':'Aucun plan quotidien créé. Clique sur « ✦ Générer le plan quotidien ».',
+    'daily-review-divider':'— Révision —','daily-gen-error':'❌ Échec de la génération du plan quotidien :',
+    'daily-net-error':'❌ Erreur réseau :','daily-review-header':'Tâches terminées',
+    'daily-review-empty':'Termines des tâches — elles apparaîtront ici.',
+    'daily-confirm-clear':'Supprimer tout l\'historique des tâches terminées pour ce module ?',
+    'daily-clear-failed':'❌ L\'historique n\'a pas pu être supprimé.','daily-clear-success':'✓ Historique des tâches supprimé.',
+    'daily-today-tasks':'Tâches du jour',
+    'setup-course':'Configurer le cours',
+    'profile-only-desc':'Réponds à quelques questions rapides pour que l\'agent s\'adapte au mieux à ton cours. Tu peux aussi passer cette étape.',
+    'setup-course-save':'Configurer le cours et enregistrer',
+    'saving-profile':'Enregistrement du profil...',
+    'creating-summary':'Création du résumé...',
+    'profile-save-failed':'Le profil n\'a pas pu être enregistré.',
+    'summary-error':'Erreur lors du résumé.',
+    'summary-error-fallback':'Erreur inconnue lors du résumé.',
+    'open-module-first':'Veuillez d\'abord ouvrir un module.',
+  }
+};
+
+let currentLang = localStorage.getItem('app-lang') || 'de';
+
+function t(key) {
+  return (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || key;
+}
+
+function tf(key, vars) {
+  let s = t(key);
+  for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
+  return s;
+}
+
+function applyI18n(lang) {
+  currentLang = lang;
+  const T = TRANSLATIONS[lang] || TRANSLATIONS.de;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = T[el.dataset.i18n];
+    if (v !== undefined) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = T[el.dataset.i18nPh];
+    if (v !== undefined) el.placeholder = v;
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const v = T[el.dataset.i18nTitle];
+    if (v !== undefined) el.title = v;
+  });
+  document.documentElement.lang = lang;
+  // Re-render JS-generated content that uses t()
+  if (typeof loadModules === 'function' && document.getElementById('setup-screen')?.classList.contains('active')) {
+    loadModules();
+  }
+  const wsActive = document.getElementById('workspace-screen')?.classList.contains('active');
+  if (wsActive) {
+    if (typeof renderWorkspaceFiles === 'function' && typeof state !== 'undefined' && state.moduleFiles) {
+      renderWorkspaceFiles(state.moduleFiles);
+    }
+    if (typeof headerStatus !== 'undefined' && state?.moduleName) {
+      headerStatus.textContent = `${t('current-course')}: ${state.moduleName}`;
+    }
+    if (typeof renderPanes === 'function') renderPanes();
+    // Re-render chat empty state if visible
+    const emptyEl = document.getElementById('empty');
+    if (emptyEl) {
+      const strong = emptyEl.querySelector('strong');
+      const p = emptyEl.querySelector('p');
+      if (strong) strong.textContent = t('chat-empty-title');
+      if (p) p.textContent = t('chat-empty-desc');
+    }
+  }
+}
+
 // ── State ──────────────────────────────────────────────────────────────────────
 const state = {
   moduleName: '',
@@ -2869,7 +3681,7 @@ const processingText    = document.getElementById('processing-text');
 const existingModulesEl = document.getElementById('existing-modules');
 const emptyModulesEl    = document.getElementById('empty-modules');
 const filesPanel        = document.getElementById('files-panel');
-const moduleChip        = document.getElementById('files-drawer-module-name');
+const moduleChip        = { set textContent(_) {} };
 const wsCenter          = document.getElementById('ws-center');
 const headerStatus      = document.getElementById('header-status');
 const newModuleBtn      = document.getElementById('new-module-btn');
@@ -2907,6 +3719,8 @@ const pkStateError  = document.getElementById('pk-state-error');
 const pkErrorMsg    = document.getElementById('pk-error-msg');
 const pkErrorClose  = document.getElementById('pk-error-close');
 const pkErrorRetry  = document.getElementById('pk-error-retry');
+let _pkAbortCtrl  = null;
+let _rgAbortCtrl  = null;
 
 // ── Accordion ─────────────────────────────────────────────────────────────────
 function toggleNewCourse(forceOpen) {
@@ -3213,9 +4027,9 @@ function resetUploadForm() {
 async function uploadModule() {
   const moduleName = moduleNameInput.value.trim();
   if (!moduleName || !state.selectedFiles.length) return;
-  setProcessingState(true, 'Dein Kurs wird vorbereitet', 'Deine Dateien werden gerade hochgeladen...');
+  setProcessingState(true, t('proc-title'), t('proc-step1'));
   updateUploadButton();
-  setStatus('Deine Dateien werden vorbereitet ...');
+  setStatus(t('upload-preparing'));
   const formData = new FormData();
   formData.append('module_name', moduleName);
   state.selectedFiles.forEach(item => formData.append('files', item.file));
@@ -3223,11 +4037,11 @@ async function uploadModule() {
   try {
     const res = await fetch('/modules/upload', { method: 'POST', body: formData });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Upload fehlgeschlagen.');
-    setProcessingState(true, 'Fast geschafft', 'Abschlussarbeiten...');
+    if (!res.ok) throw new Error(data.detail || t('upload-failed'));
+    setProcessingState(true, t('upload-finishing-title'), t('upload-finishing-sub'));
     const notes = [];
-    notes.push(`${data.saved_count||0} Datei(en) hinzugefügt.`);
-    if (data.skipped_count) notes.push(`${data.skipped_count} schon vorhanden.`);
+    notes.push(tf('upload-saved', {n: data.saved_count||0}));
+    if (data.skipped_count) notes.push(tf('upload-skipped', {n: data.skipped_count}));
     setStatus(notes.join(' '), data.failed_files?.length ? 'error' : 'success');
     await loadModules();
     autoPopulateFolderConfig(data.module_name, data.files || []);
@@ -3237,7 +4051,7 @@ async function uploadModule() {
     // Auto-trigger roadmap after new upload
     setTimeout(() => openExamModal(), 700);
   } catch (err) {
-    setStatus(err.message || 'Upload fehlgeschlagen.', 'error');
+    setStatus(err.message || t('upload-failed'), 'error');
   } finally {
     setProcessingState(false);
     updateUploadButton();
@@ -3261,7 +4075,7 @@ function openWorkspace(moduleName, files) {
   });
   document.getElementById('fw-layer').style.opacity = '0';
   moduleChip.textContent = moduleName;
-  headerStatus.textContent = `Aktueller Kurs: ${moduleName}`;
+  headerStatus.textContent = `${t('current-course')}: ${moduleName}`;
   const avatarBtn = document.getElementById('rail-avatar-btn');
   if (avatarBtn) avatarBtn.textContent = moduleName.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase() || '?';
 
@@ -3279,7 +4093,7 @@ function openWorkspace(moduleName, files) {
 function showSetup() {
   workspaceScreen.classList.remove('active', 'visible');
   setupScreen.classList.add('active');
-  headerStatus.textContent = 'Noch kein Kurs geöffnet';
+  headerStatus.textContent = t('no-course-open');
   document.getElementById('fw-layer').style.opacity = '1';
 }
 
@@ -3288,8 +4102,8 @@ function resetChat() {
     <div class="chat-empty" id="empty">
       <div class="chat-empty-inner">
         <span class="empty-icon">✦</span>
-        <strong>Bereit für deine Fragen</strong>
-        <p>Frag nach Definitionen, Beispielen oder klausurrelevanten Themen.</p>
+        <strong>${t('chat-empty-title')}</strong>
+        <p>${t('chat-empty-desc')}</p>
       </div>
     </div>`;
 }
@@ -3407,7 +4221,7 @@ function renderWorkspaceFiles(files) {
   const summaries = state.summariesByModule[state.moduleName] || [];
 
   if (!files.length && !summaries.length) {
-    filesPanel.innerHTML = '<div class="file-row" style="cursor:default;"><div class="file-meta"><div class="file-name">Noch keine Materialien</div><div class="file-sub">Für diesen Kurs wurden keine Dateien gefunden.</div></div></div>';
+    filesPanel.innerHTML = `<div class="file-row" style="cursor:default;"><div class="file-meta"><div class="file-name">${t('no-materials')}</div><div class="file-sub">${t('no-materials-sub')}</div></div></div>`;
     return;
   }
 
@@ -3428,7 +4242,6 @@ function renderWorkspaceFiles(files) {
     // Helper: build a draggable file row
     function makeFileRow(file, inFolder) {
       const ext = (file.file_type || '').toLowerCase();
-      const lecture = isLecture(file.name);
       const filePath = file.relative_path || file.name;
       const row = document.createElement('div');
       row.className = 'file-row' + (inFolder ? ' in-folder' : '');
@@ -3436,31 +4249,20 @@ function renderWorkspaceFiles(files) {
       row.dataset.name = file.name;
       row.dataset.fileType = ext;
       row.draggable = true;
-      const examBadge = file.is_exam
-        ? '<span class="file-exam-badge" data-action="exam-flag" title="Klick: Klausur-Markierung umschalten">🎓 Klausur</span>'
-        : '';
       row.innerHTML = `
         <span class="file-icon">${fileIconFor(ext)}</span>
         <div class="file-meta">
-          <div class="file-name" title="${escHtml(file.name)}">${escHtml(file.name)} ${examBadge}</div>
-          <div class="file-sub">${escHtml(ext.toUpperCase() || 'FILE')} · ${formatBytes(file.size)}</div>
+          <div class="file-name" title="${escHtml(file.name)}">${escHtml(file.name)}</div>
         </div>
         <div class="file-actions">
-          ${lecture || ext === 'pdf' || ext === 'pptx' ? `<button class="file-action-btn" data-action="summarize" title="Zusammenfassen">≡</button>` : ''}
-          ${isExerciseSheet(file.name) ? `<button class="file-action-btn" data-action="solve" title="Übungsblatt lösen" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#6ee7b7;">⚡</button>` : ''}
-          <button class="file-action-btn" data-action="exam-toggle" title="Klausur-Markierung umschalten" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#fbbf24;">🎓</button>
-          <button class="file-action-btn" data-action="delete" title="Datei löschen" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.3);color:#f87171;">🗑</button>
+          <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
         </div>
       `;
       row.addEventListener('click', e => {
-        const actionBtn = e.target.closest('.file-action-btn, .file-exam-badge');
+        const actionBtn = e.target.closest('.file-action-btn');
         if (actionBtn) {
           e.stopPropagation();
-          const action = actionBtn.dataset.action;
-          if (action === 'summarize') openSummaryFlow(file.name);
-          else if (action === 'solve') solveSheet(file, actionBtn);
-          else if (action === 'exam-toggle' || action === 'exam-flag') toggleExamFlag(file);
-          else if (action === 'delete') deleteModuleFile(file);
+          if (actionBtn.dataset.action === 'menu') filePopup.open(file, row, actionBtn);
           return;
         }
         openFile(file);
@@ -3471,12 +4273,6 @@ function renderWorkspaceFiles(files) {
       });
       return row;
     }
-
-    // Header row with "Dateien" label
-    const filesHeaderWrap = document.createElement('div');
-    filesHeaderWrap.className = 'files-section-header files-header-row';
-    filesHeaderWrap.innerHTML = `<span>Dateien</span>`;
-    filesPanel.appendChild(filesHeaderWrap);
 
     // Root drop zone (files not in any folder)
     const rootZone = document.createElement('div');
@@ -3558,7 +4354,7 @@ function renderWorkspaceFiles(files) {
   if (summaries.length) {
     const sumHeader = document.createElement('div');
     sumHeader.className = 'files-section-header';
-    sumHeader.textContent = 'Zusammenfassungen';
+    sumHeader.textContent = t('summaries-header');
     filesPanel.appendChild(sumHeader);
 
     summaries.forEach(s => {
@@ -3582,7 +4378,7 @@ function renderWorkspaceFiles(files) {
   if (state.probeklausuren && state.probeklausuren.length) {
     const pkHeader = document.createElement('div');
     pkHeader.className = 'files-section-header';
-    pkHeader.textContent = 'Probeklausuren';
+    pkHeader.textContent = t('mock-exams-header');
     filesPanel.appendChild(pkHeader);
 
     state.probeklausuren.forEach(exam => {
@@ -3756,11 +4552,12 @@ function openPkModal() {
   pkModal.classList.add('active');
 }
 function closePkModal() {
+  if (_pkAbortCtrl) { _pkAbortCtrl.abort(); _pkAbortCtrl = null; }
   pkModal.classList.remove('active');
 }
 
 pkBtn.addEventListener('click', () => {
-  if (!state.moduleName) { alert('Bitte zuerst ein Modul öffnen.'); return; }
+  if (!state.moduleName) { alert(t('open-module-first')); return; }
   openPkModal();
 });
 pkModalClose.addEventListener('click', closePkModal);
@@ -3772,8 +4569,9 @@ async function generateProbeklausur() {
   const totalPoints = parseInt(pkTotalPoints.value, 10) || 50;
   resetSteps('pk-steps');
   showPkState('pk-state-loading');
+  _pkAbortCtrl = new AbortController();
   try {
-    for await (const msg of streamSteps('/exam/generate/stream', { module_name: state.moduleName, num_tasks: numTasks, total_points: totalPoints })) {
+    for await (const msg of streamSteps('/exam/generate/stream', { module_name: state.moduleName, num_tasks: numTasks, total_points: totalPoints }, _pkAbortCtrl.signal)) {
       if (msg.type === 'step') {
         applyStep('pk-steps', msg);
       } else if (msg.type === 'result') {
@@ -3789,8 +4587,11 @@ async function generateProbeklausur() {
       }
     }
   } catch (err) {
-    pkErrorMsg.textContent = err.message || 'Unbekannter Fehler';
+    if (err.name === 'AbortError') return;
+    pkErrorMsg.textContent = err.message || t('rm-unknown-error');
     showPkState('pk-state-error');
+  } finally {
+    _pkAbortCtrl = null;
   }
 }
 
@@ -3856,7 +4657,7 @@ function openRoadmapTab(paneIdx) {
   const path = 'roadmap:current';
   let tab = pane.tabs.find(t => t.path === path);
   if (!tab) {
-    tab = { path, kind: 'roadmap', name: 'Roadmap', view: 'roadmap' };
+    tab = { path, kind: 'roadmap', name: t('tab-roadmap'), view: 'roadmap' };
     pane.tabs.push(tab);
   }
   pane.activeTab = path;
@@ -3877,7 +4678,7 @@ async function renderRoadmapView(vp, tab) {
   } catch (err) {
     console.error('[roadmap] load failed:', err);
     p.innerHTML = `<div class="roadmap-empty-detail" style="color:var(--danger);">
-      <div><strong>Fehler beim Laden der Roadmap</strong>
+      <div><strong>${t('rm-load-error')}</strong>
       <p style="margin-top:8px;">${escHtml(err.message || String(err))}</p></div></div>`;
     return;
   }
@@ -3890,14 +4691,14 @@ async function renderRoadmapView(vp, tab) {
     const total = (prog.todo||0) + (prog.doing||0) + (prog.done||0);
     const donePct  = total ? (prog.done  / total * 100).toFixed(1) : 0;
     const doingPct = total ? (prog.doing / total * 100).toFixed(1) : 0;
-    const titleTxt = `🗺 Lernplan: ${state.moduleName || 'Kurs'}${data?.exam_date ? ' · Prüfung: ' + data.exam_date : ''}`;
-    const metaTxt  = data ? `${prog.done||0}/${total} fertig · ${prog.doing||0} aktiv` : 'noch keine generiert';
+    const titleTxt = t('rm-title-prefix') + (state.moduleName || t('rm-course-fallback')) + (data?.exam_date ? t('rm-exam-separator') + data.exam_date : '');
+    const metaTxt  = data ? tf('rm-progress', {done: prog.done||0, total, doing: prog.doing||0}) : t('rm-not-generated');
     topbar.innerHTML = `
       <div class="roadmap-topbar-row1">
         <span class="roadmap-topbar-title">${escHtml(titleTxt)}</span>
         <div class="roadmap-topbar-actions">
-          <button class="roadmap-regen-btn" id="rd-generate">${data ? '↥ Neu generieren' : '✦ Erstellen'}</button>
-          <button class="roadmap-close-tab-btn" id="rd-close-tab" title="Schließen">✕</button>
+          <button class="roadmap-regen-btn" id="rd-generate">${data ? t('rm-regen') : t('rm-create-btn')}</button>
+          <button class="roadmap-close-tab-btn" id="rd-close-tab" title="${t('close')}">✕</button>
         </div>
       </div>
       <div class="roadmap-topbar-meta">${escHtml(metaTxt)}</div>
@@ -3929,15 +4730,15 @@ async function renderRoadmapView(vp, tab) {
       banner.className = 'roadmap-diff-banner';
       const d = state.roadmapPending.diff || {};
       const parts = [];
-      if (d.added_count) parts.push(`+${d.added_count} neu`);
-      if (d.removed_count) parts.push(`−${d.removed_count} entfernt`);
-      if (typeof d.status_preserved === 'number') parts.push(`${d.status_preserved} Status erhalten`);
-      const summary = parts.length ? parts.join(' · ') : 'Neue Roadmap bereit';
+      if (d.added_count) parts.push(`+${d.added_count} ${t('rm-diff-added')}`);
+      if (d.removed_count) parts.push(`−${d.removed_count} ${t('rm-diff-removed')}`);
+      if (typeof d.status_preserved === 'number') parts.push(`${d.status_preserved} ${t('rm-diff-status')}`);
+      const summary = parts.length ? parts.join(' · ') : t('rm-diff-ready');
       banner.innerHTML = `
         <span>↻ ${escHtml(summary)}</span>
         <span class="spacer"></span>
-        <button class="reject-btn" id="rd-reject">✗ Verwerfen</button>
-        <button class="accept-btn" id="rd-accept">✓ Akzeptieren</button>
+        <button class="reject-btn" id="rd-reject">${t('rm-reject')}</button>
+        <button class="accept-btn" id="rd-accept">${t('rm-accept')}</button>
       `;
       p.appendChild(banner);
       banner.querySelector('#rd-accept').addEventListener('click', () => acceptPendingRoadmap(tab));
@@ -3950,8 +4751,8 @@ async function renderRoadmapView(vp, tab) {
       empty.innerHTML = `
         <div>
           <div style="font-size:2.4rem;">🗺</div>
-          <strong>Noch keine Roadmap</strong>
-          <p style="margin-top:8px;">Klick oben rechts auf <em>Roadmap erstellen</em>.</p>
+          <strong>${t('no-roadmap')}</strong>
+          <p style="margin-top:8px;">${t('rm-empty-hint')}</p>
         </div>`;
       p.appendChild(empty);
       return;
@@ -3980,7 +4781,7 @@ async function renderRoadmapView(vp, tab) {
   } catch (err) {
     console.error('[roadmap] render failed:', err);
     p.innerHTML += `<div class="roadmap-empty-detail" style="color:var(--danger);">
-      <div><strong>Render-Fehler</strong>
+      <div><strong>${t('rm-render-error')}</strong>
       <p style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;">${escHtml(err.message || String(err))}</p></div></div>`;
   }
 }
@@ -3994,7 +4795,7 @@ function openDailyTab(paneIdx) {
   const path = 'daily:current';
   let tab = pane.tabs.find(t => t.path === path);
   if (!tab) {
-    tab = { path, kind: 'daily', name: 'Tagesplan', view: 'daily' };
+    tab = { path, kind: 'daily', name: t('daily-tab-name'), view: 'daily' };
     pane.tabs.push(tab);
   }
   pane.activeTab = path;
@@ -4075,28 +4876,28 @@ function _renderDailyTopbar(container) {
 
   container.innerHTML = `
     <div class="daily-topbar-row1">
-      <span class="daily-topbar-title">Tagesplan · ${escHtml(state.moduleName || '')}</span>
-      <span class="daily-progress-label">${done}/${total} erledigt</span>
+      <span class="daily-topbar-title">${t('daily-title-prefix')}${escHtml(state.moduleName || '')}</span>
+      <span class="daily-progress-label">${tf('daily-progress-fmt', {done, total})}</span>
     </div>
     <div class="daily-progress-track">
       <div class="daily-progress-fill" style="width:${pct}%"></div>
     </div>
     <div class="daily-topbar-row2">
-      <span class="tagesplan-hours-label">Lernzeit heute:</span>
+      <span class="tagesplan-hours-label">${t('daily-hours-label')}</span>
       <input class="tagesplan-hours-input" id="tp-hours" type="number"
              min="0.5" max="12" step="0.5"
              value="${plan ? escHtml(String(plan.daily_hours || 2.0)) : '2.0'}">
       <div class="tagesplan-mode">
         <button class="tagesplan-mode-btn ${state.dailyMode === 'konkret' ? 'active' : ''}"
-                id="tp-mode-konkret">Konkret</button>
+                id="tp-mode-konkret">${t('daily-mode-konkret')}</button>
         <button class="tagesplan-mode-btn ${state.dailyMode === 'grob' ? 'active' : ''}"
-                id="tp-mode-grob">Grob</button>
+                id="tp-mode-grob">${t('daily-mode-grob')}</button>
       </div>
       <button class="tagesplan-generate-btn" id="tp-generate" ${canGenerate ? '' : 'disabled'}>
-        ✦ Tagesplan generieren
+        ${t('daily-generate-btn')}
       </button>
-      <button class="tagesplan-clear-history-btn" id="tp-clear-history" title="Erledigten Task-Verlauf löschen">
-        Verlauf löschen
+      <button class="tagesplan-clear-history-btn" id="tp-clear-history" title="${t('daily-clear-history-title')}">
+        ${t('daily-clear-history')}
       </button>
     </div>
   `;
@@ -4120,7 +4921,7 @@ function _renderDailyBoard(container) {
   if (!plan || !(plan.topics || []).length) {
     container.innerHTML = `<div class="daily-empty-state">
       <div class="daily-empty-icon">📋</div>
-      <div>Noch kein Tagesplan erstellt.<br>Klick auf "✦ Tagesplan generieren".</div>
+      <div>${t('daily-empty-hint')}</div>
     </div>`;
     return;
   }
@@ -4133,7 +4934,7 @@ function _renderDailyBoard(container) {
       reviewDividerAdded = true;
       const divider = document.createElement('div');
       divider.className = 'daily-review-divider';
-      divider.textContent = '— Wiederholung —';
+      divider.textContent = t('daily-review-divider');
       container.appendChild(divider);
     }
     const allTasksDone = (topic.tasks || []).length > 0 && (topic.tasks || []).every(t => t.done);
@@ -4163,7 +4964,7 @@ function _renderDailyBoard(container) {
         );
         btn.addEventListener('click', () => {
           if (match) openFile(match);
-          else addMsg('agent', `Datei „${name}" nicht im Modul gefunden.`);
+          else addMsg('agent', tf('rm-file-not-found', {name}));
         });
         chips.appendChild(btn);
       });
@@ -4201,7 +5002,7 @@ async function generateDailyPlan() {
   const hoursInput = document.getElementById('tp-hours');
   const daily_hours = hoursInput ? parseFloat(hoursInput.value) || 2.0 : 2.0;
   const genBtn = document.getElementById('tp-generate');
-  if (genBtn) { genBtn.disabled = true; genBtn.textContent = '... wird generiert'; }
+  if (genBtn) { genBtn.disabled = true; genBtn.textContent = t('daily-generating'); }
 
   try {
     const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/generate`, {
@@ -4211,17 +5012,17 @@ async function generateDailyPlan() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      addMsg('agent', `❌ Tagesplan-Generierung fehlgeschlagen: ${err.detail || res.statusText}`);
+      addMsg('agent', `${t('daily-gen-error')} ${err.detail || res.statusText}`);
       return;
     }
     const data = await res.json();
     state.dailyPlan = data.exists === false ? null : data;
     refreshDailyView();
   } catch (err) {
-    addMsg('agent', `❌ Netzwerkfehler: ${err.message}`);
+    addMsg('agent', `${t('daily-net-error')} ${err.message}`);
   } finally {
     const btn = document.getElementById('tp-generate');
-    if (btn) { btn.textContent = '✦ Tagesplan generieren'; }
+    if (btn) { btn.textContent = t('daily-generate-btn'); }
   }
 }
 
@@ -4229,14 +5030,14 @@ function _renderDailyReview(container) {
   const tasks = state.dailyReview || [];
   container.innerHTML = `
     <div class="daily-review-panel-header">
-      <span>Abgeschlossene Tasks</span>
+      <span>${t('daily-review-header')}</span>
     </div>
   `;
 
   if (!tasks.length) {
     const empty = document.createElement('div');
     empty.className = 'daily-review-empty';
-    empty.textContent = 'Erledige Aufgaben — sie erscheinen hier.';
+    empty.textContent = t('daily-review-empty');
     container.appendChild(empty);
     return;
   }
@@ -4274,7 +5075,7 @@ function _renderDailyReview(container) {
 
 async function clearDailyHistory() {
   if (!state.moduleName) return;
-  if (!confirm('Gesamten erledigten Task-Verlauf für dieses Modul löschen?')) return;
+  if (!confirm(t('daily-confirm-clear'))) return;
   const btn = document.getElementById('tp-clear-history');
   if (btn) btn.disabled = true;
   try {
@@ -4282,10 +5083,10 @@ async function clearDailyHistory() {
       method: 'DELETE',
     });
     if (!res.ok) {
-      addMsg('agent', '❌ Verlauf konnte nicht gelöscht werden.');
+      addMsg('agent', t('daily-clear-failed'));
       return;
     }
-    addMsg('agent', '✓ Task-Verlauf gelöscht.');
+    addMsg('agent', t('daily-clear-success'));
   } catch (err) {
     addMsg('agent', `❌ Netzwerkfehler: ${err.message}`);
   } finally {
@@ -4339,7 +5140,7 @@ function renderRoadmapPhaseList(host, data) {
   if (!host) return;
   const phases = data.phases || [];
   if (!phases.length) {
-    host.innerHTML = '<div class="roadmap-phaselist-empty">Keine Phasen in dieser Roadmap.</div>';
+    host.innerHTML = `<div class="roadmap-phaselist-empty">${t('rm-no-phases')}</div>`;
     return;
   }
   const html = phases.map((ph, i) => {
@@ -4361,7 +5162,7 @@ function renderRoadmapPhaseList(host, data) {
         <div class="rm-pl-phase-title">${escHtml(ph.title || 'Phase')}</div>
         <div class="rm-pl-phase-line"></div>
       </div>
-      <div class="rm-pl-topics">${topics || '<span class="rm-pl-empty">– keine Themen –</span>'}</div>
+      <div class="rm-pl-topics">${topics || `<span class="rm-pl-empty">${t('rm-no-topics')}</span>`}</div>
       ${arrow}
     </div>`;
   }).join('');
@@ -4413,7 +5214,7 @@ function _buildDailyTasksHtml() {
     </div>`;
   }).join('');
   return `<div class="topic-section rm-daily-all">
-    <div class="topic-section-label">Heutige Tasks</div>
+    <div class="topic-section-label">${t('daily-today-tasks')}</div>
     <div class="tagesplan-task-list">${topicBlocks}</div>
   </div>`;
 }
@@ -4422,14 +5223,15 @@ function paintRoadmapDetail() {
   const detail = document.getElementById('rm-detail');
   if (!detail) return;
   if (!state.roadmap || !state.roadmapTopicId) {
-    detail.innerHTML = '<div class="roadmap-empty-detail">Klick einen Knoten im Graph um Details zu sehen.</div>';
+    detail.innerHTML = `<div class="roadmap-empty-detail">${t('rm-click-node')}</div>`;
     return;
   }
   const found = findRoadmapTopic(state.roadmapTopicId);
   if (!found) {
-    detail.innerHTML = '<div class="roadmap-empty-detail">Topic nicht gefunden.</div>';
+    detail.innerHTML = `<div class="roadmap-empty-detail">${t('rm-topic-not-found')}</div>`;
     return;
   }
+  const _tr = (key) => (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || key;
   const t = found.topic;
   const sections = [];
   sections.push(`<h2>${escHtml(t.name)}</h2>`);
@@ -4439,37 +5241,37 @@ function paintRoadmapDetail() {
       <span class="topic-hours-pill" style="opacity:0.7;">${escHtml(found.phase.title)}</span>
     </div>`);
   sections.push(`<div class="status-switcher" data-tid="${escHtml(t.id)}">
-      <button class="status-btn todo  ${t.status === 'todo'  ? 'active' : ''}" data-status="todo">○ Offen</button>
-      <button class="status-btn doing ${t.status === 'doing' ? 'active' : ''}" data-status="doing">◐ Dran</button>
-      <button class="status-btn done  ${t.status === 'done'  ? 'active' : ''}" data-status="done">● Fertig</button>
+      <button class="status-btn todo  ${t.status === 'todo'  ? 'active' : ''}" data-status="todo">${_tr('rm-status-todo')}</button>
+      <button class="status-btn doing ${t.status === 'doing' ? 'active' : ''}" data-status="doing">${_tr('rm-status-doing')}</button>
+      <button class="status-btn done  ${t.status === 'done'  ? 'active' : ''}" data-status="done">${_tr('rm-status-done')}</button>
     </div>`);
   if (t.bedeutung) {
     sections.push(`<div class="topic-section">
-        <div class="topic-section-label">Bedeutung</div>
+        <div class="topic-section-label">${_tr('rm-label-bedeutung')}</div>
         <div class="topic-section-body">${escHtml(t.bedeutung)}</div>
       </div>`);
   }
   if (t.warum_relevant) {
     sections.push(`<div class="topic-section">
-        <div class="topic-section-label">Warum relevant</div>
+        <div class="topic-section-label">${_tr('rm-label-warum')}</div>
         <div class="topic-section-body">${escHtml(t.warum_relevant)}</div>
       </div>`);
   }
   if ((t.subtopics || []).length) {
     sections.push(`<div class="topic-section">
-        <div class="topic-section-label">Subtopics</div>
+        <div class="topic-section-label">${_tr('rm-label-subtopics')}</div>
         <div class="topic-chips">${t.subtopics.map(s => `<span class="topic-chip">${escHtml(s)}</span>`).join('')}</div>
       </div>`);
   }
   if ((t.dateien || []).length) {
     sections.push(`<div class="topic-section">
-        <div class="topic-section-label">Dateien</div>
+        <div class="topic-section-label">${_tr('rm-label-dateien')}</div>
         <div class="topic-chips" id="rm-detail-files"></div>
       </div>`);
   }
   if ((t.aufgaben || []).length) {
     sections.push(`<div class="topic-section">
-        <div class="topic-section-label">Aufgaben</div>
+        <div class="topic-section-label">${_tr('rm-label-aufgaben')}</div>
         <div class="topic-chips">${t.aufgaben.map(a => `<span class="topic-chip">${escHtml(a)}</span>`).join('')}</div>
       </div>`);
   }
@@ -4493,7 +5295,7 @@ function paintRoadmapDetail() {
       );
       btn.addEventListener('click', () => {
         if (match) openFile(match);
-        else addMsg('agent', `Datei „${name}" nicht im Modul gefunden.`);
+        else addMsg('agent', _tr('rm-file-not-found').replace('{name}', name));
       });
       filesEl.appendChild(btn);
     });
@@ -4506,9 +5308,9 @@ function paintRoadmapDetail() {
 }
 
 function labelPrio(p) {
-  if (p === 'high' || p === 'must_know' || p === 'hoch')       return '<span class="prio-dot high"></span>Hoch';
-  if (p === 'low'  || p === 'nice_to_have' || p === 'niedrig') return '<span class="prio-dot low"></span>Niedrig';
-  return '<span class="prio-dot medium"></span>Mittel';
+  if (p === 'high' || p === 'must_know' || p === 'hoch')       return `<span class="prio-dot high"></span>${t('rm-prio-high')}`;
+  if (p === 'low'  || p === 'nice_to_have' || p === 'niedrig') return `<span class="prio-dot low"></span>${t('rm-prio-low')}`;
+  return `<span class="prio-dot medium"></span>${t('rm-prio-medium')}`;
 }
 
 function recolorMermaidNode(topicId, status) {
@@ -4559,7 +5361,7 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.detail || 'Status-Update fehlgeschlagen');
+      throw new Error(errData.detail || t('rm-status-fail'));
     }
 
     // Reload server state (for accurate mermaid classDefs)
@@ -4570,7 +5372,7 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
     if (topbarMeta && state.roadmap?.progress) {
       const p = state.roadmap.progress;
       const total = (p.todo||0) + (p.doing||0) + (p.done||0);
-      topbarMeta.textContent = `${p.done||0}/${total} fertig · ${p.doing||0} aktiv`;
+      topbarMeta.textContent = tf('rm-progress', {done: p.done||0, total, doing: p.doing||0});
       const bar = document.querySelector('.view-pane.view-roadmap.active .roadmap-progress-bar');
       if (bar && total > 0) {
         const doneEl  = bar.querySelector('.roadmap-progress-done');
@@ -4589,7 +5391,7 @@ async function updateRoadmapTopicStatus(topicId, newStatus) {
     // Revert on error
     await loadRoadmapForCurrentModule();
     paintRoadmapDetail();
-    addMsg('agent', `❌ Status-Update fehlgeschlagen: ${err.message}`);
+    addMsg('agent', `❌ ${t('rm-status-fail')}: ${err.message}`);
   }
 }
 
@@ -4601,6 +5403,7 @@ function openRoadmapGenModal() {
   document.getElementById('roadmap-gen-modal').classList.add('active');
 }
 function closeRoadmapGenModal() {
+  if (_rgAbortCtrl) { _rgAbortCtrl.abort(); _rgAbortCtrl = null; }
   document.getElementById('roadmap-gen-modal').classList.remove('active');
 }
 function showRoadmapGenState(name) {
@@ -4610,7 +5413,7 @@ function showRoadmapGenState(name) {
   document.getElementById(`roadmap-gen-${name}`)?.classList.add('active');
 }
 function showRoadmapGenError(msg) {
-  document.getElementById('rg-error-msg').textContent = msg || 'Unbekannter Fehler.';
+  document.getElementById('rg-error-msg').textContent = msg || t('rm-unknown-error');
   showRoadmapGenState('error');
 }
 
@@ -4619,8 +5422,9 @@ async function runRoadmapGenerate() {
   const focus = document.getElementById('rg-focus').value.trim() || null;
   resetSteps('rg-steps');
   showRoadmapGenState('loading');
+  _rgAbortCtrl = new AbortController();
   try {
-    for await (const msg of streamSteps('/roadmap/generate/stream', { module_name: state.moduleName, exam_date, focus })) {
+    for await (const msg of streamSteps('/roadmap/generate/stream', { module_name: state.moduleName, exam_date, focus }, _rgAbortCtrl.signal)) {
       if (msg.type === 'step') {
         applyStep('rg-steps', msg);
       } else if (msg.type === 'result') {
@@ -4639,7 +5443,10 @@ async function runRoadmapGenerate() {
       }
     }
   } catch (err) {
-    showRoadmapGenError(err.message || 'Unbekannter Fehler.');
+    if (err.name === 'AbortError') return;
+    showRoadmapGenError(err.message || t('rm-unknown-error'));
+  } finally {
+    _rgAbortCtrl = null;
   }
 }
 
@@ -4677,6 +5484,43 @@ async function toggleExamFlag(file) {
   }
 }
 
+async function renameFileInline(file, row) {
+  const nameEl = row && row.querySelector('.file-name');
+  if (!nameEl) return;
+  const oldName = file.name;
+  const input = document.createElement('input');
+  input.value = oldName;
+  input.style.cssText = 'width:100%;background:var(--bg);border:1px solid var(--accent-border);border-radius:4px;padding:1px 4px;font-size:0.8rem;color:var(--text);font-family:inherit;outline:none;min-width:0;';
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+  let committed = false;
+  const commit = async () => {
+    if (committed) return;
+    committed = true;
+    const newName = input.value.trim();
+    if (!newName || newName === oldName) { await refreshModuleFiles(); return; }
+    try {
+      const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: file.relative_path || file.name, new_name: newName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Umbenennen fehlgeschlagen');
+      await refreshModuleFiles();
+    } catch (err) {
+      addMsg('agent', `❌ ${err.message}`);
+      await refreshModuleFiles();
+    }
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { committed = true; refreshModuleFiles(); }
+  });
+  input.addEventListener('blur', commit);
+}
+
 // ── Add / delete files on an existing module ───────────────────────────────────
 async function refreshModuleFiles() {
   if (!state.moduleName) return;
@@ -4711,7 +5555,7 @@ async function addFilesToCurrentModule(input) {
   if (!arr.length || !state.moduleName) return;
   // Normalize to {file, relativePath} items (input may be File objects or already items)
   const items = arr.map(x => x instanceof File ? { file: x, relativePath: x.webkitRelativePath || '' } : x);
-  setProcessingState(true, 'Dateien werden hinzugefügt', 'Upload + Verarbeitung läuft …');
+  setProcessingState(true, t('upload-adding-title'), t('upload-adding-sub'));
   const formData = new FormData();
   formData.append('module_name', state.moduleName);
   items.forEach(item => formData.append('files', item.file));
@@ -4719,7 +5563,7 @@ async function addFilesToCurrentModule(input) {
   try {
     const res = await fetch('/modules/upload', { method: 'POST', body: formData });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Upload fehlgeschlagen.');
+    if (!res.ok) throw new Error(data.detail || t('upload-failed'));
     autoPopulateFolderConfig(state.moduleName, data.files || []);
     state.moduleFiles = data.files || state.moduleFiles;
     renderWorkspaceFiles(state.moduleFiles);
@@ -4987,7 +5831,7 @@ function getPdfFrameHost() {
   if (!host) {
     host = document.createElement('div');
     host.id = 'pdf-frame-host';
-    document.body.appendChild(host);
+    (document.querySelector('.app-shell') || document.body).appendChild(host);
   }
   return host;
 }
@@ -5047,13 +5891,15 @@ function buildTabBar(pane, paneIdx) {
   }
   pane.tabs.forEach(t => {
     const tab = document.createElement('button');
+    const T = TRANSLATIONS[currentLang] || TRANSLATIONS.de;
     tab.className = 'tab' + (t.path === pane.activeTab ? ' active' : '');
-    tab.title = t.kind === 'summary' ? `Zusammenfassung — ${t.name}` : t.path;
+    tab.title = t.kind === 'summary' ? `${T['summary-label'] || 'Zusammenfassung'} — ${t.name}` : t.path;
     tab.draggable = true;
     tab.dataset.tabPath = t.path;
     tab.dataset.paneIdx = String(paneIdx);
     const icon = t.kind === 'summary' ? '✦ ' : t.kind === 'solution' ? '⚡ ' : t.kind === 'probeklausur' ? '📝 ' : '';
-    tab.innerHTML = `<span class="tab-name">${icon}${escHtml(t.name)}</span><span class="tab-close" data-close="1">×</span>`;
+    const displayName = t.kind === 'roadmap' ? (T['tab-roadmap'] || t.name) : t.name;
+    tab.innerHTML = `<span class="tab-name">${icon}${escHtml(displayName)}</span><span class="tab-close" data-close="1">×</span>`;
     tab.addEventListener('click', e => {
       if (e.target.closest('.tab-close')) closeTab(t.path, paneIdx, e);
       else switchTab(t.path, paneIdx);
@@ -5088,24 +5934,9 @@ function buildViewBar(pane, paneIdx) {
   if (pane.tabs.length === 0) { bar.classList.add('hidden'); return bar; }
 
   const activeTab = pane.tabs.find(t => t.path === pane.activeTab);
-  if (!activeTab) { bar.classList.add('hidden'); return bar; }
+  if (!activeTab || activeTab.kind === 'file') { bar.classList.add('hidden'); return bar; }
 
-  if (activeTab.kind === 'file') {
-    [['pdf','PDF'], ['text','Text'], ['summary','Zusammenfassung']].forEach(([v, label]) => {
-      const btn = document.createElement('button');
-      btn.className = 'view-toggle' + (activeTab.view === v ? ' active' : '');
-      btn.dataset.view = v;
-      btn.textContent = label;
-      if (v === 'pdf' && activeTab.fileType !== 'pdf') btn.disabled = true;
-      btn.addEventListener('click', () => {
-        if (btn.disabled || activeTab.view === v) return;
-        activeTab.view = v;
-        persistWorkspace();
-        renderPanes();
-      });
-      bar.appendChild(btn);
-    });
-  } else if (activeTab.kind === 'summary') {
+  if (activeTab.kind === 'summary') {
     const lbl = document.createElement('span');
     lbl.className = 'view-toggle active';
     lbl.style.cursor = 'default';
@@ -5159,8 +5990,8 @@ function buildViewport(pane, paneIdx) {
       <div class="viewport-empty">
         <div class="viewport-empty-inner">
           <span class="empty-icon">✦</span>
-          <strong>Wähle links eine Datei aus</strong>
-          <p>Klick öffnet sie hier als Tab. Tab nach rechts ziehen → Split-View.</p>
+          <strong>${t('select-file-title')}</strong>
+          <p>${t('select-file-desc')}</p>
         </div>
       </div>`;
     return vp;
@@ -5238,7 +6069,7 @@ async function renderTextView(vp, tab) {
     }
     p.innerHTML = `<pre>${escHtml(text || '(leer)')}</pre>`;
   } catch (err) {
-    p.innerHTML = `<div class="summary-cta"><strong>Text konnte nicht geladen werden</strong><p>${escHtml(err.message || 'Unbekannter Fehler')}</p></div>`;
+    p.innerHTML = `<div class="summary-cta"><strong>${t('text-not-loaded')}</strong><p>${escHtml(err.message || t('rm-unknown-error'))}</p></div>`;
   }
 }
 
@@ -5408,13 +6239,13 @@ function initPanelToggles() {
   btnRight.addEventListener('click', () => toggleRightPanel());
 }
 
-// ── Icon Rail ──────────────────────────────────────────────────────────────────
+// ── Sidebar ────────────────────────────────────────────────────────────────────
 function initRail() {
-  const avatarBtn = document.getElementById('rail-avatar-btn');
-  const dropdown  = document.getElementById('rail-avatar-dropdown');
-  const drawer    = document.getElementById('files-drawer');
-  const tabFiles  = document.getElementById('rail-tab-files');
-  const tabChat   = document.getElementById('rail-tab-chat');
+  const avatarBtn   = document.getElementById('rail-avatar-btn');
+  const dropdown    = document.getElementById('rail-avatar-dropdown');
+  const collapseBtn = document.getElementById('rail-collapse-btn');
+  const tabChat     = document.getElementById('rail-tab-chat');
+  const wsGrid      = document.getElementById('ws-grid');
 
   // Avatar dropdown toggle
   avatarBtn.addEventListener('click', e => {
@@ -5422,8 +6253,6 @@ function initRail() {
     const open = dropdown.classList.toggle('open');
     avatarBtn.setAttribute('aria-expanded', String(open));
   });
-
-  // Close avatar dropdown on outside click
   document.addEventListener('click', e => {
     if (!dropdown.contains(e.target) && e.target !== avatarBtn) {
       dropdown.classList.remove('open');
@@ -5431,64 +6260,94 @@ function initRail() {
     }
   });
 
-  const wsGrid = document.getElementById('ws-grid');
-
-  function syncDrawerPosition() {
-    const ws = document.getElementById('workspace-screen');
-    if (!ws) return;
-    const r = ws.getBoundingClientRect();
-    drawer.style.top    = r.top    + 'px';
-    drawer.style.height = r.height + 'px';
+  // Sidebar collapse/expand
+  function setSidebarCollapsed(collapsed) {
+    wsGrid.classList.toggle('sidebar-collapsed', collapsed);
+    const icon = collapseBtn.querySelector('svg');
+    if (icon) {
+      // When expanded show "collapse left" chevron; when collapsed show "expand right" chevron
+      icon.innerHTML = collapsed
+        ? '<polyline points="9 18 15 12 9 6"/>'
+        : '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
+    }
+    collapseBtn.title = collapsed ? 'Sidebar aufklappen' : 'Sidebar einklappen';
+    try {
+      const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
+      s.sidebar = collapsed || undefined;
+      localStorage.setItem('studyAgent.collapsed', JSON.stringify(s));
+    } catch {}
+    setTimeout(syncPdfFramePositions, 260);
   }
 
-  function openDrawer() {
-    syncDrawerPosition();
-    drawer.classList.add('open');
-    wsGrid.classList.add('drawer-open');
-    tabFiles.classList.add('active');
-    // Re-sync PDF positions after the grid transition finishes
-    setTimeout(syncPdfFramePositions, 230);
-  }
-  function closeDrawer() {
-    drawer.classList.remove('open');
-    wsGrid.classList.remove('drawer-open');
-    tabFiles.classList.remove('active');
-    setTimeout(syncPdfFramePositions, 230);
-  }
-  window.addEventListener('resize', () => { if (drawer.classList.contains('open')) syncDrawerPosition(); });
+  // Restore saved collapsed state
+  try {
+    const s = JSON.parse(localStorage.getItem('studyAgent.collapsed') || '{}');
+    if (s.sidebar) setSidebarCollapsed(true);
+  } catch {}
 
-  // Files tab toggle
-  tabFiles.addEventListener('click', () => {
-    drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+  collapseBtn.addEventListener('click', () => {
+    setSidebarCollapsed(!wsGrid.classList.contains('sidebar-collapsed'));
   });
 
-  // Close drawer on outside click (but not when clicking rail or drawer itself)
+  // Profile menu toggle
+  const profileTrigger = document.getElementById('rail-profile-trigger');
+  const profileMenu    = document.getElementById('rail-profile-menu');
+  function setProfileMenuOpen(open) {
+    profileMenu.classList.toggle('open', open);
+    profileTrigger.setAttribute('aria-expanded', String(open));
+  }
+  profileTrigger.addEventListener('click', e => {
+    e.stopPropagation();
+    setProfileMenuOpen(!profileMenu.classList.contains('open'));
+  });
   document.addEventListener('click', e => {
-    // If the clicked element was removed from DOM during event handling (e.g. folder re-render), ignore
-    if (!e.target.isConnected) return;
-    const rail = document.getElementById('ws-rail');
-    if (drawer.classList.contains('open') && !drawer.contains(e.target) && !rail.contains(e.target)) {
-      closeDrawer();
+    if (profileMenu.classList.contains('open') &&
+        !profileMenu.contains(e.target) && e.target !== profileTrigger) {
+      setProfileMenuOpen(false);
     }
   });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && profileMenu.classList.contains('open')) setProfileMenuOpen(false);
+  });
+
+  // Language submenu selection
+  (function() {
+    const langItems = document.querySelectorAll('.lang-submenu-item');
+    function setLang(code) {
+      langItems.forEach(b => b.classList.toggle('active', b.dataset.lang === code));
+      localStorage.setItem('app-lang', code);
+      applyI18n(code);
+    }
+    langItems.forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        setLang(btn.dataset.lang);
+        setProfileMenuOpen(false);
+      });
+    });
+    const saved = localStorage.getItem('app-lang');
+    if (saved) setLang(saved);
+    else applyI18n('de');
+  })();
 
   // Chat tab toggles right panel
   tabChat.addEventListener('click', () => toggleRightPanel());
 
-  // Roadmap + PK + Daily tabs
+  // Roadmap + PK + Daily tabs — mark active, open in center pane
   const tabRoadmap = document.getElementById('roadmap-btn');
   const tabPk      = document.getElementById('pk-btn');
   const tabDaily   = document.getElementById('daily-btn');
+
   [tabRoadmap, tabPk].forEach(tab => {
     if (!tab) return;
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.rail-tab').forEach(t => t !== tabFiles && t !== tabChat && t.classList.remove('active'));
+      document.querySelectorAll('.rail-tab').forEach(t => t !== tabChat && t.classList.remove('active'));
       tab.classList.add('active');
     });
   });
   if (tabDaily) {
     tabDaily.addEventListener('click', () => {
-      document.querySelectorAll('.rail-tab').forEach(t => t !== tabFiles && t !== tabChat && t.classList.remove('active'));
+      document.querySelectorAll('.rail-tab').forEach(t => t !== tabChat && t.classList.remove('active'));
       tabDaily.classList.add('active');
       openDailyTab();
     });
@@ -5588,18 +6447,18 @@ function renderFeaturedCard(moduleName, roadmap) {
   const offset = pct !== null ? (RING_CIRC - pct / 100 * RING_CIRC).toFixed(2) : RING_CIRC;
 
   const examHtml = days !== null
-    ? `<div class="featured-exam-line">${days > 0 ? `Prüfung in ${days} Tag${days !== 1 ? 'en' : ''}` : days === 0 ? 'Prüfung heute' : 'Prüfung vorbei'}</div>`
+    ? `<div class="featured-exam-line">${days > 0 ? (days === 1 ? t('exam-in-1day') : tf('exam-in-days', {n: days})) : days === 0 ? t('exam-today') : t('exam-over')}</div>`
     : '';
 
   const card = document.createElement('div');
   card.className = 'featured-card';
   card.innerHTML = `
     <div class="featured-left">
-      <span class="featured-card-chip">★ Favorit</span>
+      <span class="featured-card-chip">${t('favorite-chip')}</span>
       <div class="featured-module-name">${escHtml(moduleName)}</div>
-      ${doingTopic ? `<div class="featured-doing-row"><span class="featured-doing-label">Aktuell</span><span class="featured-doing-topic">${escHtml(doingTopic)}</span></div>` : ''}
+      ${doingTopic ? `<div class="featured-doing-row"><span class="featured-doing-label">${t('currently')}</span><span class="featured-doing-topic">${escHtml(doingTopic)}</span></div>` : ''}
       ${examHtml}
-      <button class="primary-btn featured-action" type="button">Weiterlernen</button>
+      <button class="primary-btn featured-action" type="button">${t('continue-learning')}</button>
     </div>
     <div class="featured-right">
       ${pct !== null ? `
@@ -5609,8 +6468,8 @@ function renderFeaturedCard(moduleName, roadmap) {
             stroke-dasharray="${RING_CIRC}" stroke-dashoffset="${offset}" transform="rotate(-90 50 50)"/>
         </svg>
         <div class="featured-pct">${pct}<span class="featured-pct-unit">%</span></div>
-        <div class="featured-pct-sub">${prog.done}/${prog.total} Kernthemen</div>
-      ` : `<div class="featured-pct-sub" style="margin-top:8px;">Kein Lernplan</div>`}
+        <div class="featured-pct-sub">${prog.done}/${prog.total} ${t('core-topics')}</div>
+      ` : `<div class="featured-pct-sub" style="margin-top:8px;">${t('no-roadmap')}</div>`}
     </div>`;
 
   card.querySelector('.featured-action').addEventListener('click', e => {
@@ -5639,7 +6498,7 @@ function renderMiniCard(moduleName, roadmap) {
   const starBtn = document.createElement('button');
   starBtn.className = 'star-module-btn' + (isFav ? ' starred' : '');
   starBtn.type = 'button';
-  starBtn.title = 'Als Favorit setzen';
+  starBtn.title = t('set-favorite');
   starBtn.textContent = '★';
   starBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -5652,7 +6511,7 @@ function renderMiniCard(moduleName, roadmap) {
   const delBtn = document.createElement('button');
   delBtn.className = 'delete-module-btn';
   delBtn.type = 'button';
-  delBtn.title = 'Kurs löschen';
+  delBtn.title = t('delete-course');
   delBtn.textContent = '×';
   delBtn.addEventListener('click', e => { e.stopPropagation(); deleteModule(moduleName); });
 
@@ -5688,6 +6547,10 @@ async function loadModules() {
     const nonFavModules = modules.filter((_, i) => i !== favIdx);
     const nonFavRoadmaps = roadmaps.filter((_, i) => i !== favIdx);
     if (nonFavModules.length > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'section-heading';
+      divider.innerHTML = `<span class="section-line r"></span><span class="section-label-text">${t('more-courses')}</span><span class="section-line"></span>`;
+      existingModulesEl.appendChild(divider);
       const grid = document.createElement('div');
       grid.className = 'mini-modules-grid';
       nonFavModules.forEach((m, i) => grid.appendChild(renderMiniCard(m, nonFavRoadmaps[i])));
@@ -5695,7 +6558,7 @@ async function loadModules() {
     }
   } catch {
     emptyModulesEl.hidden = false;
-    emptyModulesEl.textContent = 'Kurse konnten nicht geladen werden.';
+    emptyModulesEl.textContent = t('courses-load-error');
   }
 }
 
@@ -5729,13 +6592,13 @@ function openOnboardingModal(mode, filename = '') {
   state.currentLectureFile = filename;
   const desc = document.getElementById('onboarding-desc');
   if (mode === 'profile_only') {
-    modalTitle.textContent = 'Kurs einrichten';
-    desc.textContent = 'Beantworte kurz ein paar Fragen, damit der Agent optimal auf deinen Kurs abgestimmt wird. Du kannst das auch überspringen.';
-    onboardingSubmit.textContent = 'Kurs einrichten & Speichern';
+    modalTitle.textContent = t('setup-course');
+    desc.textContent = t('profile-only-desc');
+    onboardingSubmit.textContent = t('setup-course-save');
   } else {
-    modalTitle.textContent = 'Vorlesung zusammenfassen';
-    desc.textContent = 'Dieses Modul ist noch nicht eingerichtet. Beantworte kurz ein paar Fragen damit die Zusammenfassung optimal auf dein Modul abgestimmt wird.';
-    onboardingSubmit.textContent = 'Weiter & Zusammenfassen';
+    modalTitle.textContent = t('lecture-title');
+    desc.textContent = t('onboarding-desc');
+    onboardingSubmit.textContent = t('next-summarize');
   }
   showModalState('onboarding');
   lectureModal.classList.add('active');
@@ -5776,7 +6639,7 @@ function showModalState(name) {
 }
 
 function showModalError(message) {
-  document.getElementById('error-msg').textContent = message || 'Unbekannter Fehler.';
+  document.getElementById('error-msg').textContent = message || t('rm-unknown-error');
   showModalState('error');
 }
 
@@ -5796,20 +6659,20 @@ async function ensureProfileSaved() {
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Profil konnte nicht gespeichert werden.');
+    throw new Error(data.detail || t('profile-save-failed'));
   }
 }
 
 async function runSummarize(/* unused legacy arg */ _skip) {
   showModalState('loading');
-  loadingStatus.textContent = 'Profil wird gespeichert...';
+  loadingStatus.textContent = t('saving-profile');
   let loadingTimer = null;
   try {
     await ensureProfileSaved();
-    loadingStatus.textContent = 'Konzepte werden extrahiert...';
+    loadingStatus.textContent = t('extracting');
     loadingTimer = setTimeout(() => {
       if (document.getElementById('state-loading').classList.contains('active')) {
-        loadingStatus.textContent = 'Zusammenfassung wird erstellt...';
+        loadingStatus.textContent = t('creating-summary');
       }
     }, 3000);
 
@@ -5819,7 +6682,7 @@ async function runSummarize(/* unused legacy arg */ _skip) {
       body: JSON.stringify({ filename: state.currentLectureFile, module_name: state.moduleName }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Fehler beim Zusammenfassen.');
+    if (!res.ok) throw new Error(data.detail || t('summary-error'));
     if (data.needs_onboarding) {
       // Defensive: ensureProfileSaved should have prevented this, but if it
       // happens, surface the form rather than silently closing.
@@ -5844,7 +6707,7 @@ async function runSummarize(/* unused legacy arg */ _skip) {
       openSummary(saved);
     }
   } catch (err) {
-    showModalError(err && err.message ? err.message : 'Unbekannter Fehler beim Zusammenfassen.');
+    showModalError(err && err.message ? err.message : t('summary-error-fallback'));
   } finally {
     if (loadingTimer) clearTimeout(loadingTimer);
   }
@@ -5895,7 +6758,7 @@ function addMsg(role, content, sources) {
   wrap.className = `msg ${role}`;
   const label = document.createElement('div');
   label.className = 'label';
-  label.textContent = role === 'user' ? 'Du' : 'Agent';
+  label.textContent = role === 'user' ? t('chat-label-user') : t('chat-label-agent');
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   if (role === 'agent') {
@@ -5913,7 +6776,7 @@ function addThinking() {
   document.getElementById('empty')?.remove();
   const wrap = document.createElement('div');
   wrap.className = 'msg agent thinking';
-  const label = document.createElement('div'); label.className = 'label'; label.textContent = 'Agent';
+  const label = document.createElement('div'); label.className = 'label'; label.textContent = t('chat-label-agent');
   const bubble = document.createElement('div'); bubble.className = 'bubble';
   bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
   wrap.append(label, bubble);
@@ -5924,11 +6787,12 @@ function addThinking() {
 
 // ── SSE step-display helpers ───────────────────────────────────────────────
 
-async function* streamSteps(url, body) {
+async function* streamSteps(url, body, signal) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
@@ -5966,7 +6830,8 @@ function applyStep(containerId, msg) {
     row.classList.add('active');
     icon.innerHTML = '<span class="step-spinner"></span>';
   }
-  label.textContent = msg.label;
+  const i18nKey = label.dataset.i18n;
+  label.textContent = i18nKey ? t(i18nKey) : msg.label;
 }
 
 function resetSteps(containerId) {
@@ -5976,6 +6841,8 @@ function resetSteps(containerId) {
     row.classList.remove('active', 'done');
     row.classList.add('pending');
     row.querySelector('.gen-step-icon').textContent = '○';
+    const label = row.querySelector('.gen-step-label[data-i18n]');
+    if (label) label.textContent = t(label.dataset.i18n);
   });
 }
 
@@ -6022,7 +6889,7 @@ async function sendQuestion() {
           if (!agentWrap) {
             thinking.remove();
             agentWrap = document.createElement('div'); agentWrap.className = 'msg agent';
-            const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = 'Agent';
+            const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = t('chat-label-agent');
             bubble = document.createElement('div'); bubble.className = 'bubble';
             agentWrap.append(lbl, bubble);
             chat.appendChild(agentWrap);
@@ -6159,7 +7026,6 @@ document.getElementById('folder-pick-btn').addEventListener('click', e => { e.st
 clearBtn.addEventListener('click', resetUploadForm);
 uploadBtn.addEventListener('click', uploadModule);
 newModuleBtn.addEventListener('click', showSetup);
-document.getElementById('brand-home-btn').addEventListener('click', showSetup);
 sendBtn.addEventListener('click', sendQuestion);
 input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(); } });
 input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 200) + 'px'; });
@@ -6326,11 +7192,11 @@ async function generateRoadmap() {
 
   const statusEl = document.getElementById('exam-loading-status');
   const msgs = [
-    'Kursinhalte werden analysiert …',
-    'Prüfungsthemen werden gewichtet …',
-    'Lernplan wird strukturiert …',
-    'Phasen werden erstellt …',
-    'Fast fertig …',
+    t('analyzing-course'),
+    t('rg-step-analyze'),
+    t('rg-step-generate'),
+    t('plan-creating'),
+    t('upload-finishing-title') + ' …',
   ];
   let msgIdx = 0;
   const timer = setInterval(() => { msgIdx = (msgIdx + 1) % msgs.length; statusEl.textContent = msgs[msgIdx]; }, 2800);
@@ -6341,20 +7207,20 @@ async function generateRoadmap() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         module_name:    state.moduleName,
-        exam_topic:     examState.topic    || 'Alle Themen des Kurses',
-        study_time:     examState.studyTime || '2 Stunden pro Tag',
+        exam_topic:     examState.topic    || null,
+        study_time:     examState.studyTime || null,
         exam_date:      examState.examDate  || null,
         old_exam_notes: examState.oldExams  || null,
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Fehler beim Generieren.');
+    if (!res.ok) throw new Error(data.detail || t('roadmap-failed'));
     currentRoadmap = data.roadmap;
     closeExamModal();
     renderAndShowRoadmap(data.roadmap);
   } catch (err) {
     closeExamModal();
-    addMsg('agent', `❌ Fehler beim Erstellen des Lernplans: ${err.message}`);
+    addMsg('agent', `❌ ${t('rm-load-error')}: ${err.message}`);
   } finally {
     clearInterval(timer);
   }
@@ -6371,9 +7237,9 @@ function renderAndShowRoadmap(rm) {
   const totalHoursRaw = (rm.phases||[]).reduce((s,p) => s + (p.topics||[]).reduce((ts,t) => ts + (parseFloat(t.hours)||0), 0), 0);
   const totalHours = Math.round(totalHoursRaw * 10) / 10;
 
-  document.getElementById('roadmap-brand-title').textContent = state.moduleName || 'Lernplan';
+  document.getElementById('roadmap-brand-title').textContent = state.moduleName || t('tab-roadmap');
   document.getElementById('roadmap-brand-sub').textContent =
-    `${prog.done||0}/${total} fertig · ${prog.doing||0} aktiv${totalHours ? ' · ' + totalHours + 'h' : ''}`;
+    tf('rm-progress', {done: prog.done||0, total, doing: prog.doing||0}) + (totalHours ? ' · ' + totalHours + 'h' : '');
 
   content.innerHTML = '';
 
@@ -6381,25 +7247,25 @@ function renderAndShowRoadmap(rm) {
   const goal = document.createElement('div');
   goal.className = 'roadmap-goal';
   const statsHtml = [
-    totalHours ? `${totalHours}h Lernzeit` : null,
-    (rm.phases||[]).length ? `${rm.phases.length} Phasen` : null,
-    rm.exam_date ? `Prüfung: ${rm.exam_date}` : null,
+    totalHours ? `${totalHours}h` : null,
+    (rm.phases||[]).length ? `${rm.phases.length} ${t('rm-stat-phases')}` : null,
+    rm.exam_date ? t('rm-exam-separator').trim() + ' ' + rm.exam_date : null,
   ].filter(Boolean).map(s => `<span class="roadmap-stat">${escHtml(s)}</span>`).join('');
   goal.innerHTML = `
-    <div class="roadmap-goal-title">${escHtml(state.moduleName || 'Lernplan')}</div>
-    <div class="roadmap-goal-meta">${prog.done||0} fertig · ${prog.doing||0} aktiv · ${prog.todo||0} offen</div>
+    <div class="roadmap-goal-title">${escHtml(state.moduleName || t('tab-roadmap'))}</div>
+    <div class="roadmap-goal-meta">${tf('rm-progress', {done: prog.done||0, total, doing: prog.doing||0})} · ${prog.todo||0} ${t('rm-todo-label')}</div>
     ${statsHtml ? `<div class="roadmap-goal-stats">${statsHtml}</div>` : ''}
   `;
   content.appendChild(goal);
 
   // Priority / status helpers
   const prioMap = {
-    must_know:    { cls: 'priority-must', label: '<span class="prio-dot high"></span>Pflicht' },
-    high:         { cls: 'priority-must', label: '<span class="prio-dot high"></span>Pflicht' },
-    good_to_know: { cls: 'priority-good', label: '<span class="prio-dot medium"></span>Wichtig' },
-    medium:       { cls: 'priority-good', label: '<span class="prio-dot medium"></span>Wichtig' },
-    nice_to_have: { cls: 'priority-nice', label: '<span class="prio-dot low"></span>Optional' },
-    low:          { cls: 'priority-nice', label: '<span class="prio-dot low"></span>Optional' },
+    must_know:    { cls: 'priority-must', label: `<span class="prio-dot high"></span>${t('rm-prio-must')}` },
+    high:         { cls: 'priority-must', label: `<span class="prio-dot high"></span>${t('rm-prio-must')}` },
+    good_to_know: { cls: 'priority-good', label: `<span class="prio-dot medium"></span>${t('rm-prio-good')}` },
+    medium:       { cls: 'priority-good', label: `<span class="prio-dot medium"></span>${t('rm-prio-good')}` },
+    nice_to_have: { cls: 'priority-nice', label: `<span class="prio-dot low"></span>${t('rm-prio-nice')}` },
+    low:          { cls: 'priority-nice', label: `<span class="prio-dot low"></span>${t('rm-prio-nice')}` },
   };
   const statusIcon = { todo: '○', doing: '◑', done: '●' };
 
@@ -6423,7 +7289,7 @@ function renderAndShowRoadmap(rm) {
 
     const grid = section.querySelector(`#rm-grid-${idx}`);
     (phase.topics || []).forEach(t => {
-      const prio = prioMap[t.pruefungsrelevanz] || { cls: 'priority-good', label: '<span class="prio-dot medium"></span>Wichtig' };
+      const prio = prioMap[t.pruefungsrelevanz] || prioMap.medium;
       const card = document.createElement('div');
       card.className = `roadmap-topic-card ${prio.cls}`;
 
@@ -6452,15 +7318,15 @@ function renderAndShowRoadmap(rm) {
   if (state.roadmapPending) {
     const d = state.roadmapPending.diff || {};
     const parts = [];
-    if (d.added_count) parts.push(`+${d.added_count} neu`);
-    if (d.removed_count) parts.push(`−${d.removed_count} entfernt`);
-    if (typeof d.status_preserved === 'number') parts.push(`${d.status_preserved} Status erhalten`);
-    const summary = parts.length ? parts.join(' · ') : 'Neue Roadmap bereit';
+    if (d.added_count) parts.push(`+${d.added_count} ${t('rm-diff-added')}`);
+    if (d.removed_count) parts.push(`−${d.removed_count} ${t('rm-diff-removed')}`);
+    if (typeof d.status_preserved === 'number') parts.push(`${d.status_preserved} ${t('rm-diff-status')}`);
+    const summary = parts.length ? parts.join(' · ') : t('rm-diff-ready');
     diffBanner.innerHTML = `
       <span>↻ ${escHtml(summary)}</span>
       <span class="spacer"></span>
-      <button class="reject-btn" id="rd-overlay-reject">✗ Verwerfen</button>
-      <button class="accept-btn" id="rd-overlay-accept">✓ Akzeptieren</button>
+      <button class="reject-btn" id="rd-overlay-reject">${t('rm-reject')}</button>
+      <button class="accept-btn" id="rd-overlay-accept">${t('rm-accept')}</button>
     `;
     diffBanner.style.display = 'flex';
     diffBanner.querySelector('#rd-overlay-accept').addEventListener('click', async () => {
@@ -6542,7 +7408,6 @@ document.getElementById('roadmap-btn').addEventListener('click', () => {
 initSplitters();
 initPanelToggles();
 initRail();
-loadModules();
 
 // If KaTeX loads after some markdown has already been painted, re-render the
 // affected containers once it's available.
@@ -6559,17 +7424,181 @@ _pdfPositionSync.observe(wsCenter);
 
 /* ── Theme toggle ── */
 const themeToggleBtn = document.getElementById('theme-toggle');
+
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  if (themeToggleBtn) themeToggleBtn.textContent = theme === 'dark' ? '☀' : '☾';
+  const lightBtn = document.getElementById('settings-theme-light');
+  const darkBtn  = document.getElementById('settings-theme-dark');
+  if (lightBtn && darkBtn) {
+    lightBtn.classList.toggle('active', theme === 'light');
+    darkBtn.classList.toggle('active',  theme === 'dark');
+    lightBtn.setAttribute('aria-pressed', String(theme === 'light'));
+    darkBtn.setAttribute('aria-pressed',  String(theme === 'dark'));
+  }
+}
+
 (function initTheme() {
-  const saved = localStorage.getItem('theme') || 'light';
-  document.body.setAttribute('data-theme', saved);
-  themeToggleBtn.textContent = saved === 'dark' ? '☀' : '☾';
+  applyTheme(localStorage.getItem('theme') || 'light');
 })();
-themeToggleBtn.addEventListener('click', () => {
-  const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  document.body.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-  themeToggleBtn.textContent = next === 'dark' ? '☀' : '☾';
+if (themeToggleBtn) themeToggleBtn.addEventListener('click', () => {
+  applyTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 });
+
+/* ── Settings Modal ── */
+(function initSettingsModal() {
+  const overlay   = document.getElementById('settings-modal');
+  const closeBtn  = document.getElementById('settings-modal-close');
+  const lightBtn  = document.getElementById('settings-theme-light');
+  const darkBtn   = document.getElementById('settings-theme-dark');
+  const menuItem  = document.querySelector('#rail-profile-menu .rail-profile-menu-item');
+
+  function openSettings() {
+    overlay.classList.add('active');
+    applyTheme(document.body.getAttribute('data-theme') || 'light');
+    document.getElementById('rail-profile-menu').classList.remove('open');
+    document.getElementById('rail-profile-trigger').setAttribute('aria-expanded', 'false');
+  }
+  function closeSettings() { overlay.classList.remove('active'); }
+
+  if (menuItem) menuItem.addEventListener('click', openSettings);
+  closeBtn.addEventListener('click', closeSettings);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeSettings(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) closeSettings();
+  });
+
+  lightBtn.addEventListener('click', () => applyTheme('light'));
+  darkBtn.addEventListener('click',  () => applyTheme('dark'));
+})();
+
+/* ── File action popup ── */
+const filePopup = (function () {
+  const TYPE_LABELS = {
+    klausur:     '🎓 Klausur',
+    übungsblatt: '📝 Übungsblatt',
+    vorlesung:   '📖 Vorlesung',
+    sonstiges:   '📁 Sonstiges',
+  };
+
+  function getCategory(file) {
+    if (file.file_category) return file.file_category;
+    if (file.is_exam) return 'klausur';
+    if (isExerciseSheet(file.name)) return 'übungsblatt';
+    if (isLecture(file.name)) return 'vorlesung';
+    return 'sonstiges';
+  }
+
+  const el = document.createElement('div');
+  el.className = 'file-popup';
+  el.style.display = 'none';
+  document.body.appendChild(el);
+
+  let _file = null, _row = null;
+
+  function close() {
+    el.style.display = 'none';
+    _file = null; _row = null;
+  }
+
+  function position(triggerBtn) {
+    const rect = triggerBtn.getBoundingClientRect();
+    el.style.left = '0'; el.style.top = '0'; el.style.display = 'flex';
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let left = rect.right + 6;
+    let top  = rect.top;
+    if (left + w > window.innerWidth - 8)  left = rect.left - w - 6;
+    if (top  + h > window.innerHeight - 8) top  = window.innerHeight - h - 8;
+    el.style.left = left + 'px';
+    el.style.top  = top + 'px';
+  }
+
+  function renderMain(file, triggerBtn) {
+    const cat = getCategory(file);
+    el.innerHTML = '';
+
+    // "Diese Datei ist..." row
+    const typeRow = document.createElement('div');
+    typeRow.className = 'fap-type-row';
+    typeRow.innerHTML = `<span class="fap-type-label">Diese Datei ist</span><span class="fap-type-value">${TYPE_LABELS[cat] || '—'}</span><span class="fap-chevron">›</span>`;
+    typeRow.addEventListener('click', e => { e.stopPropagation(); renderTypes(file, triggerBtn); });
+    el.appendChild(typeRow);
+
+    const divider = document.createElement('div');
+    divider.className = 'fap-divider';
+    el.appendChild(divider);
+
+    // Context-sensitive actions
+    const actions = [];
+    if (cat === 'übungsblatt') actions.push({ label: '⚡ Lösen', fn: () => { close(); solveSheet(file, null); } });
+    if (cat === 'vorlesung' || cat === 'klausur') actions.push({ label: '≡ Zusammenfassen', fn: () => { close(); openSummaryFlow(file.name); } });
+    actions.push({ label: '✎ Umbenennen', fn: () => { close(); renameFileInline(file, _row); } });
+    actions.push({ label: '🗑 Löschen', danger: true, fn: () => { close(); deleteModuleFile(file); } });
+
+    actions.forEach(a => {
+      const btn = document.createElement('button');
+      btn.className = 'fap-action-btn' + (a.danger ? ' danger' : '');
+      btn.textContent = a.label;
+      btn.addEventListener('click', e => { e.stopPropagation(); a.fn(); });
+      el.appendChild(btn);
+    });
+  }
+
+  function renderTypes(file, triggerBtn) {
+    const cat = getCategory(file);
+    el.innerHTML = '';
+
+    const back = document.createElement('button');
+    back.className = 'fap-back-btn';
+    back.textContent = '‹ Zurück';
+    back.addEventListener('click', e => { e.stopPropagation(); renderMain(file, triggerBtn); });
+    el.appendChild(back);
+
+    const divider = document.createElement('div');
+    divider.className = 'fap-divider';
+    el.appendChild(divider);
+
+    ['klausur', 'übungsblatt', 'vorlesung', 'sonstiges'].forEach(type => {
+      const btn = document.createElement('button');
+      btn.className = 'fap-type-option' + (cat === type ? ' active' : '');
+      btn.textContent = TYPE_LABELS[type];
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
+        try {
+          const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file/type`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: file.relative_path || file.name, file_type: type }),
+          });
+          if (!res.ok) throw new Error('Typ-Änderung fehlgeschlagen');
+          file.file_category = type;
+          file.is_exam = type === 'klausur';
+        } catch (err) { addMsg('agent', `❌ ${err.message}`); }
+        close();
+        await refreshModuleFiles();
+      });
+      el.appendChild(btn);
+    });
+
+    // Re-position in case height changed
+    if (triggerBtn) position(triggerBtn);
+  }
+
+  document.addEventListener('click', e => {
+    if (el.style.display !== 'none' && !el.contains(e.target)) close();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  return {
+    open(file, row, triggerBtn) {
+      _file = file; _row = row;
+      renderMain(file, triggerBtn);
+      position(triggerBtn);
+    },
+    close,
+  };
+})();
 
 /* ── Custom confirm dialog ── */
 function showConfirm(title, desc) {

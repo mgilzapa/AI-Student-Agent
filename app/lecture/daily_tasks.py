@@ -420,17 +420,53 @@ _EXERCISE_FILE_RE = re.compile(
     re.IGNORECASE,
 )
 
+_LECTURE_FILE_RE = re.compile(
+    r"\b(week|woche|vorlesung|lecture|lect|lec|VL|skript|mitschrift|folien|folie|slides|handout|sitzung|einheit|chapter)\b"
+    r"|\bV\d{2,}\b|\bVO\d{2,}\b|\bL\d{2,}\b|\bKap\d*\b|\bCh\d+\b|\b(WT|WS|SS|SM)\d{2,4}\b",
+    re.IGNORECASE,
+)
 
-def _split_files(files: List[str], exercises: List[str]) -> tuple[List[str], List[str]]:
+# Categories the user can assign to files in the module profile
+_EXERCISE_CATEGORIES = {"übungsblatt", "klausur"}
+_LECTURE_CATEGORIES = {"vorlesung"}
+
+
+def _lookup_file_type(name: str, file_types: Dict[str, str]) -> Optional[str]:
+    """Return the user-assigned category for a file, matching by basename."""
+    if name in file_types:
+        return file_types[name]
+    name_lower = name.lower()
+    for key, typ in file_types.items():
+        if Path(key).name.lower() == name_lower:
+            return typ
+    return None
+
+
+def _split_files(
+    files: List[str],
+    exercises: List[str],
+    file_types: Optional[Dict[str, str]] = None,
+) -> tuple[List[str], List[str]]:
     """Separate lecture/script files from exercise sheets.
 
-    Anything in `files` that looks like an exercise sheet is promoted to `exercises`
-    so it never ends up as a [Theorie] task.
+    If `file_types` (from the module profile) is provided, explicit user markings take
+    precedence: "übungsblatt"/"klausur" → exercises, "vorlesung" → lecture files.
+    For files with no explicit marking the original regex heuristic is used as fallback.
     """
     lecture_files: List[str] = []
     promoted: List[str] = []
     for f in files:
-        if _EXERCISE_FILE_RE.search(f):
+        if file_types:
+            category = _lookup_file_type(f, file_types)
+            if category in _EXERCISE_CATEGORIES:
+                promoted.append(f)
+                continue
+            if category in _LECTURE_CATEGORIES:
+                lecture_files.append(f)
+                continue
+        if _LECTURE_FILE_RE.search(f):
+            lecture_files.append(f)
+        elif _EXERCISE_FILE_RE.search(f):
             promoted.append(f)
         else:
             lecture_files.append(f)
@@ -481,11 +517,13 @@ def _build_tasks_from_metadata(
     topic: Dict[str, Any],
     hours: float = 2.0,
     completed_texts: Optional[List[str]] = None,
+    file_types: Optional[Dict[str, str]] = None,
 ) -> List[Dict[str, Any]]:
     """Fallback: build tasks from topic metadata without LLM."""
     files, exercises = _split_files(
         topic.get("dateien") or topic.get("files") or [],
         topic.get("aufgaben") or topic.get("exercises") or [],
+        file_types,
     )
     n = _task_count_for_hours(hours)
     done_set = set(completed_texts or [])
@@ -527,9 +565,12 @@ def _generate_tasks_for_topic(
     """Generate content-grounded tasks using RAG + topic metadata."""
     name = topic.get("name", "")
     subtopics = [str(s).strip() for s in (topic.get("subtopics") or topic.get("untergruppen") or []) if str(s).strip()]
+    profile = mp.load(module_name)
+    file_types: Dict[str, str] = (profile.get("file_types") or {}) if profile else {}
     files, exercises = _split_files(
         topic.get("dateien") or topic.get("files") or [],
         topic.get("aufgaben") or topic.get("exercises") or [],
+        file_types,
     )
 
     # Query RAG: topic name + subtopics for richer, content-grounded tasks
@@ -581,7 +622,7 @@ def _generate_tasks_for_topic(
         ]
     except Exception as exc:
         print(f"[daily_tasks] LLM task gen failed for {name}: {exc}")
-        return _build_tasks_from_metadata(topic, hours, completed_texts)
+        return _build_tasks_from_metadata(topic, hours, completed_texts, file_types)
 
 
 # ─────────────────────────── Main generate ──────────────────────────────────
