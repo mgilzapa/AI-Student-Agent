@@ -1,112 +1,13 @@
 """
 lecture/module_profile.py
-Lädt, speichert und verwaltet Modul-Profile (modules/<slug>.json).
-Kein API-Call – reine Dateisystem-Operationen.
+Lädt, speichert und verwaltet Modul-Profile in der Supabase modules-Tabelle.
 """
 
-import json
 import re
 from datetime import date
-from pathlib import Path
 from typing import Optional
 
-# Relativ zum Projekt-Root
-MODULES_DIR = Path("data/modules")
-
-
-# ── Schema ────────────────────────────────────────────────────────────────────
-
-def _empty_profile(name: str) -> dict:
-    slug = _slugify(name)
-    return {
-        "name": name,
-        "slug": slug,
-        "aliases": [],
-        "schwerpunkte": [],
-        "pruefungsrelevant": [],
-        "stil": "mixed",
-        "prompt_hint": "",
-        "extra": "",
-        "exam_profile": str(MODULES_DIR / f"{slug}-exam-profile.md"),
-        "history": str(MODULES_DIR / f"{slug}-history.md"),
-        "created_at": str(date.today()),
-        "updated_at": str(date.today()),
-    }
-
-
-# ── Public API ─────────────────────────────────────────────────────────────────
-
-def load(modul_name: str) -> Optional[dict]:
-    """Lädt Profil anhand von Name oder Alias. None wenn nicht gefunden."""
-    MODULES_DIR.mkdir(parents=True, exist_ok=True)
-    slug = _find_slug(modul_name)
-    if slug is None:
-        return None
-    path = MODULES_DIR / f"{slug}.json"
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
-
-
-def save(profile: dict) -> Path:
-    """Speichert Profil. Gibt Pfad zurück."""
-    MODULES_DIR.mkdir(parents=True, exist_ok=True)
-    profile["updated_at"] = str(date.today())
-    path = MODULES_DIR / f"{profile['slug']}.json"
-    path.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
-    return path
-
-
-def create_from_onboarding(answers: dict) -> dict:
-    """
-    answers = {
-        "name": str,
-        "schwerpunkte": list[str],
-        "stil": str,
-        "pruefungsrelevant": list[str],
-    }
-    """
-    profile = _empty_profile(answers["name"])
-    profile["schwerpunkte"] = answers.get("schwerpunkte", [])
-    profile["stil"] = answers.get("stil", "mixed")
-    profile["pruefungsrelevant"] = answers.get("pruefungsrelevant", [])
-    save(profile)
-    return profile
-
-
-def update_exam_topics(slug: str, top_topics: list[str]) -> None:
-    """Aktualisiert pruefungsrelevant nach Klausur-Analyse."""
-    path = MODULES_DIR / f"{slug}.json"
-    if not path.exists():
-        return
-    profile = json.loads(path.read_text(encoding="utf-8"))
-    profile["pruefungsrelevant"] = top_topics
-    save(profile)
-
-
-def append_history(profile: dict, lecture_title: str, concepts: list[str], builds_on: str = "") -> None:
-    """Hängt neue Vorlesung an History-Datei an."""
-    history_path = Path(profile["history"])
-    history_path.parent.mkdir(parents=True, exist_ok=True)
-
-    entry = f"\n## {lecture_title}\nKernkonzepte: {', '.join(concepts)}\n"
-    if builds_on:
-        entry += f"Baut auf: {builds_on}\n"
-
-    with history_path.open("a", encoding="utf-8") as f:
-        if not history_path.stat().st_size if history_path.exists() else True:
-            f.write(f"# Vorlesungs-History: {profile['name']}\n")
-        f.write(entry)
-
-
-def load_history(profile: dict) -> str:
-    """Gibt History als String zurück (leer wenn keine vorhanden)."""
-    path = Path(profile["history"])
-    return path.read_text(encoding="utf-8") if path.exists() else ""
-
-
-def load_exam_profile(profile: dict) -> str:
-    """Gibt Prüfungsprofil als String zurück."""
-    path = Path(profile["exam_profile"])
-    return path.read_text(encoding="utf-8") if path.exists() else ""
+from app.storage.supabase_client import get_client, get_user_id
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -118,20 +19,135 @@ def _slugify(name: str) -> str:
     return s.strip("-")
 
 
-def _find_slug(name: str) -> Optional[str]:
-    """Sucht Profil per Name, Slug oder Alias."""
-    MODULES_DIR.mkdir(parents=True, exist_ok=True)
-    target = name.lower().strip()
+def _row_to_profile(row: dict) -> dict:
+    return {
+        "id":                    row.get("id", ""),
+        "name":                  row.get("name", ""),
+        "slug":                  row.get("slug", ""),
+        "aliases":               row.get("aliases") or [],
+        "schwerpunkte":          row.get("schwerpunkte") or [],
+        "pruefungsrelevant":     row.get("pruefungsrelevant") or [],
+        "stil":                  row.get("stil", "mixed"),
+        "prompt_hint":           row.get("prompt_hint", ""),
+        "extra":                 row.get("extra", ""),
+        "exam_profile":          row.get("exam_profile_md", ""),
+        "history":               row.get("history_md", ""),
+        "manual_exam_files":     row.get("manual_exam_files") or [],
+        "manual_not_exam_files": row.get("manual_not_exam_files") or [],
+        "file_types":            row.get("file_types") or {},
+        "created_at":            str(row.get("created_at", "")),
+        "updated_at":            str(row.get("updated_at", "")),
+    }
 
-    for path in MODULES_DIR.glob("*.json"):
-        try:
-            profile = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            continue
+
+# ── Public API ─────────────────────────────────────────────────────────────────
+
+def load(modul_name: str) -> Optional[dict]:
+    """Load module profile by name or slug. Returns None if not found."""
+    uid = get_user_id()
+    slug = _slugify(modul_name)
+    try:
+        rows = (
+            get_client()
+            .table("modules")
+            .select("*")
+            .eq("user_id", uid)
+            .execute()
+        ).data or []
+    except Exception:
+        return None
+
+    target = modul_name.lower().strip()
+    for row in rows:
         if (
-            profile.get("name", "").lower() == target
-            or profile.get("slug", "") == _slugify(name)
-            or target in [a.lower() for a in profile.get("aliases", [])]
+            row.get("name", "").lower() == target
+            or row.get("slug", "") == slug
+            or target in [a.lower() for a in (row.get("aliases") or [])]
         ):
-            return profile["slug"]
+            return _row_to_profile(row)
     return None
+
+
+def save(profile: dict) -> None:
+    """Upsert module profile to Supabase."""
+    uid = get_user_id()
+    profile["updated_at"] = str(date.today())
+    data = {
+        "user_id":               uid,
+        "name":                  profile.get("name", ""),
+        "slug":                  profile.get("slug", ""),
+        "aliases":               profile.get("aliases", []),
+        "schwerpunkte":          profile.get("schwerpunkte", []),
+        "pruefungsrelevant":     profile.get("pruefungsrelevant", []),
+        "stil":                  profile.get("stil", "mixed"),
+        "prompt_hint":           profile.get("prompt_hint", ""),
+        "extra":                 profile.get("extra", ""),
+        "exam_profile_md":       profile.get("exam_profile", ""),
+        "history_md":            profile.get("history", ""),
+        "manual_exam_files":     profile.get("manual_exam_files", []),
+        "manual_not_exam_files": profile.get("manual_not_exam_files", []),
+        "file_types":            profile.get("file_types", {}),
+        "updated_at":            str(date.today()),
+    }
+    try:
+        existing_id = profile.get("id")
+        if existing_id:
+            get_client().table("modules").update(data).eq("id", existing_id).execute()
+        else:
+            get_client().table("modules").upsert(
+                {**data, "created_at": str(date.today())},
+                on_conflict="user_id,slug",
+            ).execute()
+    except Exception as exc:
+        raise RuntimeError(f"Failed to save module profile: {exc}") from exc
+
+
+def create_from_onboarding(answers: dict) -> dict:
+    name = answers["name"]
+    profile = {
+        "name":              name,
+        "slug":              _slugify(name),
+        "aliases":           [],
+        "schwerpunkte":      answers.get("schwerpunkte", []),
+        "stil":              answers.get("stil", "mixed"),
+        "pruefungsrelevant": answers.get("pruefungsrelevant", []),
+        "prompt_hint":       "",
+        "extra":             "",
+        "exam_profile":      "",
+        "history":           "",
+        "manual_exam_files":     [],
+        "manual_not_exam_files": [],
+        "file_types":            {},
+    }
+    save(profile)
+    return load(name) or profile
+
+
+def update_exam_topics(slug: str, top_topics: list) -> None:
+    uid = get_user_id()
+    try:
+        get_client().table("modules").update(
+            {"pruefungsrelevant": top_topics, "updated_at": str(date.today())}
+        ).eq("user_id", uid).eq("slug", slug).execute()
+    except Exception as exc:
+        raise RuntimeError(f"Failed to update exam topics: {exc}") from exc
+
+
+def append_history(profile: dict, lecture_title: str, concepts: list, builds_on: str = "") -> None:
+    """Append lecture entry to history_md in the modules table."""
+    history = profile.get("history", "") or ""
+    if not history:
+        history = f"# Vorlesungs-History: {profile['name']}\n"
+    entry = f"\n## {lecture_title}\nKernkonzepte: {', '.join(concepts)}\n"
+    if builds_on:
+        entry += f"Baut auf: {builds_on}\n"
+    profile["history"] = history + entry
+    save(profile)
+
+
+def load_history(profile: dict) -> str:
+    return profile.get("history", "") or ""
+
+
+def load_exam_profile(profile: dict) -> str:
+    return profile.get("exam_profile", "") or ""

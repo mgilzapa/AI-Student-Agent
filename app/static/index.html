@@ -2500,9 +2500,169 @@
     cursor: pointer; transition: all 0.15s ease; font-weight: 600;
   }
   .confirm-ok:hover { opacity: 0.88; }
+
+  /* ── Auth overlay ──────────────────────────────────────────────────── */
+  #auth-screen {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+  .auth-spinner {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    animation: auth-spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes auth-spin { to { transform: rotate(360deg); } }
+  .auth-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2.25rem 2rem;
+    width: 100%; max-width: 400px;
+    box-shadow: var(--shadow);
+  }
+  .auth-logo { text-align: center; margin-bottom: 1.5rem; }
+  .auth-logo-title {
+    font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 600;
+    color: var(--accent); letter-spacing: -0.01em;
+  }
+  .auth-logo-sub { color: var(--muted); font-size: 0.8125rem; margin-top: 0.2rem; }
+  .auth-toggle {
+    text-align: center; font-size: 0.8125rem; color: var(--muted);
+    margin-top: 0.125rem;
+  }
+  .auth-toggle a {
+    color: var(--accent); text-decoration: none; cursor: pointer; font-weight: 500;
+  }
+  .auth-toggle a:hover { text-decoration: underline; }
+  .auth-form { display: flex; flex-direction: column; gap: 0.625rem; }
+  .auth-input {
+    padding: 0.6rem 0.875rem; border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text); font-size: 0.9375rem;
+    font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s;
+    width: 100%;
+  }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-input::placeholder { color: var(--muted); }
+  .auth-submit {
+    padding: 0.6rem 0.875rem; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px; font-size: 0.9375rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 0.125rem;
+    font-family: 'Inter', sans-serif; width: 100%;
+  }
+  .auth-submit:hover { opacity: 0.85; }
+  .auth-submit:disabled { opacity: 0.5; cursor: default; }
+  .auth-divider {
+    display: flex; align-items: center; gap: 0.625rem; color: var(--muted);
+    font-size: 0.8125rem; margin: 0.125rem 0;
+  }
+  .auth-divider::before,.auth-divider::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+  .auth-google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.625rem;
+    padding: 0.6rem 0.875rem; background: var(--bg);
+    border: 1.5px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 0.9375rem; font-weight: 500;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    width: 100%; font-family: 'Inter', sans-serif;
+  }
+  .auth-google-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .auth-msg {
+    font-size: 0.8125rem; text-align: center; padding: 0.5rem 0.75rem;
+    border-radius: 6px; display: none; margin-bottom: 0.5rem; line-height: 1.4;
+  }
+  .auth-msg.error   { color: var(--danger);  background: rgba(220,38,38,0.08);  display:block; }
+  .auth-msg.success { color: var(--success); background: rgba(22,163,74,0.08);  display:block; }
+  .auth-msg.info    { color: var(--muted);   background: var(--panel-soft);     display:block; }
+
+  /* ── Setup-Screen Profil-Button (oben rechts, fixed) ── */
+  #setup-profile-wrap {
+    position: fixed; top: 14px; right: 18px; z-index: 400;
+    display: none;
+  }
+  #setup-profile-wrap.visible { display: block; }
+
+  .setup-profile-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1.5px solid var(--border);
+    border-radius: 999px; padding: 5px 14px 5px 6px;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .setup-profile-btn:hover {
+    border-color: var(--accent-border);
+    box-shadow: 0 3px 14px rgba(194,65,12,0.12);
+  }
+  .setup-profile-btn-name {
+    font-size: 0.875rem; font-weight: 500; color: var(--text);
+    max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Dropdown öffnet sich nach unten (weil Button oben) */
+  .setup-profile-dropdown {
+    position: absolute; top: calc(100% + 7px); right: 0;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 11px;
+    padding: 4px; display: none; flex-direction: column; gap: 1px;
+    min-width: 230px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 1px 6px rgba(0,0,0,0.06);
+    z-index: 500;
+  }
+  .setup-profile-dropdown.open { display: flex; animation: fadeIn 0.14s var(--ease-out); }
 </style>
 </head>
 <body data-theme="light">
+
+<!-- ── Auth screen ────────────────────────────────────────────────────────── -->
+<div id="auth-screen">
+  <!-- Spinner shown while checking existing session -->
+  <div id="auth-loading">
+    <div class="auth-spinner"></div>
+  </div>
+  <!-- Auth card — hidden until session check completes without session -->
+  <div id="auth-card" class="auth-card" style="display:none">
+    <div class="auth-logo">
+      <div class="auth-logo-title">Study Agent</div>
+      <div class="auth-logo-sub">Dein KI-Lernassistent</div>
+    </div>
+    <div id="auth-msg" class="auth-msg"></div>
+    <div class="auth-form">
+      <input class="auth-input" id="auth-email"    type="email"    placeholder="E-Mail"   autocomplete="email">
+      <input class="auth-input" id="auth-password" type="password" placeholder="Passwort" autocomplete="current-password">
+      <button class="auth-submit" id="auth-submit-btn" type="button">Anmelden</button>
+      <p class="auth-toggle" id="auth-toggle-wrap">
+        Noch kein Konto? <a id="auth-toggle-link">Registrieren</a>
+      </p>
+      <div class="auth-divider">oder</div>
+      <button class="auth-google-btn" id="auth-google-btn" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Mit Google anmelden
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Setup-Screen Profil-Widget (fixed oben rechts, nur auf Setup-Screen) ── -->
+<div id="setup-profile-wrap">
+  <div class="setup-profile-dropdown" id="setup-profile-dropdown" role="menu" aria-label="Profileinstellungen">
+    <div class="rail-profile-menu-email" id="setup-profile-email">—</div>
+    <button class="rail-profile-menu-item" type="button" id="setup-settings-btn" role="menuitem">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span data-i18n="settings">Einstellungen</span>
+    </button>
+    <div class="rail-profile-menu-divider"></div>
+    <button class="rail-profile-menu-item danger" type="button" id="setup-logout-btn" role="menuitem">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span data-i18n="logout">Abmelden</span>
+    </button>
+  </div>
+  <button class="setup-profile-btn" id="setup-profile-btn" type="button" aria-haspopup="true" aria-expanded="false">
+    <div class="rail-profile-avatar" id="setup-profile-avatar">—</div>
+    <span class="setup-profile-btn-name" id="setup-profile-display-name">Profil</span>
+  </button>
+</div>
+
 <!-- Global background layers -->
 <div class="bg-gradient" id="bg-gradient"></div>
 <div class="bg-noise"></div>
@@ -2703,7 +2863,7 @@
                 <span data-i18n="learn-more">Mehr erfahren</span>
               </button>
               <div class="rail-profile-menu-divider"></div>
-              <button class="rail-profile-menu-item danger" type="button" role="menuitem">
+              <button class="rail-profile-menu-item danger" type="button" role="menuitem" id="logout-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 <span data-i18n="logout">Abmelden</span>
               </button>
@@ -3105,7 +3265,165 @@
   </div>
 </div>
 
+<!-- SUPABASE_INJECT -->
 <script>
+// ── Auth ────────────────────────────────────────────────────────────────────────
+(function initAuth() {
+  if (!window.__SUPABASE_URL__ || !window.__SUPABASE_ANON_KEY__ || typeof supabase === 'undefined') return;
+
+  const _sb = supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON_KEY__);
+  window._supabaseClient = _sb;
+
+  let _authToken = null;
+
+  // Intercept all same-origin fetch calls to add Bearer token
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = function(url, options = {}) {
+    if (_authToken && typeof url === 'string' && !/^https?:\/\//.test(url)) {
+      options = { ...options, headers: { 'Authorization': 'Bearer ' + _authToken, ...(options.headers || {}) } };
+    }
+    return _origFetch(url, options);
+  };
+
+  function _showAuthScreen(loading) {
+    const s = document.getElementById('auth-screen');
+    if (s) s.style.display = 'flex';
+    const l = document.getElementById('auth-loading');
+    const c = document.getElementById('auth-card');
+    if (l) l.style.display = loading ? 'block' : 'none';
+    if (c) c.style.display = loading ? 'none'  : 'block';
+  }
+  function _hideAuthScreen() {
+    const s = document.getElementById('auth-screen');
+    if (s) s.style.display = 'none';
+  }
+  function _setAuthMsg(msg, type) {
+    const el = document.getElementById('auth-msg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'auth-msg' + (type ? ' ' + type : '');
+  }
+  function _updateAvatar(user) {
+    if (!user) return;
+    const name = (user.user_metadata && user.user_metadata.full_name) || user.email || 'U';
+    const initial = name[0].toUpperCase();
+    const displayName = name.split('@')[0];
+    // Sidebar (Workspace-Screen)
+    const avatarEl = document.querySelector('.rail-profile-avatar');
+    const nameEl   = document.querySelector('.rail-profile-name');
+    if (avatarEl) avatarEl.textContent = initial;
+    if (nameEl)   nameEl.textContent   = displayName;
+    // Setup-Screen Profilbutton
+    const setupAvatarEl = document.getElementById('setup-profile-avatar');
+    const setupNameEl   = document.getElementById('setup-profile-display-name');
+    const setupEmailEl  = document.getElementById('setup-profile-email');
+    if (setupAvatarEl) setupAvatarEl.textContent = initial;
+    if (setupNameEl)   setupNameEl.textContent   = displayName;
+    if (setupEmailEl)  setupEmailEl.textContent  = user.email || '';
+  }
+
+  // Auth state listener — fires on login, logout, token refresh
+  _sb.auth.onAuthStateChange((event, session) => {
+    _authToken = session ? session.access_token : null;
+    if (session) {
+      _hideAuthScreen();
+      _updateAvatar(session.user);
+      // Profilbutton auf Setup-Screen einblenden
+      document.getElementById('setup-profile-wrap')?.classList.add('visible');
+      if (event === 'SIGNED_IN' && typeof loadModules === 'function') loadModules();
+    } else {
+      // Nach Logout: Profilbutton ausblenden
+      document.getElementById('setup-profile-wrap')?.classList.remove('visible');
+      _showAuthScreen(false);
+    }
+  });
+
+  // Check for existing session on page load
+  _sb.auth.getSession().then(function(result) {
+    const session = result.data && result.data.session;
+    _authToken = session ? session.access_token : null;
+    if (session) {
+      _hideAuthScreen();
+      _updateAvatar(session.user);
+      document.getElementById('setup-profile-wrap')?.classList.add('visible');
+    } else {
+      // Don't show the login form if we're in the middle of an OAuth redirect.
+      // Supabase is still exchanging the code → onAuthStateChange will fire shortly.
+      const _oauthParams = new URLSearchParams(window.location.search);
+      const _isOAuthRedirect = _oauthParams.has('code') || window.location.hash.includes('access_token');
+      if (!_isOAuthRedirect) {
+        _showAuthScreen(false);
+      }
+      // If OAuth redirect: keep the loading spinner; onAuthStateChange handles the rest.
+    }
+  });
+
+  // ── Auth mode: 'login' | 'register' ──────────────────────────────────────
+  let _authMode = 'login';
+
+  function _applyAuthMode(mode) {
+    _authMode = mode;
+    const submitBtn  = document.getElementById('auth-submit-btn');
+    const pwInput    = document.getElementById('auth-password');
+    const toggleWrap = document.getElementById('auth-toggle-wrap');
+    if (mode === 'login') {
+      if (submitBtn)  submitBtn.textContent = 'Anmelden';
+      if (pwInput)  { pwInput.placeholder = 'Passwort'; pwInput.autocomplete = 'current-password'; }
+      if (toggleWrap) toggleWrap.innerHTML = 'Noch kein Konto? <a id="auth-toggle-link">Registrieren</a>';
+    } else {
+      if (submitBtn)  submitBtn.textContent = 'Konto erstellen';
+      if (pwInput)  { pwInput.placeholder = 'Passwort (min. 8 Zeichen)'; pwInput.autocomplete = 'new-password'; }
+      if (toggleWrap) toggleWrap.innerHTML = 'Schon ein Konto? <a id="auth-toggle-link">Anmelden</a>';
+    }
+    _setAuthMsg('', '');
+    // Re-attach toggle link after innerHTML replacement
+    document.getElementById('auth-toggle-link')?.addEventListener('click', function() {
+      _applyAuthMode(_authMode === 'login' ? 'register' : 'login');
+    });
+  }
+  _applyAuthMode('login');
+
+  // Submit: login or register depending on current mode
+  async function doAuthSubmit() {
+    const email = document.getElementById('auth-email').value.trim();
+    const pw    = document.getElementById('auth-password').value;
+    if (!email || !pw) { _setAuthMsg('Bitte E-Mail und Passwort eingeben.', 'error'); return; }
+    if (_authMode === 'register') {
+      if (pw.length < 8) { _setAuthMsg('Passwort muss mindestens 8 Zeichen haben.', 'error'); return; }
+      _setAuthMsg('Konto erstellen…', 'info');
+      const { error } = await _sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: window.location.origin } });
+      if (error) _setAuthMsg(error.message, 'error');
+      else       _setAuthMsg('✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.', 'success');
+    } else {
+      _setAuthMsg('Anmelden…', 'info');
+      const { error } = await _sb.auth.signInWithPassword({ email, password: pw });
+      if (error) _setAuthMsg(error.message, 'error');
+    }
+  }
+  document.getElementById('auth-submit-btn')?.addEventListener('click', doAuthSubmit);
+  document.getElementById('auth-email')?.addEventListener('keydown',    e => { if (e.key === 'Enter') document.getElementById('auth-password')?.focus(); });
+  document.getElementById('auth-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') doAuthSubmit(); });
+
+  // Google OAuth — single button, handles both new and returning users
+  document.getElementById('auth-google-btn')?.addEventListener('click', async function() {
+    const { error } = await _sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+    if (error) _setAuthMsg(error.message, 'error');
+  });
+
+  // Global sign-out helper — exposed so other scripts (setup-profile menu etc.) can call it too.
+  window._doSignOut = async function() {
+    _authToken = null;
+    try { await _sb.auth.signOut(); } catch(_) { /* ignore network errors */ }
+    // Manually reset UI in case onAuthStateChange is slow or doesn't fire
+    document.getElementById('setup-profile-wrap')?.classList.remove('visible');
+    _applyAuthMode('login');
+    _showAuthScreen(false);
+  };
+
+  // Logout buttons
+  document.getElementById('logout-btn')?.addEventListener('click', window._doSignOut);
+})();
+
 // ── i18n ───────────────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
   de: {
@@ -4070,6 +4388,8 @@ function openWorkspace(moduleName, files) {
   state.parsedTextCache = {};
   setupScreen.classList.remove('active');
   workspaceScreen.classList.add('active');
+  // Setup-Profilbutton ausblenden wenn Workspace aktiv
+  document.getElementById('setup-profile-wrap')?.classList.remove('visible');
   requestAnimationFrame(() => {
     requestAnimationFrame(() => workspaceScreen.classList.add('visible'));
   });
@@ -4095,6 +4415,8 @@ function showSetup() {
   setupScreen.classList.add('active');
   headerStatus.textContent = t('no-course-open');
   document.getElementById('fw-layer').style.opacity = '1';
+  // Setup-Profilbutton wieder einblenden
+  document.getElementById('setup-profile-wrap')?.classList.add('visible');
 }
 
 function resetChat() {
@@ -7471,6 +7793,43 @@ if (themeToggleBtn) themeToggleBtn.addEventListener('click', () => {
 
   lightBtn.addEventListener('click', () => applyTheme('light'));
   darkBtn.addEventListener('click',  () => applyTheme('dark'));
+})();
+
+/* ── Setup-Screen Profil-Dropdown ── */
+(function initSetupProfileMenu() {
+  const wrap   = document.getElementById('setup-profile-wrap');
+  const btn    = document.getElementById('setup-profile-btn');
+  const menu   = document.getElementById('setup-profile-dropdown');
+  if (!btn || !menu) return;
+
+  function setOpen(open) {
+    menu.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
+  }
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    setOpen(!menu.classList.contains('open'));
+  });
+  document.addEventListener('click', e => {
+    if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn)
+      setOpen(false);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+
+  // Einstellungen → gleiches Modal wie Sidebar
+  document.getElementById('setup-settings-btn')?.addEventListener('click', () => {
+    setOpen(false);
+    document.getElementById('settings-modal')?.classList.add('active');
+  });
+
+  // Abmelden
+  document.getElementById('setup-logout-btn')?.addEventListener('click', () => {
+    setOpen(false);
+    window._doSignOut?.();
+  });
 })();
 
 /* ── File action popup ── */

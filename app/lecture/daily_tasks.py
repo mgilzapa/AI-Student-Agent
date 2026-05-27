@@ -19,14 +19,12 @@ import json
 import random
 import re
 from datetime import date
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
 
 from . import module_profile as mp
 
-DAILY_DIR = Path("data/processed/daily_tasks")
 MODEL = "claude-haiku-4-5-20251001"
 
 _client: Optional[Anthropic] = None
@@ -39,51 +37,51 @@ def _get_client() -> Anthropic:
     return _client
 
 
-# ─────────────────────────── Path helpers ───────────────────────────────────
+# ─────────────────────────── Storage helpers ─────────────────────────────────
 
-def plan_dir(module_name: str) -> Path:
+def _slug_for(module_name: str) -> str:
     profile = mp.load(module_name)
-    slug = profile["slug"] if profile else mp._slugify(module_name)
-    return DAILY_DIR / slug
+    return profile["slug"] if profile else mp._slugify(module_name)
 
 
-def current_plan_path(module_name: str) -> Path:
-    return plan_dir(module_name) / "current_plan.md"
-
-
-def task_history_path(module_name: str) -> Path:
-    return plan_dir(module_name) / "task_history.json"
+def task_history_path(module_name: str):
+    """Returns the storage path string (used externally to check/delete history)."""
+    return _slug_for(module_name) + "/task_history.json"
 
 
 def load_plan(module_name: str) -> Optional[str]:
-    p = current_plan_path(module_name)
-    return p.read_text(encoding="utf-8") if p.exists() else None
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    return sb.read_text(f"{slug}/daily_plan.md")
 
 
-def save_plan(module_name: str, md: str) -> Path:
-    p = current_plan_path(module_name)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(md, encoding="utf-8")
-    return p
+def save_plan(module_name: str, md: str) -> str:
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    path = f"{slug}/daily_plan.md"
+    sb.write_text(path, md)
+    return path
 
 
 # ─────────────────────────── Task history ───────────────────────────────────
 
 def load_task_history(module_name: str) -> List[Dict[str, Any]]:
-    """Load completed-task history. Each entry: {topic_id, topic_name, task_text, completed_date}."""
-    p = task_history_path(module_name)
-    if not p.exists():
+    """Load completed-task history."""
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    raw = sb.read_text(f"{slug}/task_history.json")
+    if not raw:
         return []
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
+        return json.loads(raw)
     except Exception:
         return []
 
 
 def _save_task_history(module_name: str, history: List[Dict[str, Any]]) -> None:
-    p = task_history_path(module_name)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    sb.write_text(f"{slug}/task_history.json", json.dumps(history, ensure_ascii=False, indent=2))
 
 
 def record_completed_task(

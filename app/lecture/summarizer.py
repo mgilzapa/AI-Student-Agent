@@ -4,7 +4,6 @@ Zwei-Stufen-Generierung: erst Konzept-Extraktion, dann tiefe Zusammenfassung.
 """
 
 import json
-from pathlib import Path
 from openai import OpenAI
 
 from . import module_profile as mp
@@ -240,12 +239,25 @@ def _run_stage2(
 def _save_summary(profile: dict, titel: str, summary: str) -> str:
     from datetime import date
     import re
+    from app.storage import storage_backend as sb
+    from app.storage.supabase_client import get_client, get_user_id
+
     safe_titel = re.sub(r"[^a-z0-9]+", "-", titel.lower())[:40]
-    out_dir = Path("data/processed/summaries") / profile["slug"]
-    out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"{date.today()}_{safe_titel}.md"
-    path.write_text(summary, encoding="utf-8")
-    return str(path)
+    slug = profile["slug"]
+    storage_path = f"{slug}/summaries/{date.today()}_{safe_titel}.md"
+    sb.write_text(storage_path, summary)
+
+    if profile.get("id"):
+        try:
+            get_client().table("summaries").insert({
+                "user_id":      get_user_id(),
+                "module_id":    profile["id"],
+                "title":        titel,
+                "storage_path": storage_path,
+            }).execute()
+        except Exception:
+            pass
+    return storage_path
 
 
 def _default_profile(modul_name: str) -> dict:

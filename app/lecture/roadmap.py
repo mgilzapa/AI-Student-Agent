@@ -16,7 +16,6 @@ import json
 import logging
 import re
 from datetime import date
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
@@ -34,8 +33,6 @@ def _get_client() -> Anthropic:
     if _client is None:
         _client = Anthropic()
     return _client
-
-ROADMAPS_DIR = Path("data/processed/roadmaps")
 
 
 # ─────────────────────────── Generation prompt ──────────────────────────────
@@ -552,29 +549,28 @@ def merge_status(old_md: str, new_md: str) -> Tuple[str, Dict[str, Any]]:
     return merged, diff
 
 
-# ───────────────────────────── File operations ──────────────────────────────
+# ───────────────────────────── Storage operations ──────────────────────────────
 
-def roadmap_path(module_name: str) -> Path:
+def _slug_for(module_name: str) -> str:
     profile = mp.load(module_name)
-    slug = profile["slug"] if profile else mp._slugify(module_name)
-    return ROADMAPS_DIR / slug / f"{slug}.roadmap.md"
+    return profile["slug"] if profile else mp._slugify(module_name)
 
 
 def load_roadmap_md(module_name: str) -> Optional[str]:
-    p = roadmap_path(module_name)
-    return p.read_text(encoding="utf-8") if p.exists() else None
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    return sb.read_text(f"{slug}/roadmap.md")
 
 
-def save_roadmap_md(module_name: str, md: str) -> Path:
-    p = roadmap_path(module_name)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(md, encoding="utf-8")
-    return p
+def save_roadmap_md(module_name: str, md: str) -> str:
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    path = f"{slug}/roadmap.md"
+    sb.write_text(path, md)
+    return path
 
 
 def delete_roadmap(module_name: str) -> bool:
-    p = roadmap_path(module_name)
-    if p.exists():
-        p.unlink()
-        return True
-    return False
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    return sb.delete(f"{slug}/roadmap.md")

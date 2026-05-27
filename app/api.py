@@ -5,6 +5,7 @@ import asyncio
 import json
 import glob as _glob
 import hashlib
+import os
 import re
 import shutil
 import tempfile
@@ -14,10 +15,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional
 
+import jwt as pyjwt
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, StreamingResponse
 from anthropic import Anthropic
 from openai import OpenAI
 from pydantic import BaseModel
@@ -32,7 +34,8 @@ from app.parsing.parsers import parse_document
 from app.rag.query_service import create_query_service
 from app.rag.advanced_rag import ask_advanced
 from app.utils.config import load_config
-from app.vectorstore.chroma_db import ChromaVectorStore
+from app.vectorstore.pgvector_store import PgVectorStore
+from app.storage.supabase_client import get_client as _supa_client, get_user_id as _supa_uid
 from app.lecture import module_profile as mp
 from app.lecture import roadmap as rm
 from app.lecture import exam_analyzer as ea
@@ -48,6 +51,7 @@ app = FastAPI(title="Study Agent")
 client = OpenAI()
 anthropic_client = Anthropic()
 config = load_config()
+# RAW_DIR kept for legacy compatibility; uploads now go to Supabase Storage
 RAW_DIR = config["raw_path"]
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -58,12 +62,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Init RAG on startup
+# ── Auth middleware ────────────────────────────────────────────────────────────
+_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+_AUTH_DISABLED = not _JWT_SECRET  # dev fallback: no JWT secret = no auth enforcement
+
+
+@app.middleware("http")
+async def _auth_middleware(request: Request, call_next):
+    from app.storage.supabase_client import set_request_user_id
+
+    # Root path is always public (serves the HTML shell)
+    if request.url.path == "/":
+        return await call_next(request)
+
+    # Dev mode: no JWT secret configured — use env user_id for every request
+    if _AUTH_DISABLED:
+        set_request_user_id(os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001"))
+        return await call_next(request)
+
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+
+    token = auth[7:]
+    try:
+        payload = pyjwt.decode(
+            token, _JWT_SECRET, algorithms=["HS256"],
+            audience="authenticated",
+        )
+        user_id = payload.get("sub", "")
+        if not user_id:
+            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        set_request_user_id(user_id)
+    except pyjwt.ExpiredSignatureError:
+        return JSONResponse(status_code=401, content={"detail": "Token expired"})
+    except pyjwt.InvalidTokenError as exc:
+        return JSONResponse(status_code=401, content={"detail": f"Invalid token: {exc}"})
+
+    return await call_next(request)
+
+
+# Init RAG on startup (pgvector replaces ChromaDB)
 embedder = Embedder(model_name=config["embedding_model"])
-vector_store = ChromaVectorStore(
-    persist_dir=config["chroma_path"],
-    collection_name="study_chunks"
-)
+vector_store = PgVectorStore()
 rag = create_query_service(vector_store=vector_store, embedder=embedder, top_k=config["top_k"])
 
 
@@ -132,10 +173,42 @@ def _is_exam_file(rel_path: str, profile: Optional[dict]) -> bool:
 
 
 def list_module_files(module_name: str) -> List[dict]:
+    try:
+        uid = _supa_uid()
+        profile = mp.load(module_name) or {}
+        if not profile.get("id"):
+            return _list_module_files_local(module_name)
+        rows = (
+            _supa_client()
+            .table("files")
+            .select("file_name, relative_path, file_type, file_size, is_exam, file_category, storage_path")
+            .eq("module_id", profile["id"])
+            .order("file_name")
+            .execute()
+        ).data or []
+        if rows:
+            return [
+                {
+                    "name":          r["file_name"],
+                    "relative_path": r.get("relative_path") or r["file_name"],
+                    "file_type":     r.get("file_type", ""),
+                    "size":          r.get("file_size", 0),
+                    "is_exam":       r.get("is_exam", False),
+                    "file_category": r.get("file_category"),
+                    "storage_path":  r.get("storage_path", ""),
+                }
+                for r in rows
+            ]
+        # files table empty for this module — fall back to local disk
+        return _list_module_files_local(module_name)
+    except Exception:
+        return _list_module_files_local(module_name)
+
+
+def _list_module_files_local(module_name: str) -> List[dict]:
     base = module_dir(module_name)
     if not base.exists():
         return []
-
     profile = mp.load(module_name) or {}
     file_types = profile.get("file_types") or {}
     files = []
@@ -143,11 +216,11 @@ def list_module_files(module_name: str) -> List[dict]:
         if file_path.is_file():
             rel = str(file_path.relative_to(base)).replace("\\", "/")
             files.append({
-                "name": file_path.name,
+                "name":          file_path.name,
                 "relative_path": rel,
-                "file_type": file_path.suffix.lower().lstrip("."),
-                "size": file_path.stat().st_size,
-                "is_exam": _is_exam_file(rel, profile),
+                "file_type":     file_path.suffix.lower().lstrip("."),
+                "size":          file_path.stat().st_size,
+                "is_exam":       _is_exam_file(rel, profile),
                 "file_category": file_types.get(rel),
             })
     return files
@@ -179,9 +252,8 @@ def _slug(name: str) -> str:
 
 
 def _index_generated_content(text: str, source_path: str, module_name: str) -> int:
-    """Chunk, embed und indiziere generierten Inhalt in ChromaDB. Gibt Chunk-Anzahl zurück."""
+    """Chunk, embed und indiziere generierten Inhalt in pgvector. Gibt Chunk-Anzahl zurück."""
     from app.chunking.chunker import chunk_document
-    from app.storage.persister import save_chunks
 
     doc_id = hashlib.md5(source_path.encode()).hexdigest()
     chunks = chunk_document(
@@ -193,10 +265,7 @@ def _index_generated_content(text: str, source_path: str, module_name: str) -> i
     if not chunks:
         return 0
 
-    chunks_dir = config["processed_path"] / "chunks"
-    save_chunks(chunks, chunks_dir, doc_id)
-
-    existing_ids = set(vector_store.collection.get()["ids"])
+    existing_ids = set(vector_store.get()["ids"])
     new_chunks = [c for c in chunks if c.chunk_id not in existing_ids]
     if not new_chunks:
         return 0
@@ -219,42 +288,33 @@ def _index_generated_content(text: str, source_path: str, module_name: str) -> i
     return len(new_chunks)
 
 
-# ── Exam-style cache ──────────────────────────────────────────────────────────
-
-_EXAM_CACHE_DIR = Path("data/modules")
-
+# ── Exam-style cache (stored in Supabase Storage) ─────────────────────────────
 
 def _exam_cache_hash(module_name: str, exam_files: list[dict]) -> str:
-    """MD5 over sorted (name, mtime_ns, size) of the module's exam files."""
-    base = module_dir(module_name)
+    """MD5 over sorted (name, size) of the module's exam files."""
     parts = []
     for f in sorted(exam_files, key=lambda x: x["name"]):
-        path = base / f["relative_path"]
-        try:
-            st = path.stat()
-            parts.append(f"{f['name']}:{st.st_mtime_ns}:{st.st_size}")
-        except OSError:
-            parts.append(f"{f['name']}:0:0")
+        parts.append(f"{f['name']}:0:{f.get('size', 0)}")
     return hashlib.md5("|".join(parts).encode()).hexdigest()
 
 
 def _load_exam_cache(module_name: str) -> dict | None:
-    cache_path = _EXAM_CACHE_DIR / f"{_slug(module_name)}-exam-style-cache.json"
-    if not cache_path.exists():
+    from app.storage import storage_backend as sb
+    raw = sb.read_text(f"{_slug(module_name)}/exam-style-cache.json")
+    if not raw:
         return None
     try:
-        return json.loads(cache_path.read_text(encoding="utf-8"))
+        return json.loads(raw)
     except Exception:
         return None
 
 
 def _save_exam_cache(module_name: str, hash_val: str, style: str, profile_md: str) -> None:
-    _EXAM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    cache_path = _EXAM_CACHE_DIR / f"{_slug(module_name)}-exam-style-cache.json"
-    cache_path.write_text(
+    from app.storage import storage_backend as sb
+    sb.write_text(
+        f"{_slug(module_name)}/exam-style-cache.json",
         json.dumps({"hash": hash_val, "style": style, "exam_profile_md": profile_md},
                    ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
 
 
@@ -301,7 +361,14 @@ def _exam_analyze_cached(module_name: str, all_files: list[dict]) -> tuple[str, 
 @app.get("/", response_class=HTMLResponse)
 def serve_ui():
     html_path = Path(__file__).parent / "static" / "index.html"
-    return html_path.read_text(encoding="utf-8")
+    html = html_path.read_text(encoding="utf-8")
+    # Inject public Supabase config + SDK before the main inline script block
+    inject = (
+        f'<script>window.__SUPABASE_URL__="{os.getenv("SUPABASE_URL","")}";</script>\n'
+        f'<script>window.__SUPABASE_ANON_KEY__="{os.getenv("SUPABASE_ANON_KEY","")}";</script>\n'
+        '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n'
+    )
+    return html.replace("<!-- SUPABASE_INJECT -->", inject, 1)
 
 
 @app.post("/ask")
@@ -330,31 +397,74 @@ async def ask_stream(body: Question):
 
 @app.get("/modules")
 def get_modules():
-    modules = []
-    if RAW_DIR.exists():
-        modules = sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir())
-    return {"modules": modules}
+    try:
+        uid = _supa_uid()
+        rows = (
+            _supa_client()
+            .table("modules")
+            .select("name")
+            .eq("user_id", uid)
+            .order("name")
+            .execute()
+        ).data or []
+        return {"modules": [r["name"] for r in rows]}
+    except Exception:
+        # Fallback to local filesystem
+        modules = []
+        if RAW_DIR.exists():
+            modules = sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir())
+        return {"modules": modules}
 
-
-_SETTINGS_PATH = Path("data/settings.json")
 
 def _load_settings() -> dict:
-    if _SETTINGS_PATH.exists():
-        try:
-            return json.loads(_SETTINGS_PATH.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    try:
+        uid = _supa_uid()
+        rows = (
+            _supa_client()
+            .table("settings")
+            .select("preferences, favorite_module")
+            .eq("user_id", uid)
+            .execute()
+        ).data or []
+        if rows:
+            row = rows[0]
+            prefs = row.get("preferences") or {}
+            if row.get("favorite_module"):
+                prefs["favorite_module_id"] = row["favorite_module"]
+            return prefs
+    except Exception:
+        pass
     return {}
 
+
 def _save_settings(data: dict) -> None:
-    _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _SETTINGS_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        uid = _supa_uid()
+        _supa_client().table("settings").upsert(
+            {"user_id": uid, "preferences": data},
+            on_conflict="user_id",
+        ).execute()
+    except Exception:
+        pass
 
 
 @app.get("/settings/favorite-module")
 def get_favorite_module():
-    s = _load_settings()
-    return {"module": s.get("favorite_module")}
+    try:
+        uid = _supa_uid()
+        rows = (
+            _supa_client()
+            .table("settings")
+            .select("preferences")
+            .eq("user_id", uid)
+            .execute()
+        ).data or []
+        if rows:
+            prefs = rows[0].get("preferences") or {}
+            return {"module": prefs.get("favorite_module")}
+    except Exception:
+        pass
+    return {"module": None}
 
 
 class FavoriteModuleRequest(BaseModel):
@@ -362,9 +472,24 @@ class FavoriteModuleRequest(BaseModel):
 
 @app.post("/settings/favorite-module")
 def set_favorite_module(body: FavoriteModuleRequest):
-    s = _load_settings()
-    s["favorite_module"] = sanitize_module_name(body.module)
-    _save_settings(s)
+    clean = sanitize_module_name(body.module)
+    try:
+        uid = _supa_uid()
+        rows = (
+            _supa_client()
+            .table("settings")
+            .select("preferences")
+            .eq("user_id", uid)
+            .execute()
+        ).data or []
+        prefs = (rows[0].get("preferences") or {}) if rows else {}
+        prefs["favorite_module"] = clean
+        _supa_client().table("settings").upsert(
+            {"user_id": uid, "preferences": prefs},
+            on_conflict="user_id",
+        ).execute()
+    except Exception:
+        pass
     return {"ok": True}
 
 
@@ -402,102 +527,111 @@ _MEDIA_TYPES = {
 
 @app.get("/modules/{module_name}/raw")
 def get_module_raw(module_name: str, path: str):
-    """Stream the raw file (PDF/PPTX/TXT/MD) for in-browser preview."""
-    target = _resolve_module_file(module_name, path)
-    media_type = _MEDIA_TYPES.get(target.suffix.lower(), "application/octet-stream")
-    return FileResponse(
-        target,
-        media_type=media_type,
-        filename=target.name,
-        headers={"Content-Disposition": f'inline; filename="{target.name}"'},
-    )
+    """Serve raw file from Supabase Storage (signed URL) or local filesystem."""
+    from fastapi.responses import RedirectResponse
+    uid = _supa_uid()
+    slug = _slug(sanitize_module_name(module_name))
+    rel = path.replace("\\", "/")
+    storage_path = f"{uid}/{slug}/{rel}"
+
+    try:
+        result = _supa_client().storage.from_("raw-files").create_signed_url(storage_path, 3600)
+        signed_url = (result or {}).get("signedURL") or (result or {}).get("signedUrl")
+        if signed_url:
+            return RedirectResponse(url=signed_url)
+    except Exception:
+        pass
+
+    # Fallback: local filesystem
+    try:
+        target = _resolve_module_file(module_name, path)
+        media_type = _MEDIA_TYPES.get(target.suffix.lower(), "application/octet-stream")
+        return FileResponse(
+            target,
+            media_type=media_type,
+            filename=target.name,
+            headers={"Content-Disposition": f'inline; filename="{target.name}"'},
+        )
+    except HTTPException:
+        raise HTTPException(status_code=404, detail="Datei nicht gefunden.")
 
 
 @app.delete("/modules/{module_name}/file")
 def delete_module_file(module_name: str, path: str):
-    """
-    Delete a single file from a module: removes the raw file, its chunks JSONL,
-    its embeddings from Chroma, and its parsed JSON. Path-traversal guarded.
-    """
-    target = _resolve_module_file(module_name, path)
-    target_norm = str(target).replace("\\", "/").lower()
+    """Delete a single file from a module (Supabase Storage + DB + pgvector)."""
+    uid = _supa_uid()
+    supa = _supa_client()
+    slug = _slug(sanitize_module_name(module_name))
+    profile = mp.load(module_name) or {}
 
-    # 1) Find chunks JSONL files whose first chunk's metadata.source matches.
-    matched_chunk_files = []
-    chunks_dir = config["processed_path"] / "chunks"
-    if chunks_dir.exists():
-        for jsonl in chunks_dir.glob("*.jsonl"):
-            try:
-                first = jsonl.read_text(encoding="utf-8").splitlines()[0]
-                chunk = json.loads(first)
-                src = chunk.get("metadata", {}).get("source", "") or chunk.get("source", "")
-                if src and src.replace("\\", "/").lower() == target_norm:
-                    matched_chunk_files.append(jsonl)
-            except Exception:
-                pass
+    # Find the file record in DB
+    file_record = None
+    if profile.get("id"):
+        try:
+            rows = (
+                supa.table("files")
+                .select("id, file_name, storage_path, relative_path")
+                .eq("module_id", profile["id"])
+                .eq("relative_path", path.replace("\\", "/"))
+                .execute()
+            ).data or []
+            file_record = rows[0] if rows else None
+        except Exception:
+            pass
 
-    # 2) Collect Chroma chunk-IDs whose source-metadata matches this file.
-    chroma_ids_to_delete = []
+    deleted_name = Path(path).name
+    embeddings_removed = 0
+
+    # 1) Delete embeddings in pgvector by source metadata
     try:
-        # Scope by module first to avoid scanning the whole index.
-        scoped = vector_store.collection.get(where={"module_name": sanitize_module_name(module_name)})
-        for cid, meta in zip(scoped.get("ids", []), scoped.get("metadatas", [])):
-            src = (meta or {}).get("source", "")
-            if src and src.replace("\\", "/").lower() == target_norm:
-                chroma_ids_to_delete.append(cid)
-        # Fallback for legacy chunks without module_name in metadata.
-        if not chroma_ids_to_delete:
-            unscoped = vector_store.collection.get()
-            for cid, meta in zip(unscoped.get("ids", []), unscoped.get("metadatas", [])):
-                src = (meta or {}).get("source", "")
-                if src and src.replace("\\", "/").lower() == target_norm:
-                    chroma_ids_to_delete.append(cid)
+        scoped = vector_store.get(where={"module_name": sanitize_module_name(module_name)})
+        ids_to_del = [
+            cid for cid, meta in zip(scoped.get("ids", []), scoped.get("metadatas", []))
+            if (meta or {}).get("source", "").replace("\\", "/").endswith(path.replace("\\", "/"))
+        ]
+        if ids_to_del:
+            vector_store.delete(ids=ids_to_del)
+            embeddings_removed = len(ids_to_del)
     except Exception:
         pass
 
-    # 3) Now actually delete: file → chunks files → embeddings → parsed JSON.
-    deleted_name = target.name
+    # 2) Delete file record from DB
+    if file_record:
+        try:
+            supa.table("files").delete().eq("id", file_record["id"]).execute()
+        except Exception:
+            pass
+
+    # 3) Delete from Supabase Storage
+    storage_path = (file_record or {}).get("storage_path") or f"{uid}/{slug}/{path.replace(chr(92), '/')}"
     try:
-        target.unlink()
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Datei konnte nicht gelöscht werden: {exc}")
+        supa.storage.from_("raw-files").remove([storage_path])
+    except Exception:
+        pass
 
-    for jf in matched_chunk_files:
-        try: jf.unlink()
-        except Exception: pass
-
-    if chroma_ids_to_delete:
-        try: vector_store.delete(ids=chroma_ids_to_delete)
-        except Exception: pass
-
-    parsed_dir = config["processed_path"] / "parsed"
-    if parsed_dir.exists():
-        safe_stem = _glob.escape(target.stem.replace(" ", "_"))
-        for jf in parsed_dir.glob(f"{safe_stem}_*.json"):
-            try: jf.unlink()
-            except Exception: pass
+    # 4) Local filesystem cleanup (best-effort)
+    try:
+        local = _resolve_module_file(module_name, path)
+        local.unlink(missing_ok=True)
+    except Exception:
+        pass
 
     return {
         "success": True,
         "deleted": deleted_name,
-        "chunks_files_removed": len(matched_chunk_files),
-        "embeddings_removed": len(chroma_ids_to_delete),
+        "chunks_files_removed": 0,
+        "embeddings_removed": embeddings_removed,
     }
 
 
 @app.post("/modules/{module_name}/file/exam-flag")
 def toggle_exam_flag(module_name: str, path: str):
-    """Toggle the manual exam-flag for a single file (overrides auto-detection)."""
-    target = _resolve_module_file(module_name, path)
-    rel = str(target.relative_to(module_dir(module_name).resolve()))
-
+    """Toggle the manual exam-flag for a single file."""
+    rel = path.replace("\\", "/")
     profile = mp.load(module_name)
     if not profile:
         profile = mp.create_from_onboarding({
-            "name": module_name,
-            "schwerpunkte": [],
-            "stil": "mixed",
-            "pruefungsrelevant": [],
+            "name": module_name, "schwerpunkte": [], "stil": "mixed", "pruefungsrelevant": [],
         })
 
     auto_detected = bool(EXAM_FILE_PATTERN.search(rel))
@@ -516,14 +650,23 @@ def toggle_exam_flag(module_name: str, path: str):
     profile["manual_exam_files"] = manual_exam
     profile["manual_not_exam_files"] = manual_not_exam
     mp.save(profile)
+
+    # Also update is_exam in files table
+    if profile.get("id"):
+        try:
+            _supa_client().table("files").update({"is_exam": desired}).eq(
+                "module_id", profile["id"]
+            ).eq("relative_path", rel).execute()
+        except Exception:
+            pass
+
     return {"success": True, "is_exam": desired}
 
 
 @app.patch("/modules/{module_name}/file/type")
 def set_file_type(module_name: str, body: FileTypeRequest):
     """Persist the semantic category of a file (klausur/übungsblatt/vorlesung/sonstiges)."""
-    target = _resolve_module_file(module_name, body.path)
-    rel = str(target.relative_to(module_dir(module_name).resolve())).replace("\\", "/")
+    rel = body.path.replace("\\", "/")
 
     profile = mp.load(module_name)
     if not profile:
@@ -554,6 +697,17 @@ def set_file_type(module_name: str, body: FileTypeRequest):
     profile["manual_exam_files"] = manual_exam
     profile["manual_not_exam_files"] = manual_not_exam
     mp.save(profile)
+
+    # Update file_category and is_exam in files table
+    if profile.get("id"):
+        try:
+            _supa_client().table("files").update({
+                "file_category": body.file_type if body.file_type != "sonstiges" else None,
+                "is_exam": body.file_type == "klausur",
+            }).eq("module_id", profile["id"]).eq("relative_path", rel).execute()
+        except Exception:
+            pass
+
     return {"success": True, "file_type": body.file_type}
 
 
@@ -615,18 +769,35 @@ _PENDING_ROADMAPS: dict = {}
 
 
 def _collect_exam_text(module_name: str) -> List[str]:
-    """Parse all files marked as exam into plain text (for exam_analyzer)."""
+    """Parse all files marked as exam into plain text.
+    Downloads from Supabase Storage to a temp file, then parses."""
+    import tempfile as _tf
     texts: List[str] = []
     for f in list_module_files(module_name):
         if not f.get("is_exam"):
             continue
         try:
-            target = _resolve_module_file(module_name, f["relative_path"])
-            parsed = parse_document(target)
-            if parsed.success and parsed.extracted_text:
-                texts.append(parsed.extracted_text)
+            storage_path = f.get("storage_path")
+            if storage_path:
+                raw = _supa_client().storage.from_("raw-files").download(storage_path)
+                suffix = Path(f["file_name"]).suffix
+                with _tf.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                    tmp.write(raw)
+                    tmp_path = Path(tmp.name)
+                try:
+                    parsed = parse_document(tmp_path)
+                    if parsed.success and parsed.extracted_text:
+                        texts.append(parsed.extracted_text)
+                finally:
+                    tmp_path.unlink(missing_ok=True)
+            else:
+                # Fallback: local filesystem
+                target = _resolve_module_file(module_name, f["relative_path"])
+                parsed = parse_document(target)
+                if parsed.success and parsed.extracted_text:
+                    texts.append(parsed.extracted_text)
         except Exception as exc:
-            print(f"[roadmap] could not parse exam file {f['name']}: {exc}")
+            print(f"[collect_exam_text] could not parse {f['name']}: {exc}")
     return texts
 
 
@@ -806,16 +977,35 @@ def roadmap_delete(module_name: str):
 
 @app.get("/modules/{module_name}/text")
 def get_module_text(module_name: str, path: str):
-    """Return extracted plain text for the file (re-parsed live; ~100 ms for PDFs)."""
-    target = _resolve_module_file(module_name, path)
-    parsed = parse_document(target)
-    if not parsed.success:
-        raise HTTPException(status_code=422, detail=f"Datei konnte nicht gelesen werden: {parsed.error_message}")
-    return {
-        "file_name": target.name,
-        "file_type": parsed.file_type,
-        "text": parsed.extracted_text,
-    }
+    """Return extracted plain text (downloads from Supabase Storage, parses in temp file)."""
+    uid = _supa_uid()
+    slug = _slug(sanitize_module_name(module_name))
+    rel = path.replace("\\", "/")
+    storage_path = f"{uid}/{slug}/{rel}"
+    file_name = Path(rel).name
+
+    try:
+        raw = _supa_client().storage.from_("raw-files").download(storage_path)
+        suffix = Path(file_name).suffix
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(raw)
+            tmp_path = Path(tmp.name)
+        try:
+            parsed = parse_document(tmp_path)
+        finally:
+            tmp_path.unlink(missing_ok=True)
+        if not parsed.success:
+            raise HTTPException(status_code=422, detail=f"Datei konnte nicht gelesen werden: {parsed.error_message}")
+        return {"file_name": file_name, "file_type": parsed.file_type, "text": parsed.extracted_text}
+    except HTTPException:
+        raise
+    except Exception:
+        # Fallback: local filesystem
+        target = _resolve_module_file(module_name, path)
+        parsed = parse_document(target)
+        if not parsed.success:
+            raise HTTPException(status_code=422, detail=f"Datei konnte nicht gelesen werden: {parsed.error_message}")
+        return {"file_name": target.name, "file_type": parsed.file_type, "text": parsed.extracted_text}
 
 
 @app.post("/modules/upload")
@@ -825,19 +1015,28 @@ async def upload_module(
     paths: Optional[str] = Form(None),
 ):
     clean_module = sanitize_module_name(module_name)
-    target_dir = module_dir(clean_module)
-    target_dir.mkdir(parents=True, exist_ok=True)
 
     if not files:
         raise HTTPException(status_code=400, detail="Keine Dateien uebergeben.")
 
-    # Optional JSON array of relative paths (one per file, preserves folder structure)
     rel_paths: list = []
     if paths:
         try:
             rel_paths = json.loads(paths)
         except Exception:
             rel_paths = []
+
+    # Ensure module exists in DB (create minimal profile if needed)
+    profile = mp.load(clean_module)
+    if not profile:
+        profile = mp.create_from_onboarding({
+            "name": clean_module, "schwerpunkte": [], "stil": "mixed", "pruefungsrelevant": [],
+        })
+    module_id = profile.get("id") if profile else None
+
+    uid = _supa_uid()
+    slug = _slug(clean_module)
+    supa = _supa_client()
 
     saved_paths: List[Path] = []
     skipped_files: List[str] = []
@@ -851,15 +1050,53 @@ async def upload_module(
         else:
             save_rel = Path(Path(uploaded.filename).name)
 
-        target_path = target_dir / save_rel
-        if not is_supported(target_path):
+        if not is_supported(save_rel):
             skipped_files.append(uploaded.filename)
             continue
 
-        target_path.parent.mkdir(parents=True, exist_ok=True)
         content = await uploaded.read()
-        with open(target_path, "wb") as handle:
-            handle.write(content)
+        rel_str = str(save_rel).replace("\\", "/")
+        storage_path = f"{uid}/{slug}/{rel_str}"
+        file_type = save_rel.suffix.lower().lstrip(".")
+
+        # Upload to Supabase Storage raw-files bucket
+        try:
+            supa.storage.from_("raw-files").upload(
+                storage_path, content,
+                {"content-type": "application/octet-stream", "x-upsert": "true"},
+            )
+        except Exception:
+            try:
+                supa.storage.from_("raw-files").update(
+                    storage_path, content, {"content-type": "application/octet-stream"}
+                )
+            except Exception as exc:
+                skipped_files.append(uploaded.filename)
+                continue
+
+        # Record in files table
+        content_hash = hashlib.sha256(content).hexdigest()
+        if module_id:
+            try:
+                supa.table("files").upsert({
+                    "user_id":      uid,
+                    "module_id":    module_id,
+                    "file_name":    save_rel.name,
+                    "relative_path": rel_str,
+                    "storage_path": storage_path,
+                    "file_type":    file_type,
+                    "file_size":    len(content),
+                    "content_hash": content_hash,
+                    "is_exam":      bool(EXAM_FILE_PATTERN.search(rel_str)),
+                }, on_conflict="module_id,relative_path").execute()
+            except Exception as exc:
+                print(f"[upload] files table upsert failed for {rel_str}: {exc}")
+
+        # Also save to local disk for processing pipeline
+        target_dir = module_dir(clean_module)
+        target_path = target_dir / save_rel
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_bytes(content)
         saved_paths.append(target_path)
 
     if not saved_paths:
@@ -937,9 +1174,6 @@ async def lecture_summarize(body: LectureSummarizeRequest):
     Erstellt eine Vorlesungszusammenfassung (Zwei-Stufen-Generierung).
     Prüft zuerst ob Modul-Profil vorhanden – wenn nicht, needs_onboarding=True.
     """
-    from app.lecture import module_profile as mp
-    from app.lecture.summarizer import summarize
-
     # Modul-Profil prüfen
     profile = mp.load(body.module_name)
     if not profile:
@@ -951,11 +1185,30 @@ async def lecture_summarize(body: LectureSummarizeRequest):
             "saved_to": "",
         }
 
-    # Datei finden und parsen
-    file_path = _find_file(body.module_name, body.filename)
-    parsed = parse_document(file_path)
-    if not parsed.success:
-        raise HTTPException(status_code=422, detail=f"Datei konnte nicht gelesen werden: {parsed.error_message}")
+    # Datei parsen — versuche zuerst Supabase Storage, dann lokal
+    uid = _supa_uid()
+    slug = _slug(sanitize_module_name(body.module_name))
+    parsed = None
+    try:
+        storage_path = f"{uid}/{slug}/{body.filename}"
+        raw = _supa_client().storage.from_("raw-files").download(storage_path)
+        suffix = Path(body.filename).suffix
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(raw)
+            tmp_path = Path(tmp.name)
+        try:
+            parsed = parse_document(tmp_path)
+        finally:
+            tmp_path.unlink(missing_ok=True)
+    except Exception:
+        try:
+            file_path = _find_file(body.module_name, body.filename)
+            parsed = parse_document(file_path)
+        except Exception:
+            pass
+
+    if not parsed or not parsed.success:
+        raise HTTPException(status_code=422, detail=f"Datei konnte nicht gelesen werden.")
 
     # Zwei-Stufen-Zusammenfassung
     result = summarize(body.module_name, parsed.extracted_text)
@@ -977,8 +1230,6 @@ async def lecture_summarize(body: LectureSummarizeRequest):
 @app.post("/lecture/onboarding")
 def lecture_onboarding(body: LectureOnboardingRequest):
     """Speichert Modul-Profil nach Onboarding-Flow in der UI."""
-    from app.lecture import module_profile as mp
-
     profile = mp.create_from_onboarding({
         "name": body.module_name,
         "schwerpunkte": body.schwerpunkte,
@@ -991,46 +1242,40 @@ def lecture_onboarding(body: LectureOnboardingRequest):
 @app.get("/lecture/summaries/{module_name}")
 def get_lecture_summaries(module_name: str):
     """Listet alle gespeicherten Zusammenfassungen eines Moduls."""
-    slug = _slug(module_name)
-    summaries_dir = Path("data/processed/summaries") / slug
-
-    if not summaries_dir.exists():
-        return {"summaries": []}
-
-    summaries = []
-    for md_file in sorted(summaries_dir.glob("*.md"), reverse=True):
-        content = md_file.read_text(encoding="utf-8")
-        # Titel aus erster H1-Zeile
-        titel = md_file.stem.replace("-", " ").title()
-        for line in content.splitlines():
-            if line.startswith("# "):
-                titel = line[2:].strip()
-                break
-        summaries.append({
-            "titel": titel,
-            "date": md_file.stem[:10] if len(md_file.stem) >= 10 else "",
-            "path": str(md_file),
-            "preview": content[:200].replace("\n", " "),
-        })
-
-    return {"summaries": summaries}
+    try:
+        profile = mp.load(module_name)
+        if profile and profile.get("id"):
+            rows = (
+                _supa_client()
+                .table("summaries")
+                .select("title, storage_path, created_at")
+                .eq("module_id", profile["id"])
+                .order("created_at", desc=True)
+                .execute()
+            ).data or []
+            summaries = []
+            for r in rows:
+                summaries.append({
+                    "titel":   r.get("title") or r.get("storage_path", "").split("/")[-1],
+                    "date":    str(r.get("created_at", ""))[:10],
+                    "path":    r.get("storage_path", ""),
+                    "preview": "",
+                })
+            return {"summaries": summaries}
+    except Exception:
+        pass
+    return {"summaries": []}
 
 
 @app.get("/lecture/summary")
 def get_lecture_summary(path: str):
-    """Gibt Inhalt einer gespeicherten Zusammenfassung zurück."""
-    summary_path = Path(path)
-    # Sicherheits-Check: nur Dateien innerhalb data/processed/summaries
-    _summaries_root = (Path(__file__).parent.parent / "data/processed/summaries").resolve()
-    try:
-        summary_path.resolve().relative_to(_summaries_root)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ungültiger Pfad.")
-
-    if not summary_path.exists():
+    """Gibt Inhalt einer gespeicherten Zusammenfassung zurück (Supabase Storage)."""
+    from app.storage import storage_backend as sb
+    # path is the storage_path returned by summaries listing
+    content = sb.read_text(path)
+    if content is None:
         raise HTTPException(status_code=404, detail="Zusammenfassung nicht gefunden.")
-
-    return {"content": summary_path.read_text(encoding="utf-8")}
+    return {"content": content}
 
 
 @app.post("/solve-sheet")
@@ -1059,13 +1304,12 @@ async def solve_sheet(body: SolveSheetRequest):
             ]
         md_content = "\n".join(md_lines)
 
-        sheet_dir = Path("data/processed/solved_sheets") / _slug(body.module_id)
-        sheet_dir.mkdir(parents=True, exist_ok=True)
+        from app.storage import storage_backend as sb
         sheet_hash = hashlib.md5(body.sheet_text.encode()).hexdigest()[:8]
-        sheet_path = sheet_dir / f"{_date.today()}_{sheet_hash}.md"
-        sheet_path.write_text(md_content, encoding="utf-8")
+        storage_path = f"{_slug(body.module_id)}/solved_sheets/{_date.today()}_{sheet_hash}.md"
+        sb.write_text(storage_path, md_content)
 
-        await asyncio.to_thread(_index_generated_content, md_content, str(sheet_path), body.module_id)
+        await asyncio.to_thread(_index_generated_content, md_content, storage_path, body.module_id)
     except Exception as exc:
         print(f"[solve_sheet] Speichern/Indizieren fehlgeschlagen (nicht fatal): {exc}")
 
@@ -1091,86 +1335,60 @@ def delete_module(module_name: str):
     """Löscht einen Kurs inkl. Dateien, Chunks, Embeddings und Profil."""
     clean_name = sanitize_module_name(module_name)
     slug = _slug(clean_name)
-    clean_lower = clean_name.lower()
+    uid = _supa_uid()
+    supa = _supa_client()
 
-    # 1. OCR-Cache-Dateien löschen (vor raw, solange Dateinamen noch bekannt sind)
-    ocr_cache_dir = Path("data/processed/ocr")
-    raw = module_dir(clean_name)
-    if raw.exists() and ocr_cache_dir.exists():
-        for f in raw.rglob("*"):
-            if f.is_file():
-                cache_file = ocr_cache_dir / f"{f.stem}.ocr.json"
-                if cache_file.exists():
-                    try:
-                        cache_file.unlink()
-                    except Exception:
-                        pass
-
-    # 2. Raw-Dateien löschen
-    if raw.exists():
-        shutil.rmtree(raw)
-
-    # 3. Intake-Dateien löschen
-    intake_dir = config["raw_path"].parent / "intake" / clean_name
-    if intake_dir.exists():
-        shutil.rmtree(intake_dir)
-
-    # 4. ChromaDB-Embeddings löschen
+    # 1. Delete module from DB (cascades to files, documents, chunks, summaries, exams)
     try:
-        results = vector_store.collection.get(where={"module_name": clean_name})
-        if results and results.get("ids"):
-            vector_store.delete(ids=results["ids"])
+        profile = mp.load(clean_name)
+        if profile and profile.get("id"):
+            supa.table("modules").delete().eq("id", profile["id"]).execute()
     except Exception:
         pass
 
-    # 5. JSONL-Chunk-Dateien löschen (case-insensitiv)
+    # 2. Delete pgvector chunks
+    try:
+        vector_store.delete(where={"module_name": clean_name})
+    except Exception:
+        pass
+
+    # 3. Delete Storage files (raw-files bucket)
+    try:
+        raw_prefix = f"{uid}/{slug}/"
+        items = supa.storage.from_("raw-files").list(f"{uid}/{slug}")
+        for item in (items or []):
+            name = item.get("name", "")
+            if name:
+                supa.storage.from_("raw-files").remove([f"{uid}/{slug}/{name}"])
+    except Exception:
+        pass
+
+    # 4. Delete processed Storage files
+    try:
+        from app.storage import storage_backend as sb
+        for suffix in ["roadmap.md", "daily_plan.md", "task_history.json"]:
+            sb.delete(f"{slug}/{suffix}")
+    except Exception:
+        pass
+
+    # 5. Local filesystem cleanup (best-effort)
+    raw = module_dir(clean_name)
+    if raw.exists():
+        shutil.rmtree(raw, ignore_errors=True)
+
     chunks_dir = config["processed_path"] / "chunks"
+    clean_lower = clean_name.lower()
     if chunks_dir.exists():
         for jsonl in list(chunks_dir.glob("*.jsonl")):
             try:
                 first_line = jsonl.read_text(encoding="utf-8").splitlines()[0]
                 chunk = json.loads(first_line)
                 meta = chunk.get("metadata", {})
-                src = meta.get("source", chunk.get("source", ""))
                 module_name_meta = meta.get("module_name", "")
-                if (module_name_meta.lower() == clean_lower or
-                        any(p.lower() == clean_lower for p in Path(src).parts)):
+                if module_name_meta.lower() == clean_lower:
                     jsonl.unlink()
             except Exception:
                 pass
-
-    # 6. Geparste Dokumente löschen (case-insensitiv)
-    parsed_dir = config["processed_path"] / "parsed"
-    if parsed_dir.exists():
-        for jf in list(parsed_dir.glob("*.json")):
-            try:
-                data = json.loads(jf.read_text(encoding="utf-8"))
-                if data.get("module_name", "").lower() == clean_lower:
-                    jf.unlink()
-            except Exception:
-                pass
-
-    # 7. Zusammenfassungen löschen
-    summaries_dir = Path("data/processed/summaries") / slug
-    if summaries_dir.exists():
-        shutil.rmtree(summaries_dir)
-
-    # 8. Daily-Tasks löschen
-    daily_tasks_dir = Path("data/processed/daily_tasks") / slug
-    if daily_tasks_dir.exists():
-        shutil.rmtree(daily_tasks_dir)
-
-    # 9. Modul-Profil löschen
-    modules_dir = Path("data/modules")
-    for fname in [f"{slug}.json", f"{slug}-exam-profile.md", f"{slug}-history.md"]:
-        f = modules_dir / fname
-        if f.exists():
-            f.unlink()
-
-    # 10. Roadmap löschen
-    roadmap_dir = Path("data/processed/roadmaps") / slug
-    if roadmap_dir.exists():
-        shutil.rmtree(roadmap_dir)
 
     return {"success": True, "deleted": clean_name}
 
@@ -1398,7 +1616,6 @@ def daily_review(module_name: str, count: int = 2):
 def daily_history_delete(module_name: str):
     """Delete the completed-task history for a module."""
     clean = sanitize_module_name(module_name)
-    p = dt.task_history_path(clean)
-    if p.exists():
-        p.unlink()
+    from app.storage import storage_backend as sb
+    sb.delete(dt.task_history_path(clean))
     return {"success": True}

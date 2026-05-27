@@ -1,6 +1,8 @@
 # Core
 python-dotenv>=1.0.0
 ftfy>=6.2.0
+supabase>=2.4.0
+PyJWT[crypto]>=2.8.0
 
 # Document parsing
 pypdf>=3.17.0

@@ -20,7 +20,7 @@ from app.parsing.parsers import parse_document, ParseResult
 from app.chunking.chunker import chunk_document, Chunk
 from app.storage.persister import save_parsed_document, save_chunks
 from app.embeddings.embedder import Embedder
-from app.vectorstore.chroma_db import ChromaVectorStore
+from app.vectorstore.pgvector_store import PgVectorStore
 from app.rag.query_service import create_query_service
 from app.lecture.pipeline import process_lecture
 
@@ -138,9 +138,9 @@ def load_chunks_for_indexing(processed_dir: Path) -> List[Dict[str, Any]]:
 
 
 def index_chunks(config: Dict[str, Any]) -> None:
-    """Index all chunks into ChromaDB using OpenAI embeddings."""
+    """Index all chunks into pgvector using OpenAI embeddings."""
     logger.info("-" * 50)
-    logger.info("Indexing chunks into ChromaDB...")
+    logger.info("Indexing chunks into pgvector...")
 
     chunks = load_chunks_for_indexing(config["processed_path"])
 
@@ -149,13 +149,10 @@ def index_chunks(config: Dict[str, Any]) -> None:
         return
 
     embedder = Embedder(model_name=config["embedding_model"])
-    vector_store = ChromaVectorStore(
-        persist_dir=config["chroma_path"],
-        collection_name="study_chunks"
-    )
+    vector_store = PgVectorStore()
 
-    # Only index chunks not already in Chroma
-    existing_ids = set(vector_store.collection.get()["ids"])
+    # Only index chunks not already in pgvector
+    existing_ids = set(vector_store.get()["ids"])
     new_chunks = [c for c in chunks if c["chunk_id"] not in existing_ids]
 
     if not new_chunks:
@@ -166,7 +163,7 @@ def index_chunks(config: Dict[str, Any]) -> None:
     texts = [c["chunk_text"] for c in new_chunks]
     embeddings = embedder.embed_batch(texts)
 
-    BATCH_SIZE = 500
+    BATCH_SIZE = 100
     for i in range(0, len(new_chunks), BATCH_SIZE):
         batch_chunks = new_chunks[i:i+BATCH_SIZE]
         batch_embeddings = embeddings[i:i+BATCH_SIZE]
@@ -186,7 +183,7 @@ def index_chunks(config: Dict[str, Any]) -> None:
         )
         logger.info(f"Indexed batch {i//BATCH_SIZE + 1} ({min(i+BATCH_SIZE, len(new_chunks))}/{len(new_chunks)})")
 
-    logger.info(f"Done — {vector_store.count()} total documents in ChromaDB")
+    logger.info(f"Done — {vector_store.count()} total chunks in pgvector")
 
 
 def run_pipeline(config: Dict[str, Any]) -> None:
@@ -218,10 +215,7 @@ def run_pipeline(config: Dict[str, Any]) -> None:
 def ask_question(config: Dict[str, Any], question: str) -> None:
     """Ask a question using the RAG system."""
     embedder = Embedder(model_name=config["embedding_model"])
-    vector_store = ChromaVectorStore(
-        persist_dir=config["chroma_path"],
-        collection_name="study_chunks"
-    )
+    vector_store = PgVectorStore()
     rag = create_query_service(
         vector_store=vector_store,
         embedder=embedder,

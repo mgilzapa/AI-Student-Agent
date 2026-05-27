@@ -6,7 +6,6 @@ Nutzt einen einzigen Claude-API-Call pro Klausur-Batch.
 
 import json
 import re
-from pathlib import Path
 from openai import OpenAI
 
 from . import module_profile as mp
@@ -75,16 +74,15 @@ def analyze(modul_name: str, klausur_texts: list[str]) -> str:
 
     exam_profile_md = _render_exam_profile(profile["name"], n, data)
 
-    # Speichern
-    exam_path = Path(profile["exam_profile"])
-    exam_path.parent.mkdir(parents=True, exist_ok=True)
-    exam_path.write_text(exam_profile_md, encoding="utf-8")
+    # Save exam_profile_md into the modules table
+    profile["exam_profile"] = exam_profile_md
+    mp.save(profile)
 
     # pruefungsrelevant im Profil aktualisieren
     top_topics = [t["name"] for t in data.get("themen", []) if t.get("relevanz") == "hoch"]
     mp.update_exam_topics(profile["slug"], top_topics)
 
-    return str(exam_path)
+    return exam_profile_md
 
 
 def _render_exam_profile(modul: str, n: int, data: dict) -> str:
