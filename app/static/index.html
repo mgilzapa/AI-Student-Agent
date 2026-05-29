@@ -374,7 +374,8 @@
     opacity: 0; transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
   }
   .existing-module:hover .delete-module-btn,
-  .existing-module:hover .star-module-btn { opacity: 1; }
+  .existing-module:hover .star-module-btn,
+  .featured-card:hover .delete-module-btn { opacity: 1; }
   .delete-module-btn:hover { background: rgba(220,38,38,0.1) !important; color: var(--danger) !important; border-color: rgba(220,38,38,0.28) !important; }
 
   .star-module-btn {
@@ -1565,15 +1566,6 @@
   .tagesplan-hours-input {
     width: 70px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
     padding: 5px 8px; font-size: 0.85rem; color: var(--text); font-family: 'JetBrains Mono', monospace;
-  }
-  .tagesplan-mode { display: flex; gap: 6px; }
-  .tagesplan-mode-btn {
-    background: transparent; border: 1px solid var(--border); border-radius: 8px;
-    padding: 5px 12px; font-size: 0.78rem; color: var(--muted); font-family: inherit;
-    cursor: pointer; transition: all 0.15s ease;
-  }
-  .tagesplan-mode-btn.active {
-    background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
   }
   .tagesplan-generate-btn {
     background: var(--accent); border: 1px solid var(--accent);
@@ -2839,6 +2831,9 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <span class="rail-files-header-label" data-i18n="files-label">Dateien</span>
                 <div class="rail-files-actions">
+                  <button class="file-action-btn" id="new-folder-btn" type="button" title="Ordner erstellen" style="width:22px;height:22px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                  </button>
                   <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="width:22px;height:22px;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   </button>
@@ -2857,7 +2852,7 @@
           <div class="rail-profile" id="rail-profile">
             <!-- Popup menu (appears above on click) -->
             <div class="rail-profile-menu" id="rail-profile-menu" role="menu" aria-label="Profileinstellungen">
-              <div class="rail-profile-menu-email">gzapatamiguel33@gmail.com</div>
+              <div class="rail-profile-menu-email" id="rail-profile-email">—</div>
               <button class="rail-profile-menu-item" type="button" role="menuitem">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 <span data-i18n="settings">Einstellungen</span>
@@ -3351,10 +3346,12 @@
     const initial = name[0].toUpperCase();
     const displayName = name.split('@')[0];
     // Sidebar (Workspace-Screen)
-    const avatarEl = document.querySelector('.rail-profile-avatar');
-    const nameEl   = document.querySelector('.rail-profile-name');
+    const avatarEl  = document.querySelector('.rail-profile-avatar');
+    const nameEl    = document.querySelector('.rail-profile-name');
+    const emailEl   = document.getElementById('rail-profile-email');
     if (avatarEl) avatarEl.textContent = initial;
     if (nameEl)   nameEl.textContent   = displayName;
+    if (emailEl)  emailEl.textContent  = user.email || '';
     // Setup-Screen Profilbutton
     const setupAvatarEl = document.getElementById('setup-profile-avatar');
     const setupNameEl   = document.getElementById('setup-profile-display-name');
@@ -3374,9 +3371,8 @@
       document.getElementById('setup-profile-wrap')?.classList.add('visible');
       if (event === 'SIGNED_IN' && typeof loadModules === 'function') loadModules();
     } else {
-      // Nach Logout: Profilbutton ausblenden
-      document.getElementById('setup-profile-wrap')?.classList.remove('visible');
-      _showAuthScreen(false);
+      // Nach Logout: zur Landing Page weiterleiten
+      window.location.href = '/';
     }
   });
 
@@ -3394,7 +3390,7 @@
       const _oauthParams = new URLSearchParams(window.location.search);
       const _isOAuthRedirect = _oauthParams.has('code') || window.location.hash.includes('access_token');
       if (!_isOAuthRedirect) {
-        _showAuthScreen(false);
+        window.location.href = '/';
       }
       // If OAuth redirect: keep the loading spinner; onAuthStateChange handles the rest.
     }
@@ -3459,10 +3455,7 @@
   window._doSignOut = async function() {
     _authToken = null;
     try { await _sb.auth.signOut(); } catch(_) { /* ignore network errors */ }
-    // Manually reset UI in case onAuthStateChange is slow or doesn't fire
-    document.getElementById('setup-profile-wrap')?.classList.remove('visible');
-    _applyAuthMode('login');
-    _showAuthScreen(false);
+    window.location.href = '/';
   };
 
   // Logout buttons
@@ -3571,8 +3564,7 @@ const TRANSLATIONS = {
     'rm-stat-phases':'Phasen','rm-todo-label':'offen',
     'daily-tab-name':'Tagesplan','daily-title-prefix':'Tagesplan · ',
     'daily-progress-fmt':'{done}/{total} erledigt','daily-hours-label':'Lernzeit heute:',
-    'daily-mode-konkret':'Konkret','daily-mode-grob':'Grob',
-    'daily-generate-btn':'✦ Tagesplan generieren','daily-generating':'... wird generiert',
+        'daily-generate-btn':'✦ Tagesplan generieren','daily-generating':'... wird generiert',
     'daily-clear-history':'Verlauf löschen','daily-clear-history-title':'Erledigten Task-Verlauf löschen',
     'daily-empty-hint':'Noch kein Tagesplan erstellt. Klick auf „✦ Tagesplan generieren".',
     'daily-review-divider':'— Wiederholung —','daily-gen-error':'❌ Tagesplan-Generierung fehlgeschlagen:',
@@ -3691,8 +3683,7 @@ const TRANSLATIONS = {
     'rm-stat-phases':'Phases','rm-todo-label':'open',
     'daily-tab-name':'Daily Plan','daily-title-prefix':'Daily Plan · ',
     'daily-progress-fmt':'{done}/{total} done','daily-hours-label':'Study time today:',
-    'daily-mode-konkret':'Concrete','daily-mode-grob':'Rough',
-    'daily-generate-btn':'✦ Generate daily plan','daily-generating':'... generating',
+        'daily-generate-btn':'✦ Generate daily plan','daily-generating':'... generating',
     'daily-clear-history':'Clear history','daily-clear-history-title':'Delete completed task history',
     'daily-empty-hint':'No daily plan created yet. Click "✦ Generate daily plan".',
     'daily-review-divider':'— Review —','daily-gen-error':'❌ Daily plan generation failed:',
@@ -3811,8 +3802,7 @@ const TRANSLATIONS = {
     'rm-stat-phases':'Fases','rm-todo-label':'abierto',
     'daily-tab-name':'Plan diario','daily-title-prefix':'Plan diario · ',
     'daily-progress-fmt':'{done}/{total} completadas','daily-hours-label':'Tiempo de estudio hoy:',
-    'daily-mode-konkret':'Concreto','daily-mode-grob':'General',
-    'daily-generate-btn':'✦ Generar plan diario','daily-generating':'... generando',
+        'daily-generate-btn':'✦ Generar plan diario','daily-generating':'... generando',
     'daily-clear-history':'Borrar historial','daily-clear-history-title':'Eliminar historial de tareas completadas',
     'daily-empty-hint':'Aún no se ha creado un plan diario. Haz clic en «✦ Generar plan diario».',
     'daily-review-divider':'— Repaso —','daily-gen-error':'❌ Error al generar el plan diario:',
@@ -3931,8 +3921,7 @@ const TRANSLATIONS = {
     'rm-stat-phases':'Phases','rm-todo-label':'ouvert',
     'daily-tab-name':'Plan quotidien','daily-title-prefix':'Plan quotidien · ',
     'daily-progress-fmt':'{done}/{total} terminé','daily-hours-label':'Temps d\'étude aujourd\'hui :',
-    'daily-mode-konkret':'Concret','daily-mode-grob':'Général',
-    'daily-generate-btn':'✦ Générer le plan quotidien','daily-generating':'... en cours de génération',
+        'daily-generate-btn':'✦ Générer le plan quotidien','daily-generating':'... en cours de génération',
     'daily-clear-history':'Effacer l\'historique','daily-clear-history-title':'Supprimer l\'historique des tâches terminées',
     'daily-empty-hint':'Aucun plan quotidien créé. Clique sur « ✦ Générer le plan quotidien ».',
     'daily-review-divider':'— Révision —','daily-gen-error':'❌ Échec de la génération du plan quotidien :',
@@ -4009,7 +3998,6 @@ function applyI18n(lang) {
 const state = {
   moduleName: '',
   dailyPlan: null,
-  dailyMode: 'konkret',
   dailyReview: [],
   selectedFiles: [],
   isUploading: false,
@@ -5254,12 +5242,6 @@ function _renderDailyTopbar(container) {
       <input class="tagesplan-hours-input" id="tp-hours" type="number"
              min="0.5" max="12" step="0.5"
              value="${plan ? escHtml(String(plan.daily_hours || 2.0)) : '2.0'}">
-      <div class="tagesplan-mode">
-        <button class="tagesplan-mode-btn ${state.dailyMode === 'konkret' ? 'active' : ''}"
-                id="tp-mode-konkret">${t('daily-mode-konkret')}</button>
-        <button class="tagesplan-mode-btn ${state.dailyMode === 'grob' ? 'active' : ''}"
-                id="tp-mode-grob">${t('daily-mode-grob')}</button>
-      </div>
       <button class="tagesplan-generate-btn" id="tp-generate" ${canGenerate ? '' : 'disabled'}>
         ${t('daily-generate-btn')}
       </button>
@@ -5269,16 +5251,6 @@ function _renderDailyTopbar(container) {
     </div>
   `;
 
-  container.querySelector('#tp-mode-konkret').addEventListener('click', () => {
-    state.dailyMode = 'konkret';
-    container.querySelector('#tp-mode-konkret').classList.add('active');
-    container.querySelector('#tp-mode-grob').classList.remove('active');
-  });
-  container.querySelector('#tp-mode-grob').addEventListener('click', () => {
-    state.dailyMode = 'grob';
-    container.querySelector('#tp-mode-grob').classList.add('active');
-    container.querySelector('#tp-mode-konkret').classList.remove('active');
-  });
   container.querySelector('#tp-generate').addEventListener('click', generateDailyPlan);
   container.querySelector('#tp-clear-history').addEventListener('click', clearDailyHistory);
 }
@@ -5375,7 +5347,7 @@ async function generateDailyPlan() {
     const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: state.dailyMode, daily_hours }),
+      body: JSON.stringify({ daily_hours }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -6071,8 +6043,12 @@ function closeTab(path, paneIdx, ev) {
     const next = pane.tabs[Math.min(idx, pane.tabs.length - 1)];
     pane.activeTab = next ? next.path : '';
   }
-  // Auto-collapse split if right pane becomes empty
+  // Auto-collapse split if a pane becomes empty
   if (paneIdx === 1 && pane.tabs.length === 0) {
+    state.panes[1] = null;
+    state.focusedPane = 0;
+  } else if (paneIdx === 0 && pane.tabs.length === 0) {
+    state.panes[0] = state.panes[1];
     state.panes[1] = null;
     state.focusedPane = 0;
   }
@@ -6844,6 +6820,15 @@ function renderFeaturedCard(moduleName, roadmap) {
     e.stopPropagation();
     loadModuleWorkspace(moduleName);
   });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'delete-module-btn';
+  delBtn.type = 'button';
+  delBtn.title = t('delete-course');
+  delBtn.textContent = '×';
+  delBtn.addEventListener('click', e => { e.stopPropagation(); deleteModule(moduleName); });
+  card.appendChild(delBtn);
+
   card.addEventListener('click', () => loadModuleWorkspace(moduleName));
   return card;
 }
@@ -7768,6 +7753,30 @@ document.getElementById('roadmap-btn').addEventListener('click', () => {
     addFolderInput.addEventListener('change', e => {
       addFilesToCurrentModule(e.target.files);
       addFolderInput.value = '';
+    });
+  }
+  const newFolderBtn = document.getElementById('new-folder-btn');
+  if (newFolderBtn) {
+    newFolderBtn.addEventListener('click', () => {
+      const panel = document.getElementById('files-panel');
+      if (!panel) return;
+      if (panel.querySelector('.folder-new-input')) return; // already open
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'folder-new-input';
+      inp.placeholder = 'Ordnername …';
+      panel.prepend(inp);
+      inp.focus();
+      const commit = () => {
+        const name = inp.value.trim();
+        inp.remove();
+        if (name && state.moduleName) createFolderConfig(state.moduleName, name);
+      };
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') commit();
+        else if (e.key === 'Escape') inp.remove();
+      });
+      inp.addEventListener('blur', commit);
     });
   }
 }

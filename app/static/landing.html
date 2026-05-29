@@ -722,8 +722,8 @@
     <div class="footer-col">
       <h4>Konto</h4>
       <ul>
-        <li><a href="#" onclick="openAuth(); return false;">Registrieren</a></li>
-        <li><a href="#" onclick="openAuth(); return false;">Anmelden</a></li>
+        <li><a href="#" onclick="openAuth('register'); return false;">Registrieren</a></li>
+        <li><a href="#" onclick="openAuth('login'); return false;">Anmelden</a></li>
         <li><a href="/app">Zur App</a></li>
       </ul>
     </div>
@@ -746,8 +746,10 @@
     </div>
     <div id="auth-msg" class="auth-msg"></div>
     <div class="auth-form">
+      <input class="auth-input" id="auth-name" type="text" placeholder="Name" autocomplete="name" style="display:none">
       <input class="auth-input" id="auth-email" type="email" placeholder="E-Mail" autocomplete="email">
       <input class="auth-input" id="auth-password" type="password" placeholder="Passwort" autocomplete="current-password">
+      <input class="auth-input" id="auth-password2" type="password" placeholder="Passwort bestätigen" autocomplete="new-password" style="display:none">
       <button class="auth-submit" id="auth-submit-btn" type="button">Anmelden</button>
       <p class="auth-toggle" id="auth-toggle-p">
         Noch kein Konto? <a id="auth-toggle-a" tabindex="0">Registrieren</a>
@@ -770,10 +772,12 @@
   // ── Modal open/close ─────────────────────────────
   let _hasSession = false;
 
-  function openAuth() {
+  function openAuth(mode) {
     if (_hasSession) { window.location.href = '/app'; return; }
+    if (mode === 'register' && !_isReg) { _isReg = true; _syncToggle(); }
+    else if (mode === 'login' && _isReg) { _isReg = false; _syncToggle(); }
     document.getElementById('auth-modal').classList.add('open');
-    setTimeout(() => document.getElementById('auth-email')?.focus(), 60);
+    setTimeout(() => document.getElementById(_isReg ? 'auth-name' : 'auth-email')?.focus(), 60);
   }
   function closeAuth() {
     document.getElementById('auth-modal').classList.remove('open');
@@ -804,7 +808,12 @@
   function _syncToggle() {
     const submitBtn = document.getElementById('auth-submit-btn');
     const toggleP   = document.getElementById('auth-toggle-p');
+    const nameField = document.getElementById('auth-name');
+    const pw2Field  = document.getElementById('auth-password2');
     submitBtn.textContent = _isReg ? 'Konto erstellen' : 'Anmelden';
+    nameField.style.display = _isReg ? '' : 'none';
+    pw2Field.style.display  = _isReg ? '' : 'none';
+    document.getElementById('auth-password').autocomplete = _isReg ? 'new-password' : 'current-password';
     toggleP.innerHTML = _isReg
       ? 'Bereits registriert? <a id="auth-toggle-a" tabindex="0">Anmelden</a>'
       : 'Noch kein Konto? <a id="auth-toggle-a" tabindex="0">Registrieren</a>';
@@ -825,9 +834,16 @@
     const pw    = document.getElementById('auth-password').value;
     if (!email || !pw) { _msg('Bitte E-Mail und Passwort eingeben.', 'error'); return; }
     if (pw.length < 8) { _msg('Passwort muss mindestens 8 Zeichen haben.', 'error'); return; }
+    if (_isReg) {
+      const name = document.getElementById('auth-name').value.trim();
+      const pw2  = document.getElementById('auth-password2').value;
+      if (!name) { _msg('Bitte Name eingeben.', 'error'); return; }
+      if (pw !== pw2) { _msg('Passwörter stimmen nicht überein.', 'error'); return; }
+    }
     _setLoading(true);
     if (_isReg) {
-      const { error } = await _sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: window.location.origin + '/app' } });
+      const name = document.getElementById('auth-name').value.trim();
+      const { error } = await _sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: window.location.origin + '/app', data: { full_name: name } } });
       _setLoading(false);
       if (error) _msg(error.message, 'error');
       else       _msg('✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.', 'success');
@@ -842,12 +858,15 @@
     if (!_sb) { _msg('Supabase nicht konfiguriert.', 'error'); return; }
     const { error } = await _sb.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/app' }
+      options: {
+        redirectTo: window.location.origin + '/app',
+        queryParams: { prompt: 'select_account' },
+      }
     });
     if (error) _msg(error.message, 'error');
   });
 
-  ['auth-email', 'auth-password'].forEach(id =>
+  ['auth-name', 'auth-email', 'auth-password', 'auth-password2'].forEach(id =>
     document.getElementById(id)?.addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('auth-submit-btn').click();
     })

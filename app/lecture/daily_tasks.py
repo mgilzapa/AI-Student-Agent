@@ -308,14 +308,16 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
 
 # ─────────────────────────── Archive ────────────────────────────────────────
 
-def archive_current_plan(module_name: str) -> Optional[Path]:
-    """Copy current_plan.md to YYYY-MM-DD.md. Returns archive path or None."""
-    src = current_plan_path(module_name)
-    if not src.exists():
+def archive_current_plan(module_name: str) -> Optional[str]:
+    """Copy daily_plan.md to YYYY-MM-DD.md in storage. Returns archive path or None."""
+    from app.storage import storage_backend as sb
+    content = load_plan(module_name)
+    if not content:
         return None
+    slug = _slug_for(module_name)
     today = date.today().isoformat()
-    archive_path = plan_dir(module_name) / f"{today}.md"
-    archive_path.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    archive_path = f"{slug}/{today}.md"
+    sb.write_text(archive_path, content)
     return archive_path
 
 

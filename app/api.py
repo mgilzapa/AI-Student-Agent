@@ -97,11 +97,7 @@ async def _auth_middleware(request: Request, call_next):
         response = await loop.run_in_executor(None, lambda: get_client().auth.get_user(token))
         if not (response and response.user):
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
-        # Single-user mode: auth proves the caller is the app owner; data is always
-        # scoped to the fixed SUPABASE_USER_ID so existing data remains accessible
-        # regardless of the OAuth provider UUID.
-        data_uid = os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001")
-        set_request_user_id(data_uid)
+        set_request_user_id(response.user.id)
     except Exception as exc:
         return JSONResponse(status_code=401, content={"detail": f"Invalid token: {exc}"})
 
@@ -411,23 +407,16 @@ async def ask_stream(body: Question):
 
 @app.get("/modules")
 def get_modules():
-    try:
-        uid = _supa_uid()
-        rows = (
-            _supa_client()
-            .table("modules")
-            .select("name")
-            .eq("user_id", uid)
-            .order("name")
-            .execute()
-        ).data or []
-        return {"modules": [r["name"] for r in rows]}
-    except Exception:
-        # Fallback to local filesystem
-        modules = []
-        if RAW_DIR.exists():
-            modules = sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir())
-        return {"modules": modules}
+    uid = _supa_uid()
+    rows = (
+        _supa_client()
+        .table("modules")
+        .select("name")
+        .eq("user_id", uid)
+        .order("name")
+        .execute()
+    ).data or []
+    return {"modules": [r["name"] for r in rows]}
 
 
 def _load_settings() -> dict:
@@ -1373,13 +1362,27 @@ def delete_module(module_name: str):
     uid = _supa_uid()
     supa = _supa_client()
 
-    # 1. Delete module from DB (cascades to files, documents, chunks, summaries, exams)
-    try:
-        profile = mp.load(clean_name)
-        if profile and profile.get("id"):
-            supa.table("modules").delete().eq("id", profile["id"]).execute()
-    except Exception:
-        pass
+    # 1. Delete module from DB — first remove child rows to avoid FK violations,
+    #    then delete the module itself (works with or without CASCADE DELETE).
+    profile = mp.load(clean_name)
+    module_id = (profile or {}).get("id")
+
+    if module_id:
+        for child_table in ("files", "summaries"):
+            try:
+                supa.table(child_table).delete().eq("module_id", module_id).execute()
+            except Exception as exc:
+                print(f"[delete_module] {child_table} delete failed (non-fatal): {exc}")
+        try:
+            supa.table("modules").delete().eq("id", module_id).execute()
+        except Exception as exc:
+            print(f"[delete_module] modules delete failed: {exc}")
+    else:
+        # Fallback: delete by user_id + slug (no profile found but may still be in DB)
+        try:
+            supa.table("modules").delete().eq("user_id", uid).eq("slug", slug).execute()
+        except Exception as exc:
+            print(f"[delete_module] modules delete by slug failed: {exc}")
 
     # 2. Delete pgvector chunks
     try:
