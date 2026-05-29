@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Agent — KI-Studienassistent</title>
+  <!-- SUPABASE_INJECT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F5F1EB;
+      --panel: #EDE7DC;
+      --panel-soft: #E0D9CE;
+      --border: #C4BAB0;
+      --text: #1A1614;
+      --muted: #5C5450;
+      --accent: #C2410C;
+      --accent-h: #9a3309;
+      --accent-2: #B45309;
+      --accent-soft: rgba(194,65,12,0.10);
+      --accent-glow: rgba(194,65,12,0.26);
+      --success: #16A34A;
+      --shadow: 0 4px 24px rgba(26,22,20,0.10), 0 1px 4px rgba(26,22,20,0.07);
+      --shadow-lg: 0 24px 80px rgba(26,22,20,0.14), 0 4px 16px rgba(26,22,20,0.09);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── Navbar ─────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 max(1.5rem, calc(50% - 620px));
+      background: rgba(245,241,235,0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Lora', serif; font-size: 1.2rem; font-weight: 600;
+      color: var(--accent); text-decoration: none; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 1.75rem; list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.9375rem; font-weight: 500; transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 0.5rem 1.25rem; font-size: 0.9375rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .nav-cta:hover { background: var(--accent-h); transform: translateY(-1px); }
+
+    /* ─── Hero ───────────────────────────────────── */
+    .hero {
+      padding: 148px max(1.5rem, calc(50% - 620px)) 96px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 65% at 50% -10%, rgba(194,65,12,0.09), transparent 70%),
+        radial-gradient(ellipse 35% 40% at 15% 90%, rgba(180,83,9,0.05), transparent 60%),
+        radial-gradient(ellipse 35% 40% at 85% 90%, rgba(194,65,12,0.04), transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      background: var(--accent-soft); border: 1px solid rgba(194,65,12,0.25);
+      border-radius: 100px; padding: 0.3rem 0.875rem;
+      font-size: 0.8125rem; font-weight: 600; color: var(--accent);
+      margin-bottom: 1.5rem; position: relative; z-index: 1;
+    }
+    .hero-title {
+      font-family: 'Lora', serif;
+      font-size: clamp(2.4rem, 6vw, 3.875rem);
+      font-weight: 700; line-height: 1.13; letter-spacing: -0.02em;
+      color: var(--text); margin-bottom: 1.25rem;
+      position: relative; z-index: 1;
+    }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.1875rem);
+      color: var(--muted); max-width: 560px;
+      margin: 0 auto 2.25rem; line-height: 1.7;
+      position: relative; z-index: 1;
+    }
+    .hero-ctas {
+      display: flex; align-items: center; justify-content: center;
+      gap: 1rem; flex-wrap: wrap; position: relative; z-index: 1;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff; border: none; border-radius: 10px;
+      padding: 0.8rem 1.875rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      box-shadow: 0 4px 18px rgba(194,65,12,0.32);
+      transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      background: var(--accent-h); transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(194,65,12,0.40);
+    }
+    .btn-secondary {
+      background: transparent; color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 0.8rem 1.875rem; font-size: 1rem; font-weight: 500;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent); background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    /* ─── Demo mockup ────────────────────────────── */
+    .hero-demo {
+      margin: 3.5rem auto 0; max-width: 840px; position: relative; z-index: 1;
+    }
+    .demo-frame {
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .demo-bar {
+      background: var(--panel-soft); padding: 0.7rem 1rem;
+      display: flex; align-items: center; gap: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .demo-dot.r { background: #EF4444; }
+    .demo-dot.y { background: #F59E0B; }
+    .demo-dot.g { background: #10B981; }
+    .demo-url {
+      margin-left: 0.5rem; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; color: var(--muted); flex: 1;
+      background: var(--bg); border-radius: 4px; padding: 0.2rem 0.625rem;
+    }
+    .demo-body {
+      display: grid; grid-template-columns: 180px 1fr; min-height: 220px;
+    }
+    .demo-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 1rem 0.75rem;
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    .demo-chip {
+      padding: 0.4rem 0.625rem; border-radius: 7px;
+      font-size: 0.78rem; font-weight: 500;
+    }
+    .demo-chip.active {
+      background: var(--accent-soft); border: 1px solid rgba(194,65,12,0.22);
+      color: var(--accent);
+    }
+    .demo-chip.idle {
+      background: var(--panel-soft); border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .demo-chat {
+      padding: 1.25rem 1.25rem;
+      display: flex; flex-direction: column; gap: 0.75rem; justify-content: center;
+    }
+    .demo-bubble {
+      max-width: 86%; padding: 0.55rem 0.875rem;
+      border-radius: 10px; font-size: 0.8125rem; line-height: 1.5;
+    }
+    .demo-bubble.u {
+      align-self: flex-end; background: var(--accent); color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .demo-bubble.a {
+      align-self: flex-start;
+      background: var(--panel-soft); color: var(--text);
+      border: 1px solid var(--border); border-bottom-left-radius: 3px;
+    }
+    .demo-bubble.a strong { color: var(--accent); }
+    .demo-bubble.a .src {
+      display: inline-block; margin-top: 0.3rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+      color: var(--muted); background: var(--border);
+      padding: 0.1rem 0.4rem; border-radius: 4px;
+    }
+
+    /* ─── Stats ──────────────────────────────────── */
+    .stats-strip {
+      background: var(--panel);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .stats-inner {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+      padding: 2.25rem max(1.5rem, calc(50% - 620px));
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'Lora', serif; font-size: 2rem; font-weight: 700;
+      color: var(--accent); letter-spacing: -0.02em;
+    }
+    .stat-label { font-size: 0.8125rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ─── Sections common ────────────────────────── */
+    section { padding: 88px max(1.5rem, calc(50% - 640px)); }
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; font-weight: 500; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem;
+    }
+    .section-title {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 600; line-height: 1.2; letter-spacing: -0.015em;
+      color: var(--text); margin-bottom: 0.75rem;
+    }
+    .section-sub {
+      font-size: 1.0625rem; color: var(--muted);
+      max-width: 500px; line-height: 1.65;
+    }
+    .section-head { margin-bottom: 3rem; }
+
+    /* ─── Features ───────────────────────────────── */
+    #features { background: var(--bg); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+      gap: 1.125rem;
+    }
+    .feature-card {
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 1.5rem;
+      transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::after {
+      content: '';
+      position: absolute; inset: 0; border-radius: 13px;
+      background: radial-gradient(ellipse 90% 80% at 0% 0%, var(--accent-soft), transparent 68%);
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 36px rgba(26,22,20,0.12);
+      border-color: rgba(194,65,12,0.38);
+    }
+    .feature-card:hover::after { opacity: 1; }
+    .feature-icon {
+      width: 44px; height: 44px;
+      background: var(--accent-soft); border: 1.5px solid rgba(194,65,12,0.22);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      color: var(--accent); margin-bottom: 1rem; position: relative; z-index: 1;
+    }
+    .feature-title {
+      font-size: 1rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.375rem; position: relative; z-index: 1;
+    }
+    .feature-desc {
+      font-size: 0.875rem; color: var(--muted); line-height: 1.6;
+      position: relative; z-index: 1;
+    }
+
+    /* ─── How It Works ───────────────────────────── */
+    #how {
+      background: var(--panel);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; position: relative; }
+    .steps::before {
+      content: '';
+      position: absolute; top: 27px;
+      left: calc(16.67% + 28px); right: calc(16.67% + 28px);
+      height: 1.5px;
+      background: linear-gradient(to right, var(--border), var(--accent), var(--border));
+    }
+    .step { text-align: center; }
+    .step-num {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-family: 'Lora', serif; font-size: 1.2rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.25rem;
+      box-shadow: 0 4px 18px rgba(194,65,12,0.38);
+      position: relative; z-index: 1;
+    }
+    .step-title { font-size: 1.0625rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .step-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+
+    /* ─── Pricing ────────────────────────────────── */
+    #pricing { background: var(--bg); }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem; max-width: 860px; margin: 0 auto;
+    }
+    .price-card {
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+    }
+    .price-card.featured {
+      border-color: var(--accent); position: relative;
+      background: linear-gradient(140deg, var(--panel) 0%, rgba(194,65,12,0.05) 100%);
+      box-shadow: 0 8px 36px rgba(194,65,12,0.16);
+    }
+    .price-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #fff;
+      font-size: 0.75rem; font-weight: 600;
+      padding: 0.2rem 0.9rem; border-radius: 100px; white-space: nowrap;
+    }
+    .price-plan {
+      font-size: 0.8125rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem;
+    }
+    .price-amount {
+      font-family: 'Lora', serif; font-size: 2.625rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em;
+    }
+    .price-period { font-size: 0.875rem; color: var(--muted); margin-left: 0.2rem; }
+    .price-desc {
+      font-size: 0.875rem; color: var(--muted);
+      margin: 0.625rem 0 1.5rem; line-height: 1.55;
+    }
+    .price-list {
+      list-style: none; display: flex; flex-direction: column; gap: 0.6rem;
+      margin-bottom: 1.75rem;
+    }
+    .price-list li {
+      display: flex; align-items: center; gap: 0.625rem;
+      font-size: 0.875rem; color: var(--text);
+    }
+    .chk {
+      flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(22,163,74,0.12);
+      display: flex; align-items: center; justify-content: center; color: #16A34A;
+    }
+    .price-btn {
+      width: 100%; padding: 0.7rem 1rem; border-radius: 9px;
+      font-size: 0.9375rem; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; border: none; transition: all 0.15s;
+    }
+    .price-btn.solid {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 4px 14px rgba(194,65,12,0.32);
+    }
+    .price-btn.solid:hover { background: var(--accent-h); transform: translateY(-1px); }
+    .price-btn.outline {
+      background: transparent; color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .price-btn.outline:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+    /* ─── Footer ─────────────────────────────────── */
+    footer {
+      background: var(--panel); border-top: 1px solid var(--border);
+      padding: 3rem max(1.5rem, calc(50% - 640px)) 2rem;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 1fr auto auto; gap: 3rem;
+      align-items: start; flex-wrap: wrap;
+    }
+    .footer-logo-text {
+      font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 600;
+      color: var(--accent); display: block; margin-bottom: 0.625rem;
+    }
+    .footer-tagline { font-size: 0.8125rem; color: var(--muted); line-height: 1.6; max-width: 240px; }
+    .footer-col h4 {
+      font-size: 0.8125rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text); margin-bottom: 0.875rem;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .footer-col a {
+      font-size: 0.875rem; color: var(--muted); text-decoration: none; transition: color 0.15s;
+    }
+    .footer-col a:hover { color: var(--accent); }
+    .footer-bottom {
+      margin-top: 2.5rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.75rem;
+      font-size: 0.8125rem; color: var(--muted);
+    }
+
+    /* ─── Auth Modal ──────────────────────────────── */
+    #auth-modal {
+      position: fixed; inset: 0; z-index: 1000;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(26,22,20,0.52);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      padding: 1rem;
+    }
+    #auth-modal.open { display: flex; animation: fade-in 0.18s ease; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .modal-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 18px; padding: 2.25rem 2rem;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 28px 90px rgba(26,22,20,0.24);
+      position: relative;
+      animation: slide-up 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to   { opacity: 1; transform: none; }
+    }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      padding: 0.3rem; border-radius: 6px; transition: color 0.15s, background 0.15s;
+      display: flex; align-items: center;
+    }
+    .modal-close:hover { color: var(--text); background: var(--panel-soft); }
+    .auth-logo { text-align: center; margin-bottom: 1.5rem; }
+    .auth-logo-title {
+      font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 600; color: var(--accent);
+    }
+    .auth-logo-sub { color: var(--muted); font-size: 0.8125rem; margin-top: 0.2rem; }
+    #auth-msg {
+      font-size: 0.8125rem; min-height: 1.5em; text-align: center;
+      border-radius: 6px; padding: 0.25rem 0.5rem; margin-bottom: 0.375rem;
+    }
+    #auth-msg.error { background: rgba(220,38,38,0.09); color: #DC2626; }
+    #auth-msg.success { background: rgba(22,163,74,0.09); color: #16A34A; }
+    #auth-msg.info { color: var(--muted); }
+    .auth-form { display: flex; flex-direction: column; gap: 0.6rem; }
+    .auth-input {
+      padding: 0.625rem 0.875rem; border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--text); font-size: 0.9375rem;
+      font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; width: 100%;
+    }
+    .auth-input:focus { border-color: var(--accent); }
+    .auth-input::placeholder { color: var(--muted); }
+    .auth-submit {
+      padding: 0.65rem; background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; font-size: 0.9375rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif; width: 100%;
+      transition: opacity 0.15s; margin-top: 0.125rem;
+    }
+    .auth-submit:hover { opacity: 0.86; }
+    .auth-submit:disabled { opacity: 0.5; cursor: default; }
+    .auth-toggle {
+      text-align: center; font-size: 0.8125rem; color: var(--muted);
+    }
+    .auth-toggle a { color: var(--accent); text-decoration: none; cursor: pointer; font-weight: 500; }
+    .auth-toggle a:hover { text-decoration: underline; }
+    .auth-divider {
+      display: flex; align-items: center; gap: 0.625rem;
+      color: var(--muted); font-size: 0.8125rem; margin: 0.125rem 0;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .auth-google-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.625rem;
+      padding: 0.625rem; background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 0.9375rem; font-weight: 500; color: var(--text);
+      cursor: pointer; font-family: 'Inter', sans-serif; width: 100%;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .auth-google-btn:hover { background: var(--panel-soft); border-color: #888; }
+
+    /* ─── Responsive ─────────────────────────────── */
+    @media (max-width: 720px) {
+      .nav-links { display: none; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .steps { grid-template-columns: 1fr; }
+      .steps::before { display: none; }
+      .demo-body { grid-template-columns: 1fr; }
+      .demo-sidebar { display: none; }
+      .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ─────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    Study Agent
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">So funktionierts</a></li>
+    <li><a href="#pricing">Preise</a></li>
+  </ul>
+  <button class="nav-cta" onclick="openAuth()">Get Started</button>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    KI-gestütztes Lernen der nächsten Generation
+  </div>
+  <h1 class="hero-title">Kein Stress<br>vor Prüfungen <em>mehr.</em></h1>
+  <p class="hero-sub">Study Agent analysiert deine Vorlesungsunterlagen, erstellt personalisierte Lernpläne und generiert realistische Probeklausuren — vollautomatisch, auf Basis deiner eigenen Materialien.</p>
+  <div class="hero-ctas">
+    <button class="btn-primary" onclick="openAuth()">
+      Jetzt kostenlos starten
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <a class="btn-secondary" href="#features">Features entdecken</a>
+  </div>
+
+  <div class="hero-demo">
+    <div class="demo-frame">
+      <div class="demo-bar">
+        <div class="demo-dot r"></div>
+        <div class="demo-dot y"></div>
+        <div class="demo-dot g"></div>
+        <span class="demo-url">study-agent.app</span>
+      </div>
+      <div class="demo-body">
+        <div class="demo-sidebar">
+          <div class="demo-chip active">Mathematik II</div>
+          <div class="demo-chip idle">Algorithmen</div>
+          <div class="demo-chip idle">Statistik I</div>
+          <div class="demo-chip idle">Datenbanken</div>
+        </div>
+        <div class="demo-chat">
+          <div class="demo-bubble u">Was ist der Unterschied zwischen Primär- und Fremdschlüssel?</div>
+          <div class="demo-bubble a">Ein <strong>Primärschlüssel</strong> identifiziert jede Zeile eindeutig in einer Tabelle. Ein <strong>Fremdschlüssel</strong> verweist auf den Primärschlüssel einer anderen Tabelle und stellt referenzielle Integrität sicher. <span class="src">VL_Datenbanken_03.pdf</span></div>
+          <div class="demo-bubble u">Generiere eine Probeklausur für Mathe II</div>
+          <div class="demo-bubble a">✓ Probeklausur generiert — 5 Aufgaben, 50 Punkte, im Stil deiner Vorjahresklausuren.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats ──────────────────────────────────────── -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div>
+      <div class="stat-value">8+</div>
+      <div class="stat-label">KI-Features</div>
+    </div>
+    <div>
+      <div class="stat-value">PDF · PPTX · DOCX</div>
+      <div class="stat-label">Unterstützte Formate</div>
+    </div>
+    <div>
+      <div class="stat-value">∞</div>
+      <div class="stat-label">Module & Kurse</div>
+    </div>
+    <div>
+      <div class="stat-value">100%</div>
+      <div class="stat-label">Aus deinen Materialien</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Features ───────────────────────────────────── -->
+<section id="features">
+  <div class="section-head">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Alles, was du zum Lernen brauchst</h2>
+    <p class="section-sub">Von der Zusammenfassung bis zur Probeklausur — Study Agent begleitet dich durch den gesamten Lernprozess.</p>
+  </div>
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="feature-title">KI-Fragen & Antworten</div>
+      <div class="feature-desc">Stelle Fragen direkt zu deinen Vorlesungsunterlagen. Präzise Antworten mit Quellenangaben — keine Halluzinationen, keine erfundenen Fakten.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div class="feature-title">Automatische Zusammenfassungen</div>
+      <div class="feature-desc">Lade PDFs, Folien oder Dokumente hoch — Study Agent erstellt strukturierte Zusammenfassungen mit Schlüsselkonzepten in Sekunden.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      <div class="feature-title">Personalisierte Lernroadmap</div>
+      <div class="feature-desc">Gib deinen Prüfungstermin ein — die KI erstellt einen realistischen Lernplan, der exakt auf deinen Materialien und Schwerpunkten basiert.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div class="feature-title">Tagesaufgaben</div>
+      <div class="feature-desc">Klare, erreichbare Aufgaben für jeden Lerntag. Hake ab, was du geschafft hast, und behalte deinen Fortschritt im Blick.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <div class="feature-title">Probeklausuren</div>
+      <div class="feature-desc">KI generiert Prüfungen im exakten Stil deiner echten Klausuren — angepasst an das Format, die Punkteverteilung und die Schwerpunkte deiner Uni.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="feature-title">Übungsblatt-Löser</div>
+      <div class="feature-desc">Lade Übungsblätter hoch und erhalte Schritt-für-Schritt-Lösungen mit Erklärungen — ideal zur Vorbereitung auf Prüfungen.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div class="feature-title">Klausurstil-Analyse</div>
+      <div class="feature-desc">Study Agent analysiert deine alten Klausuren und lernt den Prüfungsstil deiner Uni — für täuschend echte Probeklausuren.</div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="feature-title">Multi-Format Support</div>
+      <div class="feature-desc">PDF, PowerPoint, Word, Markdown — lade beliebige Studienmaterialien hoch und lass die KI die Arbeit erledigen.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── How It Works ────────────────────────────────── -->
+<section id="how">
+  <div class="section-head">
+    <div class="section-label">So funktionierts</div>
+    <h2 class="section-title">In 3 Schritten zur bestandenen Prüfung</h2>
+    <p class="section-sub">Keine komplizierte Einrichtung, keine steile Lernkurve — Study Agent ist in Minuten einsatzbereit.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Materialien hochladen</div>
+      <div class="step-desc">Lade Vorlesungsfolien, PDFs und alte Klausuren hoch — in jedem gängigen Format. Study Agent versteht sie alle.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">KI einrichten</div>
+      <div class="step-desc">Gib deinen Prüfungstermin und Lernstil an. Die KI erstellt deinen personalisierten Plan und analysiert deine Klausuren.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Lernen & bestehen</div>
+      <div class="step-desc">Frage, übe, generiere Probeklausuren. Study Agent hilft dir jeden Tag auf dem Weg zur erfolgreichen Prüfung.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ─────────────────────────────────────── -->
+<section id="pricing">
+  <div class="section-head">
+    <div class="section-label">Preise</div>
+    <h2 class="section-title">Einfach. Transparent.</h2>
+    <p class="section-sub">Starte kostenlos und wechsle jederzeit zum Pro-Plan für unbegrenzte Funktionen.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-plan">Free</div>
+      <div><span class="price-amount">0€</span><span class="price-period">/ Monat</span></div>
+      <div class="price-desc">Ideal zum Ausprobieren — keine Kreditkarte erforderlich.</div>
+      <ul class="price-list">
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 2 Module / Kurse</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> KI-Fragen & Antworten</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Automatische Zusammenfassungen</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 5 Probeklausuren / Monat</li>
+      </ul>
+      <button class="price-btn outline" onclick="openAuth()">Kostenlos starten</button>
+    </div>
+    <div class="price-card featured">
+      <div class="price-badge">Beliebteste Wahl</div>
+      <div class="price-plan">Pro</div>
+      <div><span class="price-amount">9€</span><span class="price-period">/ Monat</span></div>
+      <div class="price-desc">Alles, was du für ein erfolgreiches Semester brauchst — unbegrenzt.</div>
+      <ul class="price-list">
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Module</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Alle KI-Features</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Probeklausuren</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Klausurstil-Analyse</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Übungsblatt-Löser</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Prioritäts-Support</li>
+      </ul>
+      <button class="price-btn solid" onclick="openAuth()">Pro starten</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────── -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <span class="footer-logo-text">Study Agent</span>
+      <div class="footer-tagline">KI-gestütztes Lernen für Studierende. Lern smarter, nicht härter.</div>
+    </div>
+    <div class="footer-col">
+      <h4>Produkt</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">So funktionierts</a></li>
+        <li><a href="#pricing">Preise</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Konto</h4>
+      <ul>
+        <li><a href="#" onclick="openAuth(); return false;">Registrieren</a></li>
+        <li><a href="#" onclick="openAuth(); return false;">Anmelden</a></li>
+        <li><a href="/app">Zur App</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Study Agent. Alle Rechte vorbehalten.</span>
+    <span>Made with ♥ für Studierende</span>
+  </div>
+</footer>
+
+<!-- ── Auth Modal ──────────────────────────────────── -->
+<div id="auth-modal" role="dialog" aria-modal="true" aria-label="Anmeldung">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeAuth()" aria-label="Schließen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="auth-logo">
+      <div class="auth-logo-title">Study Agent</div>
+      <div class="auth-logo-sub">Dein KI-Lernassistent</div>
+    </div>
+    <div id="auth-msg" class="auth-msg"></div>
+    <div class="auth-form">
+      <input class="auth-input" id="auth-email" type="email" placeholder="E-Mail" autocomplete="email">
+      <input class="auth-input" id="auth-password" type="password" placeholder="Passwort" autocomplete="current-password">
+      <button class="auth-submit" id="auth-submit-btn" type="button">Anmelden</button>
+      <p class="auth-toggle" id="auth-toggle-p">
+        Noch kein Konto? <a id="auth-toggle-a" tabindex="0">Registrieren</a>
+      </p>
+      <div class="auth-divider">oder</div>
+      <button class="auth-google-btn" id="auth-google-btn" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Mit Google anmelden
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Modal open/close ─────────────────────────────
+  let _hasSession = false;
+
+  function openAuth() {
+    if (_hasSession) { window.location.href = '/app'; return; }
+    document.getElementById('auth-modal').classList.add('open');
+    setTimeout(() => document.getElementById('auth-email')?.focus(), 60);
+  }
+  function closeAuth() {
+    document.getElementById('auth-modal').classList.remove('open');
+  }
+  document.getElementById('auth-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('auth-modal')) closeAuth();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAuth(); });
+
+  // ── Auth logic ───────────────────────────────────
+  let _sb = null;
+  let _isReg = false;
+
+  function _msg(text, type = '') {
+    const el = document.getElementById('auth-msg');
+    el.textContent = text;
+    el.className = 'auth-msg' + (type ? ' ' + type : '');
+  }
+
+  function _setLoading(on) {
+    const btn = document.getElementById('auth-submit-btn');
+    btn.disabled = on;
+    btn.textContent = on
+      ? (_isReg ? 'Konto erstellen…' : 'Anmelden…')
+      : (_isReg ? 'Konto erstellen' : 'Anmelden');
+  }
+
+  function _syncToggle() {
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const toggleP   = document.getElementById('auth-toggle-p');
+    submitBtn.textContent = _isReg ? 'Konto erstellen' : 'Anmelden';
+    toggleP.innerHTML = _isReg
+      ? 'Bereits registriert? <a id="auth-toggle-a" tabindex="0">Anmelden</a>'
+      : 'Noch kein Konto? <a id="auth-toggle-a" tabindex="0">Registrieren</a>';
+    document.getElementById('auth-toggle-a').addEventListener('click', _toggle);
+    _msg('');
+  }
+
+  function _toggle() {
+    _isReg = !_isReg;
+    _syncToggle();
+  }
+
+  document.getElementById('auth-toggle-a').addEventListener('click', _toggle);
+
+  document.getElementById('auth-submit-btn').addEventListener('click', async () => {
+    if (!_sb) { _msg('Supabase nicht konfiguriert.', 'error'); return; }
+    const email = document.getElementById('auth-email').value.trim();
+    const pw    = document.getElementById('auth-password').value;
+    if (!email || !pw) { _msg('Bitte E-Mail und Passwort eingeben.', 'error'); return; }
+    if (pw.length < 8) { _msg('Passwort muss mindestens 8 Zeichen haben.', 'error'); return; }
+    _setLoading(true);
+    if (_isReg) {
+      const { error } = await _sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: window.location.origin + '/app' } });
+      _setLoading(false);
+      if (error) _msg(error.message, 'error');
+      else       _msg('✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.', 'success');
+    } else {
+      const { error } = await _sb.auth.signInWithPassword({ email, password: pw });
+      _setLoading(false);
+      if (error) _msg(error.message, 'error');
+    }
+  });
+
+  document.getElementById('auth-google-btn').addEventListener('click', async () => {
+    if (!_sb) { _msg('Supabase nicht konfiguriert.', 'error'); return; }
+    const { error } = await _sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/app' }
+    });
+    if (error) _msg(error.message, 'error');
+  });
+
+  ['auth-email', 'auth-password'].forEach(id =>
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('auth-submit-btn').click();
+    })
+  );
+
+  // ── Supabase init ────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const url = window.__SUPABASE_URL__;
+    const key = window.__SUPABASE_ANON_KEY__;
+    if (!url || !key || typeof supabase === 'undefined') return;
+    _sb = supabase.createClient(url, key);
+
+    // If already logged in, update CTA labels but do NOT redirect automatically
+    _sb.auth.getSession().then(({ data }) => {
+      if (data?.session) {
+        _hasSession = true;
+        _updateCtasForLoggedIn();
+      }
+    });
+
+    // Redirect only after an explicit sign-in action (not on INITIAL_SESSION)
+    _sb.auth.onAuthStateChange((event, session) => {
+      if (session && event === 'SIGNED_IN') {
+        window.location.href = '/app';
+      }
+    });
+  });
+
+  function _updateCtasForLoggedIn() {
+    document.querySelectorAll('.nav-cta, .btn-primary').forEach(btn => {
+      if (btn.classList.contains('nav-cta')) btn.textContent = 'Zur App';
+      if (btn.classList.contains('btn-primary')) {
+        btn.childNodes[0].textContent = 'App öffnen ';
+      }
+    });
+  }
+</script>
+</body>
+</html>

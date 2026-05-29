@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional
 
-import jwt as pyjwt
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,40 +62,47 @@ app.add_middleware(
 )
 
 # ── Auth middleware ────────────────────────────────────────────────────────────
-_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
-_AUTH_DISABLED = not _JWT_SECRET  # dev fallback: no JWT secret = no auth enforcement
+# Auth is always enabled when Supabase is configured.
+# Token verification is delegated to Supabase's own API (GET /auth/v1/user)
+# so it works regardless of which JWT algorithm the project uses (HS256, ES256, …).
+_SUPABASE_CONFIGURED = bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_KEY"))
+_AUTH_DISABLED = not _SUPABASE_CONFIGURED
 
 
 @app.middleware("http")
 async def _auth_middleware(request: Request, call_next):
-    from app.storage.supabase_client import set_request_user_id
+    from app.storage.supabase_client import set_request_user_id, get_client
 
-    # Root path is always public (serves the HTML shell)
-    if request.url.path == "/":
+    # Landing page and app shell are always public (serve HTML without a token)
+    if request.url.path in ("/", "/app"):
         return await call_next(request)
 
-    # Dev mode: no JWT secret configured — use env user_id for every request
+    # Dev mode: Supabase not configured — use fixed fallback user
     if _AUTH_DISABLED:
         set_request_user_id(os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001"))
         return await call_next(request)
 
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
+    # Also accept ?token= query param for browser-native loads (iframes, img src, etc.)
+    token = (
+        auth[7:] if auth.startswith("Bearer ")
+        else request.query_params.get("token", "")
+    )
+    if not token:
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
-
-    token = auth[7:]
     try:
-        payload = pyjwt.decode(
-            token, _JWT_SECRET, algorithms=["HS256"],
-            audience="authenticated",
-        )
-        user_id = payload.get("sub", "")
-        if not user_id:
+        # Ask Supabase to verify the token — works with any JWT algorithm.
+        # Uses the service key (already set) to call GET /auth/v1/user.
+        loop = asyncio.get_running_loop()
+        response = await loop.run_in_executor(None, lambda: get_client().auth.get_user(token))
+        if not (response and response.user):
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
-        set_request_user_id(user_id)
-    except pyjwt.ExpiredSignatureError:
-        return JSONResponse(status_code=401, content={"detail": "Token expired"})
-    except pyjwt.InvalidTokenError as exc:
+        # Single-user mode: auth proves the caller is the app owner; data is always
+        # scoped to the fixed SUPABASE_USER_ID so existing data remains accessible
+        # regardless of the OAuth provider UUID.
+        data_uid = os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001")
+        set_request_user_id(data_uid)
+    except Exception as exc:
         return JSONResponse(status_code=401, content={"detail": f"Invalid token: {exc}"})
 
     return await call_next(request)
@@ -358,17 +364,25 @@ def _exam_analyze_cached(module_name: str, all_files: list[dict]) -> tuple[str, 
     return exam_profile_md, exam_style
 
 
-@app.get("/", response_class=HTMLResponse)
-def serve_ui():
-    html_path = Path(__file__).parent / "static" / "index.html"
-    html = html_path.read_text(encoding="utf-8")
-    # Inject public Supabase config + SDK before the main inline script block
+def _inject_supabase(html: str) -> str:
     inject = (
         f'<script>window.__SUPABASE_URL__="{os.getenv("SUPABASE_URL","")}";</script>\n'
         f'<script>window.__SUPABASE_ANON_KEY__="{os.getenv("SUPABASE_ANON_KEY","")}";</script>\n'
         '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n'
     )
     return html.replace("<!-- SUPABASE_INJECT -->", inject, 1)
+
+
+@app.get("/", response_class=HTMLResponse)
+def serve_landing():
+    html_path = Path(__file__).parent / "static" / "landing.html"
+    return _inject_supabase(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/app", response_class=HTMLResponse)
+def serve_ui():
+    html_path = Path(__file__).parent / "static" / "index.html"
+    return _inject_supabase(html_path.read_text(encoding="utf-8"))
 
 
 @app.post("/ask")
@@ -526,31 +540,52 @@ _MEDIA_TYPES = {
 
 
 @app.get("/modules/{module_name}/raw")
-def get_module_raw(module_name: str, path: str):
-    """Serve raw file from Supabase Storage (signed URL) or local filesystem."""
-    from fastapi.responses import RedirectResponse
+async def get_module_raw(module_name: str, path: str):
+    """Stream file content from Supabase Storage or local filesystem.
+
+    Always served through our own backend (no redirect to external domains) so
+    the browser treats it as same-origin — required for inline PDF rendering in
+    iframes and to prevent unwanted download prompts.
+    """
+    import httpx
+
     uid = _supa_uid()
     slug = _slug(sanitize_module_name(module_name))
     rel = path.replace("\\", "/")
     storage_path = f"{uid}/{slug}/{rel}"
+    suffix = Path(rel).suffix.lower()
+    media_type = _MEDIA_TYPES.get(suffix, "application/octet-stream")
+    filename = Path(rel).name
+    # PDFs must be inline so the browser renders them; everything else is a download.
+    disposition = "inline" if suffix == ".pdf" else f'attachment; filename="{filename}"'
 
+    # ── 1. Try Supabase Storage (stream through our server, never redirect) ──────
     try:
-        result = _supa_client().storage.from_("raw-files").create_signed_url(storage_path, 3600)
+        result = _supa_client().storage.from_("raw-files").create_signed_url(storage_path, 300)
         signed_url = (result or {}).get("signedURL") or (result or {}).get("signedUrl")
         if signed_url:
-            return RedirectResponse(url=signed_url)
+            async def _stream_supabase():
+                async with httpx.AsyncClient(timeout=60) as client:
+                    async with client.stream("GET", signed_url) as resp:
+                        async for chunk in resp.aiter_bytes(65536):
+                            yield chunk
+
+            return StreamingResponse(
+                _stream_supabase(),
+                media_type=media_type,
+                headers={"Content-Disposition": disposition, "Cache-Control": "private, max-age=300"},
+            )
     except Exception:
         pass
 
-    # Fallback: local filesystem
+    # ── 2. Fallback: local filesystem ────────────────────────────────────────────
     try:
         target = _resolve_module_file(module_name, path)
-        media_type = _MEDIA_TYPES.get(target.suffix.lower(), "application/octet-stream")
         return FileResponse(
             target,
             media_type=media_type,
-            filename=target.name,
-            headers={"Content-Disposition": f'inline; filename="{target.name}"'},
+            content_disposition_type="inline",
+            filename=filename,
         )
     except HTTPException:
         raise HTTPException(status_code=404, detail="Datei nicht gefunden.")

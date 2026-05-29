@@ -2578,7 +2578,7 @@
 
   /* ── Setup-Screen Profil-Button (oben rechts, fixed) ── */
   #setup-profile-wrap {
-    position: fixed; top: 14px; right: 18px; z-index: 400;
+    position: fixed; bottom: 14px; left: 18px; z-index: 400;
     display: none;
   }
   #setup-profile-wrap.visible { display: block; }
@@ -2600,9 +2600,9 @@
     max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
-  /* Dropdown öffnet sich nach unten (weil Button oben) */
+  /* Dropdown öffnet sich nach oben (weil Button unten) */
   .setup-profile-dropdown {
-    position: absolute; top: calc(100% + 7px); right: 0;
+    position: absolute; bottom: calc(100% + 7px); left: 0;
     background: var(--panel); border: 1px solid var(--border); border-radius: 11px;
     padding: 4px; display: none; flex-direction: column; gap: 1px;
     min-width: 230px;
@@ -2650,6 +2650,48 @@
     <button class="rail-profile-menu-item" type="button" id="setup-settings-btn" role="menuitem">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span data-i18n="settings">Einstellungen</span>
+    </button>
+    <div class="lang-item-wrap">
+      <button class="rail-profile-menu-item lang-trigger" type="button" role="menuitem" aria-haspopup="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span data-i18n="language">Sprache</span>
+        <svg class="lang-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="lang-submenu" role="menu" aria-label="Sprache wählen">
+        <button class="lang-submenu-item active" type="button" data-lang="de" role="menuitem">
+          Deutsch
+          <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <button class="lang-submenu-item" type="button" data-lang="en" role="menuitem">
+          Englisch
+          <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <button class="lang-submenu-item" type="button" data-lang="es" role="menuitem">
+          Spanisch
+          <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <button class="lang-submenu-item" type="button" data-lang="fr" role="menuitem">
+          Französisch
+          <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="rail-profile-menu-item" type="button" role="menuitem">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span data-i18n="help">Hilfe erhalten</span>
+    </button>
+    <button class="rail-profile-menu-item" type="button" role="menuitem">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span data-i18n="upgrade-plan">Tarif upgraden</span>
+    </button>
+    <div class="rail-profile-menu-divider"></div>
+    <button class="rail-profile-menu-item" type="button" role="menuitem">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+      <span data-i18n="gift">Verschenken</span>
+    </button>
+    <button class="rail-profile-menu-item" type="button" role="menuitem">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span data-i18n="learn-more">Mehr erfahren</span>
     </button>
     <div class="rail-profile-menu-divider"></div>
     <button class="rail-profile-menu-item danger" type="button" id="setup-logout-btn" role="menuitem">
@@ -3409,6 +3451,9 @@
     const { error } = await _sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
     if (error) _setAuthMsg(error.message, 'error');
   });
+
+  // Expose auth token so non-fetch browser loads (iframes, img) can append ?token=…
+  window._getAuthToken = () => _authToken;
 
   // Global sign-out helper — exposed so other scripts (setup-profile menu etc.) can call it too.
   window._doSignOut = async function() {
@@ -6355,7 +6400,8 @@ function renderPdfView(vp, tab) {
   if (!state.pdfFrames[tab.path]) {
     const iframe = document.createElement('iframe');
     iframe.title = tab.name;
-    const url = `/modules/${encodeURIComponent(state.moduleName)}/raw?path=${encodeURIComponent(tab.path)}`;
+    const _tok = window._getAuthToken ? window._getAuthToken() : '';
+    const url = `/modules/${encodeURIComponent(state.moduleName)}/raw?path=${encodeURIComponent(tab.path)}${_tok ? '&token=' + encodeURIComponent(_tok) : ''}`;
     iframe.src = `${url}#toolbar=1&navpanes=0&view=FitH`;
     iframe.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:0;height:0;border:0;display:none;';
     getPdfFrameHost().appendChild(iframe);
