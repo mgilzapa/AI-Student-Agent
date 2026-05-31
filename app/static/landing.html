@@ -236,43 +236,83 @@
 
     /* ─── Features ───────────────────────────────── */
     #features { background: var(--bg); }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
-      gap: 1.125rem;
+    .features-carousel { position: relative; }
+    .fc-viewport {
+      position: relative; width: 100%; overflow: hidden;
+      /* Höhe wird per JS gesetzt */
     }
     .feature-card {
+      position: absolute; top: 0; left: 50%;
+      width: 560px; /* per JS überschrieben */
       background: var(--panel); border: 1.5px solid var(--border);
-      border-radius: 14px; padding: 1.5rem;
-      transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
-      position: relative; overflow: hidden;
+      border-radius: 18px; padding: 2.25rem;
+      box-shadow: var(--shadow);
+      transform: translateX(-50%);
+      transform-origin: center center;
+      transition: transform 0.55s cubic-bezier(0.4,0,0.2,1),
+                  opacity 0.55s cubic-bezier(0.4,0,0.2,1),
+                  box-shadow 0.3s, border-color 0.3s;
+      will-change: transform, opacity;
+      overflow: hidden; cursor: pointer; user-select: none;
     }
+    .fc-no-anim .feature-card { transition: none; }
     .feature-card::after {
       content: '';
-      position: absolute; inset: 0; border-radius: 13px;
+      position: absolute; inset: 0; border-radius: 17px;
       background: radial-gradient(ellipse 90% 80% at 0% 0%, var(--accent-soft), transparent 68%);
-      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+      opacity: 0; transition: opacity 0.4s; pointer-events: none;
     }
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 14px 36px rgba(26,22,20,0.12);
+    .feature-card.is-active {
+      box-shadow: var(--shadow-lg);
       border-color: rgba(194,65,12,0.38);
+      cursor: default;
     }
-    .feature-card:hover::after { opacity: 1; }
+    .feature-card.is-active::after { opacity: 1; }
     .feature-icon {
-      width: 44px; height: 44px;
+      width: 52px; height: 52px;
       background: var(--accent-soft); border: 1.5px solid rgba(194,65,12,0.22);
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
-      color: var(--accent); margin-bottom: 1rem; position: relative; z-index: 1;
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      color: var(--accent); margin-bottom: 1.25rem; position: relative; z-index: 1;
     }
+    .feature-icon svg { width: 24px; height: 24px; }
     .feature-title {
-      font-size: 1rem; font-weight: 600; color: var(--text);
-      margin-bottom: 0.375rem; position: relative; z-index: 1;
+      font-size: 1.2rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.5rem; position: relative; z-index: 1;
     }
     .feature-desc {
-      font-size: 0.875rem; color: var(--muted); line-height: 1.6;
+      font-size: 0.95rem; color: var(--muted); line-height: 1.65;
       position: relative; z-index: 1;
     }
+    /* Pfeile */
+    .fc-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(245,241,235,0.9);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      border: 1.5px solid var(--border); color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 40; box-shadow: var(--shadow);
+      transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+    }
+    .fc-arrow:hover {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+      transform: translateY(-50%) scale(1.06);
+    }
+    .fc-arrow:active { transform: translateY(-50%) scale(0.95); }
+    .fc-prev { left: 10px; }
+    .fc-next { right: 10px; }
+    /* Punkte-Indikator */
+    .fc-dots {
+      display: flex; justify-content: center; align-items: center;
+      gap: 0.5rem; margin-top: 2.25rem;
+    }
+    .fc-dot {
+      width: 9px; height: 9px; border-radius: 50%; border: none; padding: 0;
+      background: var(--border); cursor: pointer;
+      transition: background 0.2s, width 0.2s, border-radius 0.2s;
+    }
+    .fc-dot:hover { background: var(--accent-2); }
+    .fc-dot.active { background: var(--accent); width: 26px; border-radius: 6px; }
 
     /* ─── How It Works ───────────────────────────── */
     #how {
@@ -303,9 +343,37 @@
     /* ─── Pricing ────────────────────────────────── */
     #pricing { background: var(--bg); }
     .pricing-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem; max-width: 860px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+      gap: 1.5rem; max-width: 1040px; margin: 0 auto;
+      align-items: start;
     }
+    /* Abrechnungs-Toggle */
+    .billing-switch-wrap { display: flex; justify-content: center; margin-bottom: 2.75rem; }
+    .billing-switch {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 100px; padding: 4px;
+    }
+    .bs-opt {
+      border: none; background: transparent; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.9375rem; font-weight: 600;
+      color: var(--muted); padding: 0.5rem 1.25rem; border-radius: 100px;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .bs-opt:hover { color: var(--text); }
+    .bs-opt.is-active {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 2px 10px rgba(194,65,12,0.30);
+    }
+    .bs-opt.is-active:hover { color: #fff; }
+    .bs-save {
+      font-size: 0.7rem; font-weight: 700; line-height: 1;
+      background: rgba(22,163,74,0.15); color: var(--success);
+      padding: 0.18rem 0.45rem; border-radius: 100px;
+    }
+    .bs-opt.is-active .bs-save { background: rgba(255,255,255,0.22); color: #fff; }
+    .price-amount-wrap { margin-bottom: 1.5rem; }
     .price-card {
       background: var(--panel); border: 1.5px solid var(--border);
       border-radius: 16px; padding: 2rem;
@@ -472,6 +540,133 @@
     }
     .auth-google-btn:hover { background: var(--panel-soft); border-color: #888; }
 
+    /* ─── Navbar Scroll-State + Scroll-Spy ───────── */
+    nav.scrolled {
+      box-shadow: 0 2px 18px rgba(26,22,20,0.09);
+      border-bottom-color: var(--panel-soft);
+    }
+    .nav-links a.active { color: var(--accent); }
+
+    /* ─── Scroll-Reveal ──────────────────────────── */
+    .reveal-ready .reveal {
+      opacity: 0; transform: translateY(26px);
+      transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1),
+                  transform 0.7s cubic-bezier(0.4,0,0.2,1);
+    }
+    .reveal-ready .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal-ready .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+    }
+
+    /* ─── Trust-Strip (Hero) ─────────────────────── */
+    .trust-row {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 0.55rem 1.5rem; margin-top: 1.875rem;
+      position: relative; z-index: 1;
+    }
+    .trust-item {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8125rem; font-weight: 500; color: var(--muted);
+    }
+    .trust-item svg { color: var(--success); flex-shrink: 0; }
+
+    /* ─── Testimonials ───────────────────────────── */
+    #testimonials { background: var(--bg); }
+    .testi-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+      max-width: 1040px; margin: 0 auto;
+    }
+    .testi-card {
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 1.75rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .testi-card:hover {
+      transform: translateY(-3px); box-shadow: var(--shadow-lg);
+      border-color: rgba(194,65,12,0.28);
+    }
+    .testi-stars { display: flex; gap: 0.15rem; color: var(--accent); }
+    .testi-quote { font-size: 0.95rem; line-height: 1.65; color: var(--text); flex: 1; }
+    .testi-author { display: flex; align-items: center; gap: 0.75rem; }
+    .testi-avatar {
+      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent-soft); border: 1.5px solid rgba(194,65,12,0.22);
+      color: var(--accent); font-family: 'Lora', serif; font-weight: 700; font-size: 0.95rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .testi-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .testi-detail { font-size: 0.8125rem; color: var(--muted); margin-top: 0.1rem; }
+
+    /* ─── FAQ ────────────────────────────────────── */
+    #faq { background: var(--bg); }
+    .faq-list {
+      max-width: 760px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .faq-item {
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 12px; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .faq-item.open { border-color: rgba(194,65,12,0.32); box-shadow: var(--shadow); }
+    .faq-q {
+      width: 100%; text-align: left; cursor: pointer;
+      background: none; border: none; font-family: 'Inter', sans-serif;
+      font-size: 1rem; font-weight: 600; color: var(--text);
+      padding: 1.15rem 1.35rem; display: flex; align-items: center;
+      justify-content: space-between; gap: 1rem;
+      transition: color 0.15s;
+    }
+    .faq-q:hover { color: var(--accent); }
+    .faq-icon { flex-shrink: 0; color: var(--accent); transition: transform 0.3s ease; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .faq-a-inner {
+      padding: 0 1.35rem 1.25rem; font-size: 0.9375rem;
+      color: var(--muted); line-height: 1.65;
+    }
+
+    /* ─── CTA-Band ───────────────────────────────── */
+    #cta { background: var(--bg); padding-top: 0; }
+    .cta-band {
+      max-width: 1040px; margin: 0 auto;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      border-radius: 22px; padding: 3.5rem 2rem; text-align: center;
+      position: relative; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(194,65,12,0.30);
+    }
+    .cta-band::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 60% at 12% 8%, rgba(255,255,255,0.18), transparent 60%),
+        radial-gradient(ellipse 55% 65% at 88% 100%, rgba(0,0,0,0.12), transparent 60%);
+    }
+    .cta-title {
+      font-family: 'Lora', serif; font-size: clamp(1.6rem, 4vw, 2.3rem);
+      font-weight: 700; color: #fff; line-height: 1.18; letter-spacing: -0.015em;
+      margin-bottom: 0.75rem; position: relative; z-index: 1;
+    }
+    .cta-sub {
+      font-size: 1.0625rem; color: rgba(255,255,255,0.92);
+      max-width: 520px; margin: 0 auto 2rem; line-height: 1.6;
+      position: relative; z-index: 1;
+    }
+    .cta-btn {
+      background: #fff; color: var(--accent); border: none; border-radius: 11px;
+      padding: 0.85rem 2.1rem; font-size: 1.0625rem; font-weight: 700;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      transition: transform 0.12s, box-shadow 0.15s;
+      position: relative; z-index: 1;
+    }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.26); }
+    .cta-note {
+      margin-top: 1rem; font-size: 0.8125rem; color: rgba(255,255,255,0.84);
+      position: relative; z-index: 1;
+    }
+
     /* ─── Responsive ─────────────────────────────── */
     @media (max-width: 720px) {
       .nav-links { display: none; }
@@ -481,6 +676,12 @@
       .demo-body { grid-template-columns: 1fr; }
       .demo-sidebar { display: none; }
       .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .fc-arrow { width: 40px; height: 40px; }
+      .testi-grid { grid-template-columns: 1fr; }
+      .cta-band { padding: 2.5rem 1.5rem; }
+    }
+    @media (max-width: 960px) and (min-width: 721px) {
+      .testi-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -516,6 +717,25 @@
     <a class="btn-secondary" href="#features">Features entdecken</a>
   </div>
 
+  <div class="trust-row">
+    <span class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Keine Kreditkarte nötig
+    </span>
+    <span class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      DSGVO-konform
+    </span>
+    <span class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      Server in der EU
+    </span>
+    <span class="trust-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.9L21 9.27l-5 4.6 1.4 6.93L12 17.3l-5.4 3.5L8 13.87l-5-4.6 6.6-.37L12 2z"/></svg>
+      Powered by Claude
+    </span>
+  </div>
+
   <div class="hero-demo">
     <div class="demo-frame">
       <div class="demo-bar">
@@ -544,20 +764,20 @@
 
 <!-- ── Stats ──────────────────────────────────────── -->
 <div class="stats-strip">
-  <div class="stats-inner">
-    <div>
+  <div class="stats-inner" data-stagger>
+    <div class="reveal">
       <div class="stat-value">8+</div>
       <div class="stat-label">KI-Features</div>
     </div>
-    <div>
+    <div class="reveal">
       <div class="stat-value">PDF · PPTX · DOCX</div>
       <div class="stat-label">Unterstützte Formate</div>
     </div>
-    <div>
+    <div class="reveal">
       <div class="stat-value">∞</div>
       <div class="stat-label">Module & Kurse</div>
     </div>
-    <div>
+    <div class="reveal">
       <div class="stat-value">100%</div>
       <div class="stat-label">Aus deinen Materialien</div>
     </div>
@@ -566,12 +786,19 @@
 
 <!-- ── Features ───────────────────────────────────── -->
 <section id="features">
-  <div class="section-head">
+  <div class="section-head reveal">
     <div class="section-label">Features</div>
     <h2 class="section-title">Alles, was du zum Lernen brauchst</h2>
     <p class="section-sub">Von der Zusammenfassung bis zur Probeklausur — Study Agent begleitet dich durch den gesamten Lernprozess.</p>
   </div>
-  <div class="features-grid">
+  <div class="features-carousel" id="featuresCarousel" aria-roledescription="carousel" aria-label="Features">
+    <div class="fc-viewport">
+      <button class="fc-arrow fc-prev" type="button" aria-label="Vorheriges Feature">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="fc-arrow fc-next" type="button" aria-label="Nächstes Feature">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
 
     <div class="feature-card">
       <div class="feature-icon">
@@ -637,28 +864,30 @@
       <div class="feature-desc">PDF, PowerPoint, Word, Markdown — lade beliebige Studienmaterialien hoch und lass die KI die Arbeit erledigen.</div>
     </div>
 
+    </div>
+    <div class="fc-dots" role="tablist" aria-label="Feature wählen"></div>
   </div>
 </section>
 
 <!-- ── How It Works ────────────────────────────────── -->
 <section id="how">
-  <div class="section-head">
+  <div class="section-head reveal">
     <div class="section-label">So funktionierts</div>
     <h2 class="section-title">In 3 Schritten zur bestandenen Prüfung</h2>
     <p class="section-sub">Keine komplizierte Einrichtung, keine steile Lernkurve — Study Agent ist in Minuten einsatzbereit.</p>
   </div>
-  <div class="steps">
-    <div class="step">
+  <div class="steps" data-stagger>
+    <div class="step reveal">
       <div class="step-num">1</div>
       <div class="step-title">Materialien hochladen</div>
       <div class="step-desc">Lade Vorlesungsfolien, PDFs und alte Klausuren hoch — in jedem gängigen Format. Study Agent versteht sie alle.</div>
     </div>
-    <div class="step">
+    <div class="step reveal">
       <div class="step-num">2</div>
       <div class="step-title">KI einrichten</div>
       <div class="step-desc">Gib deinen Prüfungstermin und Lernstil an. Die KI erstellt deinen personalisierten Plan und analysiert deine Klausuren.</div>
     </div>
-    <div class="step">
+    <div class="step reveal">
       <div class="step-num">3</div>
       <div class="step-title">Lernen & bestehen</div>
       <div class="step-desc">Frage, übe, generiere Probeklausuren. Study Agent hilft dir jeden Tag auf dem Weg zur erfolgreichen Prüfung.</div>
@@ -666,41 +895,189 @@
   </div>
 </section>
 
+<!-- ── Testimonials ────────────────────────────────── -->
+<section id="testimonials">
+  <div class="section-head reveal">
+    <div class="section-label">Stimmen</div>
+    <h2 class="section-title">Von Studierenden geliebt</h2>
+    <p class="section-sub">Hunderte Studierende lernen mit Study Agent effizienter — das sagen sie über ihre Prüfungsphase.</p>
+  </div>
+  <div class="testi-grid" data-stagger>
+    <div class="testi-card reveal">
+      <div class="testi-stars" aria-label="5 von 5 Sternen">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <p class="testi-quote">„Ich hab in zwei Wochen Statistik nachgeholt, wofür ich sonst ein halbes Semester gebraucht hätte. Die Probeklausuren waren näher an der echten Klausur als alles, was ich vorher hatte."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">LM</div>
+        <div>
+          <div class="testi-name">Lena M.</div>
+          <div class="testi-detail">BWL, 4. Semester · Uni Mannheim</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testi-card reveal">
+      <div class="testi-stars" aria-label="5 von 5 Sternen">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <p class="testi-quote">„Endlich ein Tool, das nur meine Unterlagen nutzt und nichts erfindet. Die Quellenangabe bei jeder Antwort gibt mir das Vertrauen, das ich beim Lernen brauche."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">JK</div>
+        <div>
+          <div class="testi-name">Jonas K.</div>
+          <div class="testi-detail">Informatik, Master · TU München</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testi-card reveal">
+      <div class="testi-stars" aria-label="5 von 5 Sternen">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <p class="testi-quote">„Der Lernplan hat mich durch die Prüfungsphase getragen. Jeden Tag klare Aufgaben statt Panik — ich war zum ersten Mal wirklich entspannt vor einer Klausur."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">SA</div>
+        <div>
+          <div class="testi-name">Sarah A.</div>
+          <div class="testi-detail">Medizin, 6. Semester · Charité Berlin</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Pricing ─────────────────────────────────────── -->
 <section id="pricing">
-  <div class="section-head">
+  <div class="section-head reveal">
     <div class="section-label">Preise</div>
     <h2 class="section-title">Einfach. Transparent.</h2>
-    <p class="section-sub">Starte kostenlos und wechsle jederzeit zum Pro-Plan für unbegrenzte Funktionen.</p>
+    <p class="section-sub">Starte kostenlos und wechsle jederzeit zum Student- oder Pro-Plan — jederzeit kündbar.</p>
   </div>
-  <div class="pricing-grid">
-    <div class="price-card">
+  <div class="billing-switch-wrap reveal">
+    <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum">
+      <button class="bs-opt is-active" type="button" data-cycle="monthly" aria-pressed="true">Monatlich</button>
+      <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false">Jährlich <span class="bs-save">−33%</span></button>
+    </div>
+  </div>
+  <div class="pricing-grid" data-stagger>
+    <div class="price-card reveal">
       <div class="price-plan">Free</div>
-      <div><span class="price-amount">0€</span><span class="price-period">/ Monat</span></div>
-      <div class="price-desc">Ideal zum Ausprobieren — keine Kreditkarte erforderlich.</div>
+      <div class="price-amount-wrap" data-m="0€" data-mp="/ Monat" data-y="0€" data-yp="/ Jahr"><span class="price-amount">0€</span><span class="price-period">/ Monat</span></div>
       <ul class="price-list">
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 2 Module / Kurse</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> KI-Fragen & Antworten</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Automatische Zusammenfassungen</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 5 Probeklausuren / Monat</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 1 Modul</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 50 KI-Fragen / Monat</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 2 Zusammenfassungen / Monat</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 1 Roadmap / Monat</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 3 Datei-Uploads</li>
       </ul>
       <button class="price-btn outline" onclick="openAuth()">Kostenlos starten</button>
     </div>
-    <div class="price-card featured">
+    <div class="price-card featured reveal">
       <div class="price-badge">Beliebteste Wahl</div>
-      <div class="price-plan">Pro</div>
-      <div><span class="price-amount">9€</span><span class="price-period">/ Monat</span></div>
-      <div class="price-desc">Alles, was du für ein erfolgreiches Semester brauchst — unbegrenzt.</div>
+      <div class="price-plan">Student</div>
+      <div class="price-amount-wrap" data-m="4,99€" data-mp="/ Monat" data-y="39,99€" data-yp="/ Jahr"><span class="price-amount">4,99€</span><span class="price-period">/ Monat</span></div>
       <ul class="price-list">
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Module</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Alle KI-Features</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Probeklausuren</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Klausurstil-Analyse</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Übungsblatt-Löser</li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Prioritäts-Support</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 5 Module</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 300 KI-Fragen / Monat (Haiku + Sonnet)</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 15 Zusammenfassungen / Monat</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 5 Roadmaps / Monat (editierbar)</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 5 Probeklausuren / Monat</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> 25 Uploads · E-Mail-Support</li>
       </ul>
-      <button class="price-btn solid" onclick="openAuth()">Pro starten</button>
+      <button class="price-btn solid" onclick="openAuth()">Student wählen</button>
     </div>
+    <div class="price-card reveal">
+      <div class="price-plan">Pro</div>
+      <div class="price-amount-wrap" data-m="9,99€" data-mp="/ Monat" data-y="79,99€" data-yp="/ Jahr"><span class="price-amount">9,99€</span><span class="price-period">/ Monat</span></div>
+      <ul class="price-list">
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Module & KI-Fragen</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Zusammenfassungen</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Roadmaps + Export (PDF/Notion)</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Unbegrenzte Klausuren + Lösungsanalyse</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Daily Tasks: automatischer Lernplan</li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Uploads bis 500 MB · Prioritäts-Support (&lt; 24h)</li>
+      </ul>
+      <button class="price-btn outline" onclick="openAuth()">Pro starten</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ─────────────────────────────────────────── -->
+<section id="faq">
+  <div class="section-head reveal">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Häufige Fragen</h2>
+    <p class="section-sub">Alles, was du vor dem Start wissen musst.</p>
+  </div>
+  <div class="faq-list reveal">
+    <div class="faq-item">
+      <button class="faq-q" type="button" aria-expanded="false">
+        Bleiben meine Unterlagen privat?
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Ja. Deine Dokumente werden ausschließlich für deinen Account verarbeitet, auf Servern in der EU gespeichert und niemals zum Training von KI-Modellen verwendet.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" type="button" aria-expanded="false">
+        Welche KI steckt hinter Study Agent?
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Anthropic's Claude (Haiku &amp; Sonnet). Einfache Fragen laufen über das schnelle Haiku-Modell, komplexe über das stärkere Sonnet — so bekommst du beste Qualität zum besten Preis.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" type="button" aria-expanded="false">
+        Wie realistisch sind die Probeklausuren?
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Sie basieren auf deinen echten Alt- und Vorlesungsklausuren. Study Agent übernimmt Format, Punkteverteilung und thematische Schwerpunkte deiner Uni — für täuschend echte Übung.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" type="button" aria-expanded="false">
+        Kann ich jederzeit kündigen?
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Ja, alle Abos sind monatlich kündbar. Kein Vertrag, keine Mindestlaufzeit, keine versteckten Kosten.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" type="button" aria-expanded="false">
+        Welche Dateiformate werden unterstützt?
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">PDF, PowerPoint (PPTX), Word (DOCX) und Markdown. Lade einfach deine Vorlesungsfolien und Skripte hoch — die KI versteht sie alle.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" type="button" aria-expanded="false">
+        Brauche ich eine Kreditkarte für den Free-Plan?
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Nein. Du kannst sofort kostenlos starten — ganz ohne Zahlungsdaten. Erst beim Upgrade auf Student oder Pro brauchst du eine Zahlungsmethode.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA-Band ─────────────────────────────────────── -->
+<section id="cta">
+  <div class="cta-band reveal">
+    <h2 class="cta-title">Bereit, stressfrei zu lernen?</h2>
+    <p class="cta-sub">Starte heute kostenlos und verwandle deine Vorlesungsunterlagen in deinen persönlichen KI-Lernassistenten.</p>
+    <button class="cta-btn" onclick="openAuth()">
+      Jetzt kostenlos starten
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="cta-note">Kostenlos starten · Keine Kreditkarte nötig · In 2 Minuten startklar</div>
   </div>
 </section>
 
@@ -717,6 +1094,7 @@
         <li><a href="#features">Features</a></li>
         <li><a href="#how">So funktionierts</a></li>
         <li><a href="#pricing">Preise</a></li>
+        <li><a href="#faq">FAQ</a></li>
       </ul>
     </div>
     <div class="footer-col">
@@ -903,6 +1281,267 @@
       }
     });
   }
+</script>
+
+<script>
+  // ── Features-Karussell (Coverflow / Peek) ────────
+  (function () {
+    const root = document.getElementById('featuresCarousel');
+    if (!root) return;
+    const viewport = root.querySelector('.fc-viewport');
+    const cards = Array.from(root.querySelectorAll('.feature-card'));
+    const dotsWrap = root.querySelector('.fc-dots');
+    const prevBtn = root.querySelector('.fc-prev');
+    const nextBtn = root.querySelector('.fc-next');
+    const N = cards.length;
+    if (!N) return;
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) root.classList.add('fc-no-anim');
+
+    const PAD = 40;            // vertikaler Puffer für Schatten
+    const SCALE = 0.82;        // Skalierung der Nachbar-Cards
+    let active = 0;
+    let geo = { off1: 300, offHidden: 600 };
+
+    // Punkte-Indikator erzeugen
+    const dots = cards.map((_, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fc-dot';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-label', 'Feature ' + (i + 1));
+      b.addEventListener('click', () => { go(i); restart(); });
+      dotsWrap.appendChild(b);
+      return b;
+    });
+
+    // Offset zirkulär normalisieren → [-N/2 .. N/2]
+    function circ(o) {
+      o = ((o % N) + N) % N;
+      if (o > N / 2) o -= N;
+      return o;
+    }
+
+    function layout() {
+      const vw = viewport.clientWidth;
+      const Wc = Math.min(560, vw - 80);
+      const scaledW = Wc * SCALE;
+      const peek = Math.max(22, Math.min(44, vw * 0.05));
+      geo.off1 = vw / 2 - peek + scaledW / 2;      // Nachbar peekt am Rand
+      geo.offHidden = geo.off1 + scaledW;          // versteckte Cards weiter raus
+      let maxH = 0;
+      cards.forEach(c => { c.style.width = Wc + 'px'; c.style.top = PAD + 'px'; });
+      cards.forEach(c => { if (c.offsetHeight > maxH) maxH = c.offsetHeight; });
+      viewport.style.height = (maxH + PAD * 2) + 'px';
+      render();
+    }
+
+    function render() {
+      cards.forEach((c, i) => {
+        const o = circ(i - active);
+        const abs = Math.abs(o);
+        let tx, sc, op, z, pe;
+        if (o === 0) { tx = 0; sc = 1; op = 1; z = 30; pe = 'auto'; }
+        else if (abs === 1) { tx = o * geo.off1; sc = SCALE; op = 0.5; z = 20; pe = 'auto'; }
+        else { tx = (o > 0 ? 1 : -1) * geo.offHidden; sc = 0.7; op = 0; z = 5; pe = 'none'; }
+        c.style.transform = 'translateX(-50%) translateX(' + tx + 'px) scale(' + sc + ')';
+        c.style.opacity = op;
+        c.style.zIndex = z;
+        c.style.pointerEvents = pe;
+        c.classList.toggle('is-active', o === 0);
+        c.setAttribute('aria-hidden', o === 0 ? 'false' : 'true');
+      });
+      dots.forEach((d, i) => {
+        const on = i === active;
+        d.classList.toggle('active', on);
+        if (on) d.setAttribute('aria-current', 'true');
+        else d.removeAttribute('aria-current');
+      });
+    }
+
+    function go(i) { active = ((i % N) + N) % N; render(); }
+    function next() { go(active + 1); }
+    function prev() { go(active - 1); }
+
+    // ── Autoplay ──────────────────────────────────
+    let timer = null;
+    const DELAY = 5000;
+    function start() { if (reduce) return; stop(); timer = setInterval(next, DELAY); }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function restart() { stop(); start(); }
+
+    prevBtn.addEventListener('click', () => { prev(); restart(); });
+    nextBtn.addEventListener('click', () => { next(); restart(); });
+
+    // Klick auf Nachbar-Card holt sie in die Mitte
+    let suppressClick = false;
+    cards.forEach((c, i) => c.addEventListener('click', () => {
+      if (suppressClick) return;
+      if (circ(i - active) !== 0) { go(i); restart(); }
+    }));
+
+    // Tastatur (← / →)
+    root.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); restart(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); next(); restart(); }
+    });
+
+    // Swipe / Drag
+    let sx = 0, sdown = false;
+    viewport.addEventListener('pointerdown', e => { sdown = true; sx = e.clientX; stop(); });
+    viewport.addEventListener('pointerup', e => {
+      if (!sdown) return; sdown = false;
+      const dx = e.clientX - sx;
+      if (Math.abs(dx) > 40) {
+        suppressClick = true;
+        if (dx < 0) next(); else prev();
+        setTimeout(() => { suppressClick = false; }, 60);
+      }
+      start();
+    });
+    viewport.addEventListener('pointercancel', () => { sdown = false; start(); });
+
+    // Autoplay pausieren bei Interaktion
+    root.addEventListener('mouseenter', stop);
+    root.addEventListener('mouseleave', start);
+    root.addEventListener('focusin', stop);
+    root.addEventListener('focusout', start);
+    document.addEventListener('visibilitychange', () => { document.hidden ? stop() : start(); });
+
+    // Resize
+    let rt = null;
+    window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layout, 150); });
+
+    layout();
+    start();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+  })();
+
+  // ── Abrechnungs-Toggle (monatlich / jährlich) ────
+  (function () {
+    const sw = document.querySelector('.billing-switch');
+    if (!sw) return;
+    const opts = Array.from(sw.querySelectorAll('.bs-opt'));
+    const wraps = Array.from(document.querySelectorAll('#pricing .price-amount-wrap'));
+    function apply(cycle) {
+      opts.forEach(o => {
+        const on = o.dataset.cycle === cycle;
+        o.classList.toggle('is-active', on);
+        o.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      wraps.forEach(w => {
+        w.querySelector('.price-amount').textContent = cycle === 'yearly' ? w.dataset.y : w.dataset.m;
+        w.querySelector('.price-period').textContent = cycle === 'yearly' ? w.dataset.yp : w.dataset.mp;
+      });
+    }
+    opts.forEach(o => o.addEventListener('click', () => apply(o.dataset.cycle)));
+    apply('monthly');
+  })();
+</script>
+
+<script>
+  // ── Scroll-Reveal (IntersectionObserver) ─────────
+  (function () {
+    const els = Array.from(document.querySelectorAll('.reveal'));
+    if (!els.length) return;
+    document.documentElement.classList.add('reveal-ready');
+
+    // Gestaffeltes Einblenden innerhalb von [data-stagger]-Gruppen
+    document.querySelectorAll('[data-stagger]').forEach(group => {
+      Array.from(group.querySelectorAll('.reveal')).forEach((el, i) => {
+        el.style.transitionDelay = (i * 80) + 'ms';
+      });
+    });
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(el => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(el => io.observe(el));
+  })();
+
+  // ── Navbar Scroll-Schatten + Scroll-Spy ──────────
+  (function () {
+    const nav = document.querySelector('nav');
+    const links = Array.from(document.querySelectorAll('.nav-links a'));
+    const map = links
+      .map(a => {
+        const href = a.getAttribute('href');
+        if (!href || href.charAt(0) !== '#' || href.length < 2) return null;
+        const sec = document.querySelector(href);
+        return sec ? { a, sec } : null;
+      })
+      .filter(Boolean);
+
+    function onScroll() {
+      if (nav) nav.classList.toggle('scrolled', window.scrollY > 8);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if ('IntersectionObserver' in window && map.length) {
+      const spy = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            const id = '#' + e.target.id;
+            map.forEach(m => m.a.classList.toggle('active', m.a.getAttribute('href') === id));
+          }
+        });
+      }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+      map.forEach(m => spy.observe(m.sec));
+    }
+  })();
+
+  // ── FAQ-Accordion ────────────────────────────────
+  (function () {
+    const items = Array.from(document.querySelectorAll('.faq-item'));
+    if (!items.length) return;
+
+    function close(item) {
+      item.classList.remove('open');
+      const q = item.querySelector('.faq-q');
+      const a = item.querySelector('.faq-a');
+      if (q) q.setAttribute('aria-expanded', 'false');
+      if (a) a.style.maxHeight = null;
+    }
+    function open(item) {
+      item.classList.add('open');
+      const q = item.querySelector('.faq-q');
+      const a = item.querySelector('.faq-a');
+      if (q) q.setAttribute('aria-expanded', 'true');
+      if (a) a.style.maxHeight = a.scrollHeight + 'px';
+    }
+
+    items.forEach(item => {
+      const q = item.querySelector('.faq-q');
+      if (!q) return;
+      q.addEventListener('click', () => {
+        const isOpen = item.classList.contains('open');
+        items.forEach(other => { if (other !== item) close(other); });
+        isOpen ? close(item) : open(item);
+      });
+    });
+
+    // Offenes Item bei Resize nachmessen
+    let rt = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => {
+        const openItem = items.find(i => i.classList.contains('open'));
+        if (openItem) {
+          const a = openItem.querySelector('.faq-a');
+          if (a) a.style.maxHeight = a.scrollHeight + 'px';
+        }
+      }, 150);
+    });
+  })();
 </script>
 </body>
 </html>

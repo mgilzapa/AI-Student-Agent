@@ -11,7 +11,7 @@ import logging
 import argparse
 import json
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.utils.config import load_config
 from app.utils.logger import setup_logger
@@ -37,7 +37,7 @@ def already_processed(document_id: str, chunks_dir: Path) -> bool:
     return len(list(chunks_dir.glob(f"chunks_{document_id[:8]}_*.jsonl"))) > 0
 
 
-def process_document(file_path: Path, processed_dir: Path, skip_lecture_processing: bool = False) -> Dict[str, Any]:
+def process_document(file_path: Path, processed_dir: Path, skip_lecture_processing: bool = False, module_name: Optional[str] = None) -> Dict[str, Any]:
     """Process a single document through the full pipeline."""
     result = {
         "file": str(file_path),
@@ -69,14 +69,18 @@ def process_document(file_path: Path, processed_dir: Path, skip_lecture_processi
 
     logger.info(f"Parsed {file_path.name}: {len(parsed.extracted_text)} chars")
 
-    module_name = ""
-    try:
-        raw_root = load_config()["raw_path"].resolve()
-        relative_path = file_path.resolve().relative_to(raw_root)
-        if len(relative_path.parts) > 1:
-            module_name = relative_path.parts[0]
-    except Exception:
-        module_name = file_path.parent.name if file_path.parent.name else ""
+    # module_name may be passed explicitly by the caller (web upload, where the
+    # local dir is namespaced as RAW_DIR/<uid>/<module>). Only derive it from the
+    # path layout when not supplied (CLI pipeline: RAW_DIR/<module>/<file>).
+    if module_name is None:
+        module_name = ""
+        try:
+            raw_root = load_config()["raw_path"].resolve()
+            relative_path = file_path.resolve().relative_to(raw_root)
+            if len(relative_path.parts) > 1:
+                module_name = relative_path.parts[0]
+        except Exception:
+            module_name = file_path.parent.name if file_path.parent.name else ""
 
     if not skip_lecture_processing:
         lecture_result = process_lecture(

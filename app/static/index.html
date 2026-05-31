@@ -396,42 +396,108 @@
     text-align: center;
   }
 
-  /* ── New course accordion ── */
-  .new-course-toggle {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 13px 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
+  /* ── Greeting header + overview stats ── */
+  .setup-header { display: flex; flex-direction: column; gap: 22px; }
+  .setup-greet { display: flex; flex-direction: column; gap: 5px; }
+  .setup-greet-sub {
+    color: var(--muted); font-size: 0.9375rem; line-height: 1.5;
+    animation: fadeIn 0.45s var(--ease-out) both;
   }
-  .new-course-toggle:hover { background: var(--panel-soft); border-color: var(--accent-border); }
-  .new-course-toggle.open {
-    border-radius: 12px 12px 0 0;
-    border-bottom-color: transparent;
-    background: var(--panel-soft);
-    border-color: var(--accent-border);
-  }
-  .toggle-title { font-size: 0.9rem; font-weight: 500; color: var(--text); }
-  .toggle-icon {
-    font-size: 1.2rem; line-height: 1;
-    color: var(--accent); transition: transform 0.3s var(--ease-out);
-    flex-shrink: 0;
-  }
-  .new-course-toggle.open .toggle-icon { transform: rotate(45deg); }
 
-  .upload-panel { max-height: 0; overflow: hidden; transition: max-height 0.5s var(--ease-out); }
-  .upload-panel.open { max-height: 900px; }
-
-  .upload-panel-inner {
-    padding: 18px;
-    background: var(--panel-soft);
-    border: 1px solid var(--accent-border); border-top: none;
-    border-radius: 0 0 12px 12px;
-    display: grid; gap: 14px;
+  .dash-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 12px;
+    animation: fadeIn 0.5s var(--ease-out) both;
   }
+  .dash-stats[hidden] { display: none; }
+  .stat-tile {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 15px 16px 13px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .stat-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 1.55rem; font-weight: 400;
+    color: var(--text); line-height: 1.05; letter-spacing: -0.01em;
+  }
+  .stat-val .stat-unit { font-size: 0.9rem; color: var(--muted); margin-left: 1px; }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .stat-tile.urgent { border-color: var(--accent-border); background: var(--accent-soft); }
+  .stat-tile.urgent .stat-val, .stat-tile.urgent .stat-val .stat-unit { color: var(--accent); }
+
+  /* ── Mini-card meta (current topic + exam pill) ── */
+  .mini-topic {
+    font-size: 0.78rem; color: var(--muted); line-height: 1.35;
+    padding-right: 22px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mini-topic b {
+    font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); margin-right: 4px;
+  }
+  .exam-pill {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+    max-width: calc(100% - 24px);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.02em; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid var(--accent-border);
+    border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+  }
+  .exam-pill svg { flex-shrink: 0; }
+  .exam-pill.is-urgent {
+    color: var(--danger);
+    background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.30);
+  }
+  .featured-exam-line.is-urgent { color: var(--danger); font-weight: 600; }
+
+  /* ── "+ New course" tile in grid ── */
+  .add-course-tile {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 14px; min-height: 100%;
+    background: transparent;
+    border: 1.5px dashed var(--border); border-radius: 14px;
+    cursor: pointer; text-align: left; color: var(--muted);
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  }
+  .add-course-tile:hover {
+    border-color: var(--accent-border); background: var(--accent-soft);
+    transform: translateY(-2px);
+  }
+  .add-course-plus { font-size: 1.5rem; line-height: 1; color: var(--accent); flex-shrink: 0; }
+  .add-course-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .add-course-text strong {
+    font-family: 'Lora', serif; font-size: 0.9375rem; font-weight: 600; color: var(--text);
+    transition: color 0.2s ease;
+  }
+  .add-course-tile:hover .add-course-text strong { color: var(--accent); }
+  .add-course-text span { font-size: 0.7rem; color: var(--muted); }
+
+  /* ── Empty state (no courses yet) ── */
+  .courses-empty {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 9px;
+    padding: 44px 24px;
+    background: var(--panel); border: 1px dashed var(--border); border-radius: 16px;
+    animation: fadeIn 0.45s var(--ease-out) both;
+  }
+  .courses-empty[hidden] { display: none; }
+  .courses-empty-icon {
+    width: 54px; height: 54px; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 14px; margin-bottom: 4px;
+  }
+  .courses-empty-title {
+    font-family: 'Lora', serif; font-size: 1.15rem; font-weight: 600; color: var(--text);
+  }
+  .courses-empty-text { color: var(--muted); font-size: 0.875rem; line-height: 1.6; max-width: 44ch; }
+
+  /* ── New course: empty-state CTA + modal form ── */
+  .courses-empty-cta { margin-top: 6px; }
+  .new-course-form { display: grid; gap: 14px; }
+  .new-course-sub { color: var(--muted); font-size: 0.86rem; line-height: 1.6; margin-top: -4px; }
 
   /* Fields */
   .field-label {
@@ -2725,57 +2791,25 @@
 
       <div class="setup-scroll">
 
-        <!-- Page title -->
-        <h1 class="page-title" data-i18n="page-title">Wo willst du weitermachen?</h1>
+        <!-- Greeting + overview -->
+        <header class="setup-header">
+          <div class="setup-greet">
+            <h1 class="page-title" id="greeting-title">Wo willst du weitermachen?</h1>
+            <p class="setup-greet-sub" id="greeting-sub"></p>
+          </div>
+          <div class="dash-stats" id="dash-stats" hidden></div>
+        </header>
 
         <!-- Existing courses -->
         <div class="section-block" id="courses-section">
           <div class="courses-grid" id="existing-modules"></div>
-          <p class="no-courses-hint" id="empty-modules" hidden data-i18n="empty-courses">
-            Noch keine Kurse vorhanden — lege deinen ersten Kurs unten an.
-          </p>
-        </div>
-
-        <!-- New course accordion -->
-        <div class="section-block">
-          <div class="section-heading">
-            <span class="section-line r"></span>
-            <span class="section-label-text" data-i18n="new-course-section">Neuen Kurs anlegen</span>
-            <span class="section-line"></span>
-          </div>
-
-          <div class="new-course-toggle" id="new-course-toggle" role="button" tabindex="0" aria-expanded="false">
-            <span class="toggle-title" data-i18n="upload-toggle">Materialien hochladen</span>
-            <span class="toggle-icon">+</span>
-          </div>
-
-          <div class="upload-panel" id="new-course-panel">
-            <div class="upload-panel-inner">
-              <div>
-                <label class="field-label" for="module-name" data-i18n="course-name-label">Kursname</label>
-                <input id="module-name" type="text" placeholder="Zum Beispiel: Lineare Algebra" data-i18n-ph="course-name-ph">
-              </div>
-
-              <div id="drop-zone">
-                <input id="file-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple>
-                <div class="drop-copy">
-                  <div class="drop-icon">↑</div>
-                  <div class="drop-title" data-i18n="drop-title">Dateien oder Ordner ablegen</div>
-                  <div class="drop-subtitle" data-i18n="drop-subtitle">Lade Folien, Skripte oder ganze Ordner auf einmal hoch.</div>
-                  <div class="drop-hint" data-i18n="drop-hint">PDF · PPTX · MD · TXT</div>
-                </div>
-              </div>
-              <input id="folder-input" type="file" webkitdirectory multiple style="display:none">
-              <button class="secondary-btn" id="folder-pick-btn" type="button" style="font-size:0.79rem;padding:5px 14px;align-self:flex-start;" data-i18n="folder-btn">📁 Ordner auswählen</button>
-
-              <div class="selected-files" id="selected-files"></div>
-
-              <div class="actions">
-                <button class="primary-btn" id="upload-btn" disabled data-i18n="upload-btn">Kurs vorbereiten</button>
-                <button class="secondary-btn" id="clear-btn" type="button" data-i18n="clear-btn">Auswahl leeren</button>
-              </div>
-              <div class="status-line" id="upload-status"></div>
+          <div class="courses-empty" id="empty-modules" hidden>
+            <div class="courses-empty-icon" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             </div>
+            <div class="courses-empty-title" data-i18n="empty-title">Bereit für deinen ersten Kurs?</div>
+            <p class="courses-empty-text" data-i18n="empty-courses">Noch keine Kurse vorhanden — lade deine Materialien hoch und leg los.</p>
+            <button class="primary-btn courses-empty-cta" id="empty-create-btn" type="button" data-i18n="empty-cta">Ersten Kurs anlegen</button>
           </div>
         </div>
 
@@ -2969,6 +3003,43 @@
       </div>
     </div>
   </main>
+</div>
+
+<!-- ── New Course Modal ── -->
+<div class="modal-overlay" id="new-course-modal">
+  <div class="modal-card" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 data-i18n="new-course-section">Neuen Kurs anlegen</h2>
+      <button class="modal-close" id="new-course-close" title="Schließen" data-i18n-title="close">✕</button>
+    </div>
+    <div class="new-course-form">
+      <p class="new-course-sub" data-i18n="upload-toggle">Materialien hochladen</p>
+      <div>
+        <label class="field-label" for="module-name" data-i18n="course-name-label">Kursname</label>
+        <input id="module-name" type="text" placeholder="Zum Beispiel: Lineare Algebra" data-i18n-ph="course-name-ph">
+      </div>
+
+      <div id="drop-zone">
+        <input id="file-input" type="file" accept=".pdf,.pptx,.md,.txt" multiple>
+        <div class="drop-copy">
+          <div class="drop-icon">↑</div>
+          <div class="drop-title" data-i18n="drop-title">Dateien oder Ordner ablegen</div>
+          <div class="drop-subtitle" data-i18n="drop-subtitle">Lade Folien, Skripte oder ganze Ordner auf einmal hoch.</div>
+          <div class="drop-hint" data-i18n="drop-hint">PDF · PPTX · MD · TXT</div>
+        </div>
+      </div>
+      <input id="folder-input" type="file" webkitdirectory multiple style="display:none">
+      <button class="secondary-btn" id="folder-pick-btn" type="button" style="font-size:0.79rem;padding:5px 14px;align-self:flex-start;" data-i18n="folder-btn">📁 Ordner auswählen</button>
+
+      <div class="selected-files" id="selected-files"></div>
+
+      <div class="actions">
+        <button class="primary-btn" id="upload-btn" disabled data-i18n="upload-btn">Kurs vorbereiten</button>
+        <button class="secondary-btn" id="clear-btn" type="button" data-i18n="clear-btn">Auswahl leeren</button>
+      </div>
+      <div class="status-line" id="upload-status"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ── Lecture Summary Modal ── -->
@@ -3313,13 +3384,26 @@
 
   let _authToken = null;
 
-  // Intercept all same-origin fetch calls to add Bearer token
+  // Intercept all same-origin fetch calls to add Bearer token + handle rate limits (HTTP 429).
   const _origFetch = window.fetch.bind(window);
   window.fetch = function(url, options = {}) {
     if (_authToken && typeof url === 'string' && !/^https?:\/\//.test(url)) {
       options = { ...options, headers: { 'Authorization': 'Bearer ' + _authToken, ...(options.headers || {}) } };
     }
-    return _origFetch(url, options);
+    return _origFetch(url, options).then(function(res) {
+      // Central 429 handling: show a clear "please wait N seconds" message instead of a
+      // generic error. Deferred (setTimeout 0) so it wins over any generic message a
+      // caller's own catch-block sets synchronously right after the request rejects.
+      if (res.status === 429) {
+        let wait = parseInt(res.headers.get('Retry-After') || '', 10);
+        if (!Number.isFinite(wait) || wait <= 0) wait = 60;
+        const msg = (typeof tf === 'function')
+          ? tf('rate-limit', { n: wait })
+          : ('Zu viele Anfragen – bitte warte ' + wait + ' Sekunden und versuche es erneut.');
+        setTimeout(function() { if (typeof setStatus === 'function') setStatus(msg, 'error'); }, 0);
+      }
+      return res;
+    });
   };
 
   function _showAuthScreen(loading) {
@@ -3359,6 +3443,7 @@
     if (setupAvatarEl) setupAvatarEl.textContent = initial;
     if (setupNameEl)   setupNameEl.textContent   = displayName;
     if (setupEmailEl)  setupEmailEl.textContent  = user.email || '';
+    if (typeof updateGreeting === 'function') updateGreeting();
   }
 
   // Auth state listener — fires on login, logout, token refresh
@@ -3448,7 +3533,9 @@
     if (error) _setAuthMsg(error.message, 'error');
   });
 
-  // Expose auth token so non-fetch browser loads (iframes, img) can append ?token=…
+  // Exposed for any code that needs the current access token in JS. Note: never
+  // put it in a URL — browser-native loads (PDF iframe) fetch bytes via the auth'd
+  // fetch() wrapper and render from a blob: URL instead.
   window._getAuthToken = () => _authToken;
 
   // Global sign-out helper — exposed so other scripts (setup-profile menu etc.) can call it too.
@@ -3465,7 +3552,7 @@
 // ── i18n ───────────────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
   de: {
-    'page-title':'Wo willst du weitermachen?','empty-courses':'Noch keine Kurse vorhanden — lege deinen ersten Kurs unten an.',
+    'page-title':'Wo willst du weitermachen?','empty-courses':'Noch keine Kurse vorhanden — leg los und erstelle deinen ersten.',
     'new-course-section':'Neuen Kurs anlegen','upload-toggle':'Materialien hochladen',
     'course-name-label':'Kursname','course-name-ph':'Zum Beispiel: Lineare Algebra',
     'drop-title':'Dateien oder Ordner ablegen','drop-subtitle':'Lade Folien, Skripte oder ganze Ordner auf einmal hoch.',
@@ -3533,6 +3620,12 @@ const TRANSLATIONS = {
     'exam-today':'Prüfung heute','exam-over':'Prüfung vorbei',
     'set-favorite':'Als Favorit setzen','delete-course':'Kurs löschen',
     'more-courses':'Weitere Kurse','courses-load-error':'Kurse konnten nicht geladen werden.',
+    'greet-morning':'Guten Morgen','greet-day':'Hallo','greet-evening':'Guten Abend',
+    'greet-sub':'Wo willst du weitermachen?',
+    'stat-courses':'Kurse','stat-avg':'Ø Fortschritt','stat-next-exam':'Nächste Prüfung','stat-topics':'Themen erledigt',
+    'stat-day-unit':'Tag','stat-days-unit':'Tage',
+    'new-course-tile':'Neuer Kurs','new-course-tile-sub':'Material hochladen',
+    'empty-title':'Bereit für deinen ersten Kurs?','empty-cta':'Ersten Kurs anlegen',
     'no-materials':'Noch keine Materialien','no-materials-sub':'Für diesen Kurs wurden keine Dateien gefunden.',
     'summaries-header':'Zusammenfassungen','mock-exams-header':'Probeklausuren',
     'select-file-title':'Wähle links eine Datei aus',
@@ -3558,7 +3651,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Deine Dateien werden vorbereitet …',
     'upload-finishing-title':'Fast geschafft','upload-finishing-sub':'Abschlussarbeiten…',
     'upload-adding-title':'Dateien werden hinzugefügt','upload-adding-sub':'Upload + Verarbeitung läuft …',
-    'upload-failed':'Upload fehlgeschlagen.','upload-saved':'{n} Datei(en) hinzugefügt.','upload-skipped':'{n} schon vorhanden.',
+    'upload-failed':'Upload fehlgeschlagen.','rate-limit':'Zu viele Anfragen – bitte warte {n} Sekunden und versuche es erneut.','upload-saved':'{n} Datei(en) hinzugefügt.','upload-skipped':'{n} schon vorhanden.',
     'text-not-loaded':'Text konnte nicht geladen werden',
     'rm-prio-must':'Pflicht','rm-prio-good':'Wichtig','rm-prio-nice':'Optional',
     'rm-stat-phases':'Phasen','rm-todo-label':'offen',
@@ -3584,7 +3677,7 @@ const TRANSLATIONS = {
     'open-module-first':'Bitte zuerst ein Modul öffnen.',
   },
   en: {
-    'page-title':'Where do you want to continue?','empty-courses':'No courses yet — create your first course below.',
+    'page-title':'Where do you want to continue?','empty-courses':'No courses yet — get started and create your first one.',
     'new-course-section':'Create new course','upload-toggle':'Upload materials',
     'course-name-label':'Course name','course-name-ph':'For example: Linear Algebra',
     'drop-title':'Drop files or folders','drop-subtitle':'Upload slides, scripts, or entire folders at once.',
@@ -3652,6 +3745,12 @@ const TRANSLATIONS = {
     'exam-today':'Exam today','exam-over':'Exam over',
     'set-favorite':'Set as favorite','delete-course':'Delete course',
     'more-courses':'More courses','courses-load-error':'Courses could not be loaded.',
+    'greet-morning':'Good morning','greet-day':'Hi','greet-evening':'Good evening',
+    'greet-sub':'Where do you want to continue?',
+    'stat-courses':'Courses','stat-avg':'Avg. progress','stat-next-exam':'Next exam','stat-topics':'Topics done',
+    'stat-day-unit':'day','stat-days-unit':'days',
+    'new-course-tile':'New course','new-course-tile-sub':'Upload material',
+    'empty-title':'Ready for your first course?','empty-cta':'Create first course',
     'no-materials':'No materials yet','no-materials-sub':'No files found for this course.',
     'summaries-header':'Summaries','mock-exams-header':'Mock exams',
     'select-file-title':'Select a file on the left',
@@ -3677,7 +3776,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Preparing your files …',
     'upload-finishing-title':'Almost done','upload-finishing-sub':'Finishing up…',
     'upload-adding-title':'Adding files','upload-adding-sub':'Upload + processing in progress …',
-    'upload-failed':'Upload failed.','upload-saved':'{n} file(s) added.','upload-skipped':'{n} already present.',
+    'upload-failed':'Upload failed.','rate-limit':'Too many requests — please wait {n} seconds and try again.','upload-saved':'{n} file(s) added.','upload-skipped':'{n} already present.',
     'text-not-loaded':'Text could not be loaded',
     'rm-prio-must':'Required','rm-prio-good':'Important','rm-prio-nice':'Optional',
     'rm-stat-phases':'Phases','rm-todo-label':'open',
@@ -3703,7 +3802,7 @@ const TRANSLATIONS = {
     'open-module-first':'Please open a module first.',
   },
   es: {
-    'page-title':'¿Dónde quieres continuar?','empty-courses':'Aún no hay cursos — crea tu primer curso abajo.',
+    'page-title':'¿Dónde quieres continuar?','empty-courses':'Aún no hay cursos — empieza y crea el primero.',
     'new-course-section':'Crear nuevo curso','upload-toggle':'Subir materiales',
     'course-name-label':'Nombre del curso','course-name-ph':'Por ejemplo: Álgebra Lineal',
     'drop-title':'Suelta archivos o carpetas','drop-subtitle':'Sube diapositivas, apuntes o carpetas completas de una vez.',
@@ -3771,6 +3870,12 @@ const TRANSLATIONS = {
     'exam-today':'Examen hoy','exam-over':'Examen terminado',
     'set-favorite':'Marcar como favorito','delete-course':'Eliminar curso',
     'more-courses':'Más cursos','courses-load-error':'No se pudieron cargar los cursos.',
+    'greet-morning':'Buenos días','greet-day':'Hola','greet-evening':'Buenas noches',
+    'greet-sub':'¿Dónde quieres continuar?',
+    'stat-courses':'Cursos','stat-avg':'Progreso medio','stat-next-exam':'Próximo examen','stat-topics':'Temas hechos',
+    'stat-day-unit':'día','stat-days-unit':'días',
+    'new-course-tile':'Nuevo curso','new-course-tile-sub':'Subir material',
+    'empty-title':'¿Listo para tu primer curso?','empty-cta':'Crear primer curso',
     'no-materials':'Aún no hay materiales','no-materials-sub':'No se encontraron archivos para este curso.',
     'summaries-header':'Resúmenes','mock-exams-header':'Exámenes de práctica',
     'select-file-title':'Selecciona un archivo a la izquierda',
@@ -3796,7 +3901,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Preparando tus archivos …',
     'upload-finishing-title':'Casi listo','upload-finishing-sub':'Finalizando…',
     'upload-adding-title':'Añadiendo archivos','upload-adding-sub':'Subida + procesamiento en curso …',
-    'upload-failed':'Error en la subida.','upload-saved':'{n} archivo(s) añadido(s).','upload-skipped':'{n} ya presentes.',
+    'upload-failed':'Error en la subida.','rate-limit':'Demasiadas solicitudes: espera {n} segundos e inténtalo de nuevo.','upload-saved':'{n} archivo(s) añadido(s).','upload-skipped':'{n} ya presentes.',
     'text-not-loaded':'No se pudo cargar el texto',
     'rm-prio-must':'Obligatorio','rm-prio-good':'Importante','rm-prio-nice':'Opcional',
     'rm-stat-phases':'Fases','rm-todo-label':'abierto',
@@ -3822,7 +3927,7 @@ const TRANSLATIONS = {
     'open-module-first':'Por favor, abre primero un módulo.',
   },
   fr: {
-    'page-title':'Où veux-tu continuer ?','empty-courses':'Aucun cours pour l\'instant — crée ton premier cours ci-dessous.',
+    'page-title':'Où veux-tu continuer ?','empty-courses':'Aucun cours pour l\'instant — lance-toi et crée le premier.',
     'new-course-section':'Créer un nouveau cours','upload-toggle':'Télécharger des matériaux',
     'course-name-label':'Nom du cours','course-name-ph':'Par exemple : Algèbre linéaire',
     'drop-title':'Déposer des fichiers ou des dossiers','drop-subtitle':'Télécharge des diapositives, des scripts ou des dossiers entiers en une fois.',
@@ -3890,6 +3995,12 @@ const TRANSLATIONS = {
     'exam-today':'Examen aujourd\'hui','exam-over':'Examen terminé',
     'set-favorite':'Définir comme favori','delete-course':'Supprimer le cours',
     'more-courses':'Autres cours','courses-load-error':'Impossible de charger les cours.',
+    'greet-morning':'Bonjour','greet-day':'Salut','greet-evening':'Bonsoir',
+    'greet-sub':'Où veux-tu continuer ?',
+    'stat-courses':'Cours','stat-avg':'Progression moy.','stat-next-exam':'Prochain examen','stat-topics':'Sujets faits',
+    'stat-day-unit':'jour','stat-days-unit':'jours',
+    'new-course-tile':'Nouveau cours','new-course-tile-sub':'Importer des fichiers',
+    'empty-title':'Prêt pour ton premier cours ?','empty-cta':'Créer le premier cours',
     'no-materials':'Pas encore de matériaux','no-materials-sub':'Aucun fichier trouvé pour ce cours.',
     'summaries-header':'Résumés','mock-exams-header':'Examens blancs',
     'select-file-title':'Sélectionne un fichier à gauche',
@@ -3915,7 +4026,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Préparation de tes fichiers …',
     'upload-finishing-title':'Presque terminé','upload-finishing-sub':'Finitions en cours…',
     'upload-adding-title':'Ajout de fichiers','upload-adding-sub':'Upload + traitement en cours …',
-    'upload-failed':'Échec de l\'upload.','upload-saved':'{n} fichier(s) ajouté(s).','upload-skipped':'{n} déjà présent(s).',
+    'upload-failed':'Échec de l\'upload.','rate-limit':'Trop de requêtes — patiente {n} secondes puis réessaie.','upload-saved':'{n} fichier(s) ajouté(s).','upload-skipped':'{n} déjà présent(s).',
     'text-not-loaded':'Le texte n\'a pas pu être chargé',
     'rm-prio-must':'Obligatoire','rm-prio-good':'Important','rm-prio-nice':'Optionnel',
     'rm-stat-phases':'Phases','rm-todo-label':'ouvert',
@@ -3970,6 +4081,7 @@ function applyI18n(lang) {
     if (v !== undefined) el.title = v;
   });
   document.documentElement.lang = lang;
+  if (typeof updateGreeting === 'function') updateGreeting();
   // Re-render JS-generated content that uses t()
   if (typeof loadModules === 'function' && document.getElementById('setup-screen')?.classList.contains('active')) {
     loadModules();
@@ -4054,8 +4166,9 @@ const onboardingSkip    = document.getElementById('onboarding-skip-btn');
 const resultCloseBtn    = document.getElementById('result-close-btn');
 const resultChatBtn     = document.getElementById('result-chat-btn');
 
-const newCourseToggle   = document.getElementById('new-course-toggle');
-const newCoursePanel    = document.getElementById('new-course-panel');
+const newCourseModal    = document.getElementById('new-course-modal');
+const newCourseClose    = document.getElementById('new-course-close');
+const emptyCreateBtn    = document.getElementById('empty-create-btn');
 
 const pkModal       = document.getElementById('pk-modal');
 const pkBtn         = document.getElementById('pk-btn');
@@ -4073,18 +4186,20 @@ const pkErrorRetry  = document.getElementById('pk-error-retry');
 let _pkAbortCtrl  = null;
 let _rgAbortCtrl  = null;
 
-// ── Accordion ─────────────────────────────────────────────────────────────────
-function toggleNewCourse(forceOpen) {
-  const isOpen = newCoursePanel.classList.contains('open');
-  const open = forceOpen !== undefined ? forceOpen : !isOpen;
-  newCoursePanel.classList.toggle('open', open);
-  newCourseToggle.classList.toggle('open', open);
-  newCourseToggle.setAttribute('aria-expanded', String(open));
+// ── New course modal ──────────────────────────────────────────────────────────
+function openNewCourseModal() {
+  newCourseModal.classList.add('active');
+  setTimeout(() => { if (moduleNameInput) moduleNameInput.focus(); }, 80);
+}
+function closeNewCourseModal() {
+  newCourseModal.classList.remove('active');
 }
 
-newCourseToggle.addEventListener('click', () => toggleNewCourse());
-newCourseToggle.addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleNewCourse(); }
+newCourseClose.addEventListener('click', closeNewCourseModal);
+emptyCreateBtn.addEventListener('click', openNewCourseModal);
+newCourseModal.addEventListener('click', e => { if (e.target === newCourseModal) closeNewCourseModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && newCourseModal.classList.contains('active')) closeNewCourseModal();
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -4378,6 +4493,7 @@ function resetUploadForm() {
 async function uploadModule() {
   const moduleName = moduleNameInput.value.trim();
   if (!moduleName || !state.selectedFiles.length) return;
+  closeNewCourseModal();
   setProcessingState(true, t('proc-title'), t('proc-step1'));
   updateUploadButton();
   setStatus(t('upload-preparing'));
@@ -6376,18 +6492,31 @@ function renderPdfView(vp, tab) {
   if (!state.pdfFrames[tab.path]) {
     const iframe = document.createElement('iframe');
     iframe.title = tab.name;
-    const _tok = window._getAuthToken ? window._getAuthToken() : '';
-    const url = `/modules/${encodeURIComponent(state.moduleName)}/raw?path=${encodeURIComponent(tab.path)}${_tok ? '&token=' + encodeURIComponent(_tok) : ''}`;
-    iframe.src = `${url}#toolbar=1&navpanes=0&view=FitH`;
     iframe.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:0;height:0;border:0;display:none;';
     getPdfFrameHost().appendChild(iframe);
     state.pdfFrames[tab.path] = iframe;
+    // Fetch the PDF through the auth'd fetch() wrapper (Bearer token rides in the
+    // Authorization header, never the URL) and render it from a blob: URL so the
+    // access token can't leak via logs / history / Referer.
+    const url = `/modules/${encodeURIComponent(state.moduleName)}/raw?path=${encodeURIComponent(tab.path)}`;
+    fetch(url)
+      .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+      .then(blob => {
+        if (!state.pdfFrames[tab.path]) { return; }  // tab closed while loading
+        const objUrl = URL.createObjectURL(blob);
+        iframe.dataset.objUrl = objUrl;
+        iframe.src = `${objUrl}#toolbar=1&navpanes=0&view=FitH`;
+      })
+      .catch(() => { /* network/HTTP error — 429 handled centrally; frame stays blank */ });
   }
 }
 
 function disposePdfFrame(path) {
   const frame = state.pdfFrames[path];
   if (frame) {
+    if (frame.dataset && frame.dataset.objUrl) {
+      try { URL.revokeObjectURL(frame.dataset.objUrl); } catch (_) { /* ignore */ }
+    }
     if (frame.parentElement) frame.parentElement.removeChild(frame);
     delete state.pdfFrames[path];
   }
@@ -6782,6 +6911,62 @@ function daysUntilExam(examDate) {
   return Math.ceil((new Date(examDate) - today) / 86400000);
 }
 
+function updateGreeting() {
+  const titleEl = document.getElementById('greeting-title');
+  if (!titleEl) return;
+  const subEl = document.getElementById('greeting-sub');
+  const nameEl = document.getElementById('setup-profile-display-name');
+  let name = nameEl ? nameEl.textContent.trim() : '';
+  if (name === 'Profil' || name === 'Profile' || name === 'Profil ') name = '';
+  const h = new Date().getHours();
+  const key = h < 11 ? 'greet-morning' : (h < 18 ? 'greet-day' : 'greet-evening');
+  titleEl.textContent = name ? `${t(key)}, ${name}` : `${t(key)}!`;
+  if (subEl) subEl.textContent = t('greet-sub');
+}
+
+function renderDashStats(modules, roadmaps) {
+  const el = document.getElementById('dash-stats');
+  if (!el) return;
+  if (!modules.length) { el.hidden = true; el.innerHTML = ''; return; }
+
+  let pctSum = 0, pctCount = 0, doneSum = 0, totalSum = 0, nextExam = null;
+  roadmaps.forEach(rm => {
+    const p = calcKernProgress(rm);
+    if (p) { pctSum += p.pct; pctCount++; doneSum += p.done; totalSum += p.total; }
+    const d = daysUntilExam(rm && rm.exam_date);
+    if (d !== null && d >= 0) nextExam = (nextExam === null) ? d : Math.min(nextExam, d);
+  });
+  const avg = pctCount ? Math.round(pctSum / pctCount) : null;
+  const examUrgent = nextExam !== null && nextExam <= 7;
+  const examVal = nextExam === null
+    ? '—'
+    : `${nextExam}<span class="stat-unit">&nbsp;${nextExam === 1 ? t('stat-day-unit') : t('stat-days-unit')}</span>`;
+
+  const tile = (val, label, extra = '') =>
+    `<div class="stat-tile${extra}"><div class="stat-val">${val}</div><div class="stat-label">${label}</div></div>`;
+
+  el.innerHTML =
+    tile(modules.length, t('stat-courses')) +
+    tile(avg === null ? '—' : `${avg}<span class="stat-unit">%</span>`, t('stat-avg')) +
+    tile(examVal, t('stat-next-exam'), examUrgent ? ' urgent' : '') +
+    tile(totalSum ? `${doneSum}<span class="stat-unit">/${totalSum}</span>` : '—', t('stat-topics'));
+  el.hidden = false;
+}
+
+function renderAddCourseTile() {
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.className = 'add-course-tile';
+  tile.innerHTML = `
+    <span class="add-course-plus" aria-hidden="true">+</span>
+    <span class="add-course-text">
+      <strong>${t('new-course-tile')}</strong>
+      <span>${t('new-course-tile-sub')}</span>
+    </span>`;
+  tile.addEventListener('click', () => openNewCourseModal());
+  return tile;
+}
+
 function renderFeaturedCard(moduleName, roadmap) {
   const prog = calcKernProgress(roadmap);
   const doingTopic = getDoingTopic(roadmap);
@@ -6790,8 +6975,9 @@ function renderFeaturedCard(moduleName, roadmap) {
   const pct = prog ? prog.pct : null;
   const offset = pct !== null ? (RING_CIRC - pct / 100 * RING_CIRC).toFixed(2) : RING_CIRC;
 
+  const featExamUrgent = days !== null && days >= 0 && days <= 7;
   const examHtml = days !== null
-    ? `<div class="featured-exam-line">${days > 0 ? (days === 1 ? t('exam-in-1day') : tf('exam-in-days', {n: days})) : days === 0 ? t('exam-today') : t('exam-over')}</div>`
+    ? `<div class="featured-exam-line${featExamUrgent ? ' is-urgent' : ''}">${days > 0 ? (days === 1 ? t('exam-in-1day') : tf('exam-in-days', {n: days})) : days === 0 ? t('exam-today') : t('exam-over')}</div>`
     : '';
 
   const card = document.createElement('div');
@@ -6837,6 +7023,12 @@ function renderMiniCard(moduleName, roadmap) {
   const isFav = localStorage.getItem('studyAgent.favorite') === moduleName;
   const prog = calcKernProgress(roadmap);
   const pct = prog ? prog.pct : null;
+  const doing = getDoingTopic(roadmap);
+  const days = daysUntilExam(roadmap?.exam_date);
+  const examUrgent = days !== null && days >= 0 && days <= 7;
+  const examText = days === null || days < 0 ? ''
+    : (days === 0 ? t('exam-today') : days === 1 ? t('exam-in-1day') : tf('exam-in-days', {n: days}));
+  const calIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
 
   const card = document.createElement('button');
   card.className = 'existing-module';
@@ -6846,7 +7038,9 @@ function renderMiniCard(moduleName, roadmap) {
     ${pct !== null ? `
       <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
       <div class="mini-pct">${pct}%</div>
-    ` : ''}`;
+    ` : ''}
+    ${doing ? `<div class="mini-topic"><b>${t('currently')}</b>${escHtml(doing)}</div>` : ''}
+    ${examText ? `<span class="exam-pill${examUrgent ? ' is-urgent' : ''}">${calIcon}${examText}</span>` : ''}`;
 
   const starBtn = document.createElement('button');
   starBtn.className = 'star-module-btn' + (isFav ? ' starred' : '');
@@ -6875,6 +7069,7 @@ function renderMiniCard(moduleName, roadmap) {
 }
 
 async function loadModules() {
+  if (typeof updateGreeting === 'function') updateGreeting();
   try {
     const res = await fetch('/modules');
     const data = await res.json();
@@ -6882,7 +7077,10 @@ async function loadModules() {
     existingModulesEl.innerHTML = '';
     emptyModulesEl.hidden = modules.length > 0;
 
-    if (modules.length === 0) { toggleNewCourse(true); return; }
+    if (modules.length === 0) {
+      renderDashStats([], []);
+      return;
+    }
 
     const favorite = localStorage.getItem('studyAgent.favorite');
     let favIdx = modules.indexOf(favorite);
@@ -6895,6 +7093,8 @@ async function loadModules() {
       )
     );
 
+    renderDashStats(modules, roadmaps);
+
     existingModulesEl.appendChild(renderFeaturedCard(modules[favIdx], roadmaps[favIdx]));
 
     const nonFavModules = modules.filter((_, i) => i !== favIdx);
@@ -6904,14 +7104,17 @@ async function loadModules() {
       divider.className = 'section-heading';
       divider.innerHTML = `<span class="section-line r"></span><span class="section-label-text">${t('more-courses')}</span><span class="section-line"></span>`;
       existingModulesEl.appendChild(divider);
-      const grid = document.createElement('div');
-      grid.className = 'mini-modules-grid';
-      nonFavModules.forEach((m, i) => grid.appendChild(renderMiniCard(m, nonFavRoadmaps[i])));
-      existingModulesEl.appendChild(grid);
     }
+    const grid = document.createElement('div');
+    grid.className = 'mini-modules-grid';
+    nonFavModules.forEach((m, i) => grid.appendChild(renderMiniCard(m, nonFavRoadmaps[i])));
+    grid.appendChild(renderAddCourseTile());
+    existingModulesEl.appendChild(grid);
   } catch {
+    renderDashStats([], []);
     emptyModulesEl.hidden = false;
-    emptyModulesEl.textContent = t('courses-load-error');
+    const txt = emptyModulesEl.querySelector('.courses-empty-text');
+    if (txt) txt.textContent = t('courses-load-error');
   }
 }
 

@@ -21,7 +21,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, StreamingResponse
 from anthropic import Anthropic
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
 
 from app.embeddings.embedder import Embedder
 from app.ingestion.file_scanner import is_supported
@@ -46,6 +48,62 @@ from app.lecture import daily_tasks as dt
 load_dotenv()
 
 app = FastAPI(title="Study Agent")
+
+# ── Rate limiting (slowapi) ──────────────────────────────────────────────────
+# Keyed per authenticated user (the Supabase user-id the auth middleware stores
+# in a contextvar); falls back to the dev/env user-id when auth is disabled.
+# In-memory storage by default — fine for single-process uvicorn. Point
+# RATELIMIT_STORAGE_URI at redis://… before scaling to multiple workers.
+RL_CHAT = os.getenv("RATELIMIT_CHAT", "15/minute")             # light: /ask, /ask/stream
+RL_HEAVY = os.getenv("RATELIMIT_HEAVY", "5/minute")            # heavy: generation endpoints
+RL_HEAVY_DAILY = os.getenv("RATELIMIT_HEAVY_DAILY", "50/day")  # shared per-user daily budget
+_RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", "no")
+
+# ── Payload size limits ──────────────────────────────────────────────────────
+# Guards against memory-exhaustion DoS (huge uploads) and runaway LLM cost
+# (huge text bodies forwarded to paid Anthropic/OpenAI calls). All env-tunable.
+MAX_REQUEST_BYTES = int(os.getenv("MAX_REQUEST_BYTES", str(100 * 1024 * 1024)))      # 100 MB total body
+MAX_UPLOAD_FILE_BYTES = int(os.getenv("MAX_UPLOAD_FILE_BYTES", str(50 * 1024 * 1024)))  # 50 MB per file
+MAX_TEXT_CHARS = int(os.getenv("MAX_TEXT_CHARS", "50000"))                            # free-text fields
+
+
+def _rate_limit_key(request: Request) -> str:
+    """Rate-limit bucket = the current authenticated user (per-request contextvar)."""
+    return _supa_uid()
+
+
+limiter = Limiter(
+    key_func=_rate_limit_key,
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+    enabled=_RL_ENABLED,
+)
+app.state.limiter = limiter
+
+
+def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """429 with a Retry-After header so the frontend can back off.
+
+    A custom handler (not slowapi's default) is needed because emitting headers
+    the default way requires headers_enabled=True, which forces every endpoint to
+    return a starlette Response — ours return plain dicts and StreamingResponses.
+    Setting Retry-After only on this error response leaves the success paths
+    untouched. Retry-After = the limit's window length in seconds (worst-case wait).
+    """
+    try:
+        retry_after = int(exc.limit.limit.get_expiry())
+    except Exception:
+        retry_after = 60
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate-Limit erreicht ({exc.detail}). Bitte kurz warten."},
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
+
+# Shared daily budget: every heavy LLM endpoint draws from ONE per-user/day bucket.
+_heavy_daily = limiter.shared_limit(RL_HEAVY_DAILY, scope="llm_heavy_daily")
 
 client = OpenAI()
 anthropic_client = Anthropic()
@@ -82,12 +140,12 @@ async def _auth_middleware(request: Request, call_next):
         set_request_user_id(os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001"))
         return await call_next(request)
 
+    # Credentials are only accepted in the Authorization header — never in the URL
+    # query string, which would leak the token into access logs, browser history
+    # and Referer headers. Browser-native loads (PDF iframe etc.) fetch the bytes
+    # via the auth'd fetch() wrapper and render them from a blob: URL.
     auth = request.headers.get("Authorization", "")
-    # Also accept ?token= query param for browser-native loads (iframes, img src, etc.)
-    token = (
-        auth[7:] if auth.startswith("Bearer ")
-        else request.query_params.get("token", "")
-    )
+    token = auth[7:] if auth.startswith("Bearer ") else ""
     if not token:
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
     try:
@@ -104,6 +162,46 @@ async def _auth_middleware(request: Request, call_next):
     return await call_next(request)
 
 
+# ── Body-size guard ──────────────────────────────────────────────────────────
+# Added last → outermost middleware → runs first, so oversized requests are
+# rejected before auth/processing. Covers the common (honest Content-Length)
+# case for every endpoint; `_read_capped` is the backstop when the header is
+# missing or lies (e.g. chunked uploads).
+@app.middleware("http")
+async def _limit_body_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            if int(content_length) > MAX_REQUEST_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": f"Anfrage zu groß (max {MAX_REQUEST_BYTES // (1024 * 1024)} MB)."},
+                )
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "Ungültiger Content-Length-Header."})
+    return await call_next(request)
+
+
+async def _read_capped(upload: UploadFile, max_bytes: int = MAX_UPLOAD_FILE_BYTES) -> bytes:
+    """Read an UploadFile in chunks, aborting with HTTP 413 once max_bytes is
+    exceeded. Bounds memory/disk use even when Content-Length is absent or lies,
+    instead of `await upload.read()` pulling an unbounded file in one shot."""
+    chunks: List[bytes] = []
+    total = 0
+    while True:
+        chunk = await upload.read(1024 * 1024)  # 1 MB
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Datei zu groß (max {max_bytes // (1024 * 1024)} MB).",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 # Init RAG on startup (pgvector replaces ChromaDB)
 embedder = Embedder(model_name=config["embedding_model"])
 vector_store = PgVectorStore()
@@ -111,8 +209,8 @@ rag = create_query_service(vector_store=vector_store, embedder=embedder, top_k=c
 
 
 class Question(BaseModel):
-    question: str
-    module_name: Optional[str] = None
+    question: str = Field(..., max_length=MAX_TEXT_CHARS)
+    module_name: Optional[str] = Field(default=None, max_length=200)
     chat_history: List[dict] = []
 
 class LectureSummarizeRequest(BaseModel):
@@ -156,7 +254,10 @@ def sanitize_module_name(name: str) -> str:
 
 
 def module_dir(module_name: str) -> Path:
-    return RAW_DIR / sanitize_module_name(module_name)
+    # Namespace local files per authenticated user so the local-filesystem tier
+    # (used as a processing scratch area and as a read fallback) cannot serve one
+    # tenant's uploads to another that happens to pick the same module name.
+    return RAW_DIR / _supa_uid() / sanitize_module_name(module_name)
 
 
 EXAM_FILE_PATTERN = re.compile(r"(probe|alt)?klausur|\bexam\b|\btest\b", re.IGNORECASE)
@@ -235,16 +336,26 @@ def _safe_rel_path(rel: str) -> Path:
     return Path(*safe) if safe else Path(Path(rel).name)
 
 def _find_file(module_name: str, filename: str) -> Path:
-    """Sucht Datei im Modul-Verzeichnis."""
-    base = RAW_DIR / sanitize_module_name(module_name)
-    target = base / filename
-    if target.exists():
+    """Sucht Datei im Modul-Verzeichnis (pfad-traversal-sicher).
+
+    `filename` ist client-kontrolliert; es wird über `_safe_rel_path` entschärft
+    und das aufgelöste Ziel muss innerhalb des Modul-Verzeichnisses liegen, damit
+    `../`-/Absolut-Pfade nicht beliebige Dateien des Servers lesen können.
+    """
+    base = module_dir(module_name).resolve()
+    rel = _safe_rel_path(filename)
+    target = (base / rel).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Datei nicht gefunden: {rel.name}")
+    if target.exists() and target.is_file():
         return target
-    # Fallback: rekursiv suchen
-    matches = list(base.rglob(filename))
+    # Fallback: rekursiv per Basename suchen (innerhalb von base, kein Traversal)
+    matches = list(base.rglob(rel.name)) if rel.name else []
     if matches:
         return matches[0]
-    raise HTTPException(status_code=404, detail=f"Datei nicht gefunden: {filename}")
+    raise HTTPException(status_code=404, detail=f"Datei nicht gefunden: {rel.name}")
 
 
 def _slug(name: str) -> str:
@@ -382,7 +493,8 @@ def serve_ui():
 
 
 @app.post("/ask")
-async def ask(body: Question):
+@limiter.limit(RL_CHAT)
+async def ask(request: Request, body: Question):
     answer_parts: List[str] = []
     sources: list = []
     path = "simple"
@@ -397,7 +509,8 @@ async def ask(body: Question):
 
 
 @app.post("/ask/stream")
-async def ask_stream(body: Question):
+@limiter.limit(RL_CHAT)
+async def ask_stream(request: Request, body: Question):
     async def event_stream():
         async for raw in ask_advanced(body.question, body.module_name, rag, body.chat_history):
             yield f"data: {raw}\n\n"
@@ -774,14 +887,14 @@ def rename_module_file(module_name: str, body: FileRenameRequest):
 # ─────────────────────── Roadmap endpoints ────────────────────────────────────
 
 class SolveSheetRequest(BaseModel):
-    sheet_text: str
-    module_id: str
+    sheet_text: str = Field(..., max_length=MAX_TEXT_CHARS)
+    module_id: str = Field(..., max_length=200)
 
 
 class RoadmapGenerateRequest(BaseModel):
-    module_name: str
-    exam_date: Optional[str] = None
-    focus: Optional[str] = None
+    module_name: str = Field(..., max_length=200)
+    exam_date: Optional[str] = Field(default=None, max_length=50)
+    focus: Optional[str] = Field(default=None, max_length=2000)
 
 
 class RoadmapStatusRequest(BaseModel):
@@ -826,7 +939,9 @@ def _collect_exam_text(module_name: str) -> List[str]:
 
 
 @app.post("/roadmap/generate")
-async def roadmap_generate(body: RoadmapGenerateRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def roadmap_generate(request: Request, body: RoadmapGenerateRequest):
     """
     Generate a fresh roadmap. If an old one exists, smart-merge status across.
     Returns preview_md + diff WITHOUT writing — call /roadmap/{m}/accept to commit.
@@ -895,7 +1010,9 @@ async def roadmap_generate(body: RoadmapGenerateRequest):
 
 
 @app.post("/roadmap/generate/stream")
-async def roadmap_generate_stream(body: RoadmapGenerateRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def roadmap_generate_stream(request: Request, body: RoadmapGenerateRequest):
     """SSE version of /roadmap/generate — emits step events then a result event."""
 
     async def event_gen():
@@ -1078,7 +1195,12 @@ async def upload_module(
             skipped_files.append(uploaded.filename)
             continue
 
-        content = await uploaded.read()
+        try:
+            content = await _read_capped(uploaded)
+        except HTTPException:
+            # Oversized file: skip and report instead of failing the whole batch.
+            skipped_files.append(uploaded.filename)
+            continue
         rel_str = str(save_rel).replace("\\", "/")
         storage_path = f"{uid}/{slug}/{rel_str}"
         file_type = save_rel.suffix.lower().lstrip(".")
@@ -1127,7 +1249,7 @@ async def upload_module(
         raise HTTPException(status_code=400, detail="Keine unterstuetzten Dateien hochgeladen.")
 
     with ThreadPoolExecutor(max_workers=min(len(saved_paths), 4)) as pool:
-        futures = {pool.submit(process_document, path, config["processed_path"], True): path for path in saved_paths}
+        futures = {pool.submit(process_document, path, config["processed_path"], True, module_name=clean_module): path for path in saved_paths}
         results = [f.result() for f in as_completed(futures)]
     index_chunks(config)
 
@@ -1154,8 +1276,10 @@ async def upload_module(
 
 
 @app.post("/process")
-async def process_lecture(file: UploadFile = File(...)):
-    content = await file.read()
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def process_lecture(request: Request, file: UploadFile = File(...)):
+    content = await _read_capped(file)
 
     with tempfile.NamedTemporaryFile(suffix=Path(file.filename).suffix, delete=False) as tmp:
         tmp.write(content)
@@ -1193,7 +1317,9 @@ Vorlesung:
         }
 
 @app.post("/lecture/summarize")
-async def lecture_summarize(body: LectureSummarizeRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def lecture_summarize(request: Request, body: LectureSummarizeRequest):
     """
     Erstellt eine Vorlesungszusammenfassung (Zwei-Stufen-Generierung).
     Prüft zuerst ob Modul-Profil vorhanden – wenn nicht, needs_onboarding=True.
@@ -1303,7 +1429,9 @@ def get_lecture_summary(path: str):
 
 
 @app.post("/solve-sheet")
-async def solve_sheet(body: SolveSheetRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def solve_sheet(request: Request, body: SolveSheetRequest):
     from app.router import HybridRouter
     from app.solver import ExerciseSheetSolver
 
@@ -1434,7 +1562,9 @@ def delete_module(module_name: str):
 # ─────────────────────── Probeklausur endpoints ───────────────────────────────
 
 @app.post("/exam/generate")
-async def exam_generate(body: ExamGenerateRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def exam_generate(request: Request, body: ExamGenerateRequest):
     clean_name = sanitize_module_name(body.module_name)
 
     existing = eg.list_exams(clean_name)
@@ -1489,7 +1619,9 @@ async def exam_generate(body: ExamGenerateRequest):
 
 
 @app.post("/exam/generate/stream")
-async def exam_generate_stream(body: ExamGenerateRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def exam_generate_stream(request: Request, body: ExamGenerateRequest):
     """SSE version of /exam/generate — emits step events then a result event."""
 
     async def event_gen():
