@@ -62,7 +62,7 @@ _RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", 
 # ── Payload size limits ──────────────────────────────────────────────────────
 # Guards against memory-exhaustion DoS (huge uploads) and runaway LLM cost
 # (huge text bodies forwarded to paid Anthropic/OpenAI calls). All env-tunable.
-MAX_REQUEST_BYTES = int(os.getenv("MAX_REQUEST_BYTES", str(100 * 1024 * 1024)))      # 100 MB total body
+MAX_REQUEST_BYTES = int(os.getenv("MAX_REQUEST_BYTES", str(500 * 1024 * 1024)))      # 500 MB total body
 MAX_UPLOAD_FILE_BYTES = int(os.getenv("MAX_UPLOAD_FILE_BYTES", str(50 * 1024 * 1024)))  # 50 MB per file
 MAX_TEXT_CHARS = int(os.getenv("MAX_TEXT_CHARS", "50000"))                            # free-text fields
 
@@ -131,8 +131,8 @@ _AUTH_DISABLED = not _SUPABASE_CONFIGURED
 async def _auth_middleware(request: Request, call_next):
     from app.storage.supabase_client import set_request_user_id, get_client
 
-    # Landing page and app shell are always public (serve HTML without a token)
-    if request.url.path in ("/", "/app"):
+    # Landing page, app shell, upgrade page and logo are always public (serve without a token)
+    if request.url.path in ("/", "/app", "/upgrade", "/logo.png"):
         return await call_next(request)
 
     # Dev mode: Supabase not configured — use fixed fallback user
@@ -492,6 +492,17 @@ def serve_ui():
     return _inject_supabase(html_path.read_text(encoding="utf-8"))
 
 
+@app.get("/upgrade", response_class=HTMLResponse)
+def serve_upgrade():
+    html_path = Path(__file__).parent / "static" / "upgrade.html"
+    return _inject_supabase(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/logo.png")
+def serve_logo():
+    return FileResponse(Path(__file__).parent / "static" / "logo.png", media_type="image/png")
+
+
 @app.post("/ask")
 @limiter.limit(RL_CHAT)
 async def ask(request: Request, body: Question):
@@ -606,6 +617,74 @@ def set_favorite_module(body: FavoriteModuleRequest):
         ).execute()
     except Exception:
         pass
+    return {"ok": True}
+
+
+# ── Sidebar folder layout (persisted in settings.preferences jsonb) ────────────
+# The browser keeps a localStorage cache, but the server is the source of truth so
+# folders survive a cache clear and follow the user across browsers/devices.
+def _read_preferences() -> dict:
+    try:
+        uid = _supa_uid()
+        rows = (
+            _supa_client()
+            .table("settings")
+            .select("preferences")
+            .eq("user_id", uid)
+            .execute()
+        ).data or []
+        if rows:
+            return rows[0].get("preferences") or {}
+    except Exception:
+        pass
+    return {}
+
+
+def _write_preferences(prefs: dict) -> None:
+    try:
+        uid = _supa_uid()
+        _supa_client().table("settings").upsert(
+            {"user_id": uid, "preferences": prefs},
+            on_conflict="user_id",
+        ).execute()
+    except Exception:
+        pass
+
+
+def _clear_folder_config(module_name: str) -> None:
+    """Remove a module's saved sidebar folder layout from settings.preferences."""
+    prefs = _read_preferences()
+    configs = prefs.get("folder_configs") or {}
+    if module_name in configs:
+        configs.pop(module_name, None)
+        prefs["folder_configs"] = configs
+        _write_preferences(prefs)
+
+
+@app.get("/modules/{module_name}/folder-config")
+def get_module_folder_config(module_name: str):
+    """Return the saved sidebar folder layout for a module (empty if none)."""
+    clean = sanitize_module_name(module_name)
+    prefs = _read_preferences()
+    configs = prefs.get("folder_configs") or {}
+    return {"config": configs.get(clean) or {}}
+
+
+class FolderConfigRequest(BaseModel):
+    config: dict = {}
+
+@app.put("/modules/{module_name}/folder-config")
+def set_module_folder_config(module_name: str, body: FolderConfigRequest):
+    """Persist the sidebar folder layout for a module in settings.preferences."""
+    clean = sanitize_module_name(module_name)
+    prefs = _read_preferences()
+    configs = dict(prefs.get("folder_configs") or {})
+    if body.config:
+        configs[clean] = body.config
+    else:
+        configs.pop(clean, None)
+    prefs["folder_configs"] = configs
+    _write_preferences(prefs)
     return {"ok": True}
 
 
@@ -1243,12 +1322,13 @@ async def upload_module(
         target_path = target_dir / save_rel
         target_path.parent.mkdir(parents=True, exist_ok=True)
         target_path.write_bytes(content)
+        del content  # free RAM immediately; file is now in Supabase Storage + local disk
         saved_paths.append(target_path)
 
     if not saved_paths:
         raise HTTPException(status_code=400, detail="Keine unterstuetzten Dateien hochgeladen.")
 
-    with ThreadPoolExecutor(max_workers=min(len(saved_paths), 4)) as pool:
+    with ThreadPoolExecutor(max_workers=min(len(saved_paths), 2)) as pool:
         futures = {pool.submit(process_document, path, config["processed_path"], True, module_name=clean_module): path for path in saved_paths}
         results = [f.result() for f in as_completed(futures)]
     index_chunks(config)
@@ -1482,21 +1562,94 @@ async def solve_sheet(request: Request, body: SolveSheetRequest):
     }
 
 
+def _list_storage_prefix_recursive(supa, bucket: str, prefix: str, _depth: int = 0) -> list:
+    """Return full object paths under a storage prefix, recursing into subfolders.
+
+    Supabase ``list()`` is not recursive and returns subfolders as placeholder
+    entries (no ``id``/``metadata``). We descend into those so nested files
+    (e.g. ``processed/<slug>/summaries/*`` or nested raw-file folders) are caught.
+    """
+    out: list = []
+    if _depth > 6:
+        return out
+    try:
+        items = supa.storage.from_(bucket).list(prefix)
+    except Exception:
+        return out
+    for item in (items or []):
+        name = item.get("name")
+        if not name:
+            continue
+        full = f"{prefix}/{name}"
+        is_folder = item.get("id") is None and item.get("metadata") is None
+        if is_folder:
+            out.extend(_list_storage_prefix_recursive(supa, bucket, full, _depth + 1))
+        else:
+            out.append(full)
+    return out
+
+
 @app.delete("/modules/{module_name}")
 def delete_module(module_name: str):
-    """Löscht einen Kurs inkl. Dateien, Chunks, Embeddings und Profil."""
+    """Löscht einen Kurs vollständig: DB-Zeilen, Chunks/Embeddings, Storage
+    (raw-files + processed) und lokale Reste.
+
+    Reihenfolge bewusst gewählt: Chunks und Storage werden gelöscht, *solange das
+    Modul noch existiert*, und die ``modules``-Zeile erst ganz zuletzt. So kann
+    keine spätere Namensauflösung das Modul versehentlich neu anlegen.
+    """
     clean_name = sanitize_module_name(module_name)
     slug = _slug(clean_name)
     uid = _supa_uid()
     supa = _supa_client()
 
-    # 1. Delete module from DB — first remove child rows to avoid FK violations,
-    #    then delete the module itself (works with or without CASCADE DELETE).
     profile = mp.load(clean_name)
     module_id = (profile or {}).get("id")
 
+    # 1. Delete pgvector chunks first, directly by module_id (no name resolution,
+    #    so the auto-create path can never fire). Falls back to the name-based
+    #    delete only when no profile/id was found.
+    try:
+        if module_id:
+            supa.table("chunks").delete().eq("user_id", uid).eq("module_id", module_id).execute()
+        else:
+            vector_store.delete(where={"module_name": clean_name})
+    except Exception as exc:
+        print(f"[delete_module] chunks delete failed (non-fatal): {exc}")
+
+    # 2. Delete every raw file for this module. Prefer the exact storage_paths
+    #    recorded in the files table (handles nested folders), then sweep the
+    #    storage prefix as a backstop for anything not in the table.
+    try:
+        raw_paths: list = []
+        if module_id:
+            rows = (
+                supa.table("files")
+                .select("storage_path")
+                .eq("module_id", module_id)
+                .execute()
+            ).data or []
+            raw_paths = [r["storage_path"] for r in rows if r.get("storage_path")]
+        raw_paths += _list_storage_prefix_recursive(supa, "raw-files", f"{uid}/{slug}")
+        raw_paths = list(dict.fromkeys(raw_paths))  # dedupe, preserve order
+        if raw_paths:
+            supa.storage.from_("raw-files").remove(raw_paths)
+    except Exception as exc:
+        print(f"[delete_module] raw-files delete failed (non-fatal): {exc}")
+
+    # 3. Delete every processed artifact (roadmap, daily plan, history,
+    #    summaries/*, exams/*) under processed/<uid>/<slug>/.
+    try:
+        proc_paths = _list_storage_prefix_recursive(supa, "processed", f"{uid}/{slug}")
+        if proc_paths:
+            supa.storage.from_("processed").remove(proc_paths)
+    except Exception as exc:
+        print(f"[delete_module] processed delete failed (non-fatal): {exc}")
+
+    # 4. Delete DB rows last. Remove children explicitly (works with or without
+    #    ON DELETE CASCADE), then the module itself.
     if module_id:
-        for child_table in ("files", "summaries"):
+        for child_table in ("chunks", "summaries", "exams", "documents", "files"):
             try:
                 supa.table(child_table).delete().eq("module_id", module_id).execute()
             except Exception as exc:
@@ -1512,32 +1665,15 @@ def delete_module(module_name: str):
         except Exception as exc:
             print(f"[delete_module] modules delete by slug failed: {exc}")
 
-    # 2. Delete pgvector chunks
+    # 5. Drop the in-memory module-id cache so the name can't resolve to a stale
+    #    (now-deleted) id on the next operation.
     try:
-        vector_store.delete(where={"module_name": clean_name})
+        from app.vectorstore.pgvector_store import purge_module_cache
+        purge_module_cache(clean_name, slug)
     except Exception:
         pass
 
-    # 3. Delete Storage files (raw-files bucket)
-    try:
-        raw_prefix = f"{uid}/{slug}/"
-        items = supa.storage.from_("raw-files").list(f"{uid}/{slug}")
-        for item in (items or []):
-            name = item.get("name", "")
-            if name:
-                supa.storage.from_("raw-files").remove([f"{uid}/{slug}/{name}"])
-    except Exception:
-        pass
-
-    # 4. Delete processed Storage files
-    try:
-        from app.storage import storage_backend as sb
-        for suffix in ["roadmap.md", "daily_plan.md", "task_history.json"]:
-            sb.delete(f"{slug}/{suffix}")
-    except Exception:
-        pass
-
-    # 5. Local filesystem cleanup (best-effort)
+    # 6. Local filesystem cleanup (best-effort)
     raw = module_dir(clean_name)
     if raw.exists():
         shutil.rmtree(raw, ignore_errors=True)
@@ -1555,6 +1691,10 @@ def delete_module(module_name: str):
                     jsonl.unlink()
             except Exception:
                 pass
+
+    # Drop the saved sidebar folder layout so a module recreated under the same
+    # name doesn't resurrect old folders (mirrors the localStorage cleanup).
+    _clear_folder_config(clean_name)
 
     return {"success": True, "deleted": clean_name}
 

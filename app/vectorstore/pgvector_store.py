@@ -19,8 +19,14 @@ def _cache_key(uid: str, name: str) -> str:
     return f"{uid}:{name}"
 
 
-def _resolve_module_id(module_name: str) -> Optional[str]:
-    """Look up module UUID by name or slug. Auto-creates a minimal entry if missing."""
+def _resolve_module_id(module_name: str, auto_create: bool = False) -> Optional[str]:
+    """Look up module UUID by name or slug.
+
+    A missing module is only (re)created when ``auto_create`` is True — that path
+    is reserved for the write/``add`` flow so freshly-ingested chunks are not
+    lost. Read/search/delete callers pass ``auto_create=False`` so a deleted
+    module is never resurrected as a side effect of resolving its name.
+    """
     if not module_name:
         return None
 
@@ -57,6 +63,10 @@ def _resolve_module_id(module_name: str) -> Optional[str]:
         _module_id_cache[ck] = mid
         return mid
 
+    if not auto_create:
+        # Caller is reading/deleting — do not resurrect a module that is gone.
+        return None
+
     # Module not in DB — auto-create a minimal entry so chunks are not lost
     import re as _re
     slug = _re.sub(r"[äöüß]", lambda m: {"ä":"ae","ö":"oe","ü":"ue","ß":"ss"}[m.group()], module_name.lower())
@@ -79,6 +89,23 @@ def _resolve_module_id(module_name: str) -> Optional[str]:
         logger.warning("Auto-create module %r failed: %s", module_name, exc)
 
     return None
+
+
+def purge_module_cache(*names: str) -> None:
+    """Drop cached name/slug→id mappings for the current user.
+
+    Call after a module is deleted so its name can never resolve to a stale id
+    (and so a later lookup goes back to the DB instead of a dead cache entry).
+    """
+    uid = get_user_id()
+    keys = set()
+    for n in names:
+        if not n:
+            continue
+        keys.add(_cache_key(uid, n))
+        keys.add(_cache_key(uid, n.lower()))
+    for k in keys:
+        _module_id_cache.pop(k, None)
 
 
 def _vec_str(embedding: List[float]) -> str:
@@ -121,7 +148,7 @@ class PgVectorStore:
         rows = []
         for chunk_id, emb, doc, meta in zip(ids, embeddings, documents, metadatas):
             module_name = meta.get("module_name", "")
-            module_id = _resolve_module_id(module_name)
+            module_id = _resolve_module_id(module_name, auto_create=True)
             if not module_id:
                 logger.warning("Skipping chunk %s — no module_id for %r", chunk_id, module_name)
                 continue

@@ -477,25 +477,41 @@ def _split_files(
 # ─────────────────────────── LLM task generation ────────────────────────────
 
 _TASK_PROMPT = """\
-Du bist ein universitärer Lerncoach. Erstelle {n} Lernaufgaben für heute.
-
+Du bist ein AI Lerncoach. Dein Ziel ist es, eine effektive, fokussierte Tageslernplan 
+mit {n} konkreten Aufgaben zu erstellen, basierend auf dem Thema und den verfügbaren Materialien. 
+Du musst auch verstehen um was für ein modul es sich handelt. Wenn es z.B. um ein Informatik/Mathematik Modul geht, 
+dann sollten die aufgaben eher praktisch sein, während es bei einem theoriekurs, wie Wirtschaftswissenschaften/Linguistik/Recht geht,  
+dann eher um das verstehen von konzepten geht.
+Jede Aufgabe sollte klar und umsetzbar sein, damit der Lernende direkt loslegen kann.
+Hier sind die Daten, die du für die Planung verwenden kannst:
 THEMA: {topic_name}
 SUBTOPICS: {subtopics}
 LERNZEIT HEUTE: {hours}h
 VERFÜGBARE DATEIEN: {files}
 ÜBUNGSBLÄTTER: {exercises}
 {rag_section}{already_done_section}
-Jede Aufgabe ist ein kurzer Titel/Referenz — kein langer Satz, keine Aufgabenstellung.
-Wenn möglich: Übungsblatt-Aufgaben priorisieren.
+Hier sind einige Richtlinien für die Aufgabenerstellung:
+- Priorisiere Aufgaben, die direkt mit den verfügbaren Dateien und Übungen verbunden sind.
+- Berücksichtige die Unterthemen, um sicherzustellen, dass die Aufgaben relevante Konzepte abdecken.
+- Versuche, die Lernzeit optimal zu nutzen, indem du eine Mischung aus Theorie und Praxis vorschlägst
+- Ein Übungsblatt könnte z.B. die Aufgabe sein, eine bestimmte Übungsaufgabe zu lösen, während eine Datei die Aufgabe sein könnte, ein bestimmtes Kapitel durchzuarbeiten und die Kernkonzepte zusammenzufassen.
+- Du schreibst keine aufgabenstellungen, sondern kurze Referenzen, die den Lernenden anleiten, was genau zu tun ist (z.B. "Löse Aufgabe 3 aus Blatt3" oder "Fasse Kapitel 4 der VL5 zusammen").
+- Vermeide vage Formulierungen wie "Lerne Thema X" oder "Verstehe Konzept Y". Sei stattdessen so konkret und handlungsorientiert wie möglich.
+- Wenn es viel Theorie Material gibt zb. Skripte oder Vorlesungsfolien, dann sollten die Aufgaben eher darauf fokussieren, die Kernkonzepte zu verstehen und in eigenen Worten zusammenzufassen. 
+- Wenn es viele Übungsblätter gibt, dann sollten die Aufgaben eher darauf fokussieren, konkrete Übungsaufgaben zu lösen.
 
-FORMAT (kurze Referenz, max. 6–8 Wörter):
-✓ "Blatt3 – Aufgabe 1"
-✓ "Blatt3 – Aufgaben 2–4"
-✓ "VL5 – Normalformen (1NF/2NF/3NF)"
-✓ "Skript Kap. 4 – Algorithmus X"
-✓ "Wiederholung: Transaktionen"
-✗ "Löse Aufgabe 3 aus Blatt3 vollständig und überprüfe jeden Schritt (~40 min)"
-✗ "Erkläre den Unterschied zwischen X und Y in eigenen Worten"
+Hier ist ein beispiel für die task generierung:
+
+<example> 
+"Löse Aufgabe 3 aus Blatt3 vollständig und kontrolliere deine lösungen."
+"Lese Kapitel 4 der VL5 und fasse die 3 wichtigsten Konzepte in eigenen Worten zusammen."
+"Löse die Übungsaufgaben 2, 4 und 5 aus Blatt3, da sie wichtige prüfungsrelevante Konzepte abdecken."
+"Verbringe 30 Minuten damit, die Normalformen (1NF, 2NF, 3NF) anhand von Beispielen zu erklären und zu verstehen."
+"Schreibe eine kurze Zusammenfassung der wichtigsten Punkte aus Skript Kapitel 4 zum Algorithmus X, um dein Verständnis zu vertiefen."
+</example>
+
+Wie erstellst du den Tagesplan?
+Denk erstmal was du schreiben willst bevor du antwortest.
 
 Antworte NUR als JSON-Array mit genau {n} Strings.\
 """

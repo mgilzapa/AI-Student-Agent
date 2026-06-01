@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veexa · Tarif upgraden</title>
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC">
+  <!-- SUPABASE_INJECT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F5F1EB;
+      --panel: #EDE7DC;
+      --panel-soft: #E0D9CE;
+      --border: #C4BAB0;
+      --text: #1A1614;
+      --muted: #5C5450;
+      --accent: #C2410C;
+      --accent-h: #9a3309;
+      --accent-soft: rgba(194,65,12,0.10);
+      --success: #16A34A;
+      --danger: #DC2626;
+      --shadow: 0 4px 24px rgba(26,22,20,0.10), 0 1px 4px rgba(26,22,20,0.07);
+      --shadow-lg: 0 24px 80px rgba(26,22,20,0.14), 0 4px 16px rgba(26,22,20,0.09);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 1rem; line-height: 1.6;
+      min-height: 100vh; overflow-x: hidden;
+    }
+
+    /* ─── Top bar ─────────────────────────────────── */
+    .top {
+      position: sticky; top: 0; z-index: 100;
+      height: 60px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 max(1.25rem, calc(50% - 560px));
+      background: rgba(245,241,235,0.85);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .top-logo { display: inline-flex; align-items: center; text-decoration: none; }
+    .top-logo img { height: 28px; width: auto; display: block; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: transparent; border: 1.5px solid var(--border); border-radius: 9px;
+      padding: 0.45rem 0.9rem; font-family: 'Inter', sans-serif;
+      font-size: 0.875rem; font-weight: 600; color: var(--text);
+      cursor: pointer; text-decoration: none; transition: all 0.15s;
+    }
+    .back-link:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .back-link svg { width: 15px; height: 15px; }
+
+    /* ─── Page header ─────────────────────────────── */
+    .wrap { padding: 64px max(1.25rem, calc(50% - 560px)) 80px; position: relative; }
+    .wrap::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% -5%, rgba(194,65,12,0.09), transparent 70%),
+        radial-gradient(ellipse 30% 35% at 12% 80%, rgba(180,83,9,0.05), transparent 60%);
+    }
+    .head { text-align: center; position: relative; z-index: 1; margin-bottom: 2.25rem; }
+    .section-label {
+      display: inline-block; font-size: 0.8125rem; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: 'Lora', serif; font-size: clamp(1.85rem, 4vw, 2.6rem); font-weight: 700;
+      letter-spacing: -0.02em; line-height: 1.12; margin-bottom: 0.85rem;
+    }
+    .section-sub {
+      font-size: 1rem; color: var(--muted); max-width: 540px; margin: 0 auto; line-height: 1.6;
+    }
+
+    /* ─── Billing toggle ──────────────────────────── */
+    .billing-switch-wrap { display: flex; justify-content: center; margin-bottom: 2.5rem; position: relative; z-index: 1; }
+    .billing-switch {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 100px; padding: 4px;
+    }
+    .bs-opt {
+      border: none; background: transparent; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.9375rem; font-weight: 600;
+      color: var(--muted); padding: 0.5rem 1.25rem; border-radius: 100px;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .bs-opt:hover { color: var(--text); }
+    .bs-opt.is-active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(194,65,12,0.30); }
+    .bs-opt.is-active:hover { color: #fff; }
+    .bs-save {
+      font-size: 0.7rem; font-weight: 700; line-height: 1;
+      background: rgba(22,163,74,0.15); color: var(--success);
+      padding: 0.18rem 0.45rem; border-radius: 100px;
+    }
+    .bs-opt.is-active .bs-save { background: rgba(255,255,255,0.22); color: #fff; }
+
+    /* ─── Pricing grid ────────────────────────────── */
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+      gap: 1.5rem; max-width: 1040px; margin: 0 auto; align-items: start;
+      position: relative; z-index: 1;
+    }
+    .price-card {
+      background: var(--panel); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 2rem; position: relative;
+      animation: cardUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .price-card:nth-child(2) { animation-delay: 0.06s; }
+    .price-card:nth-child(3) { animation-delay: 0.12s; }
+    @keyframes cardUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .price-card { animation: none; } }
+    .price-card.featured {
+      border-color: var(--accent);
+      background: linear-gradient(140deg, var(--panel) 0%, rgba(194,65,12,0.05) 100%);
+      box-shadow: 0 8px 36px rgba(194,65,12,0.16);
+    }
+    .price-card.current { border-color: var(--success); }
+    .price-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #fff; font-size: 0.75rem; font-weight: 600;
+      padding: 0.2rem 0.9rem; border-radius: 100px; white-space: nowrap;
+    }
+    .price-badge.current-badge { background: var(--success); }
+    .price-plan {
+      font-size: 0.8125rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem;
+    }
+    .price-amount-wrap { margin-bottom: 1.5rem; }
+    .price-amount {
+      font-family: 'Lora', serif; font-size: 2.625rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em;
+    }
+    .price-period { font-size: 0.875rem; color: var(--muted); margin-left: 0.2rem; }
+    .price-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.75rem; }
+    .price-list li { display: flex; align-items: center; gap: 0.625rem; font-size: 0.875rem; color: var(--text); }
+    .chk {
+      flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(22,163,74,0.12);
+      display: flex; align-items: center; justify-content: center; color: #16A34A;
+    }
+    .price-btn {
+      width: 100%; padding: 0.7rem 1rem; border-radius: 9px;
+      font-size: 0.9375rem; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; border: none; transition: all 0.15s;
+    }
+    .price-btn.solid { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(194,65,12,0.32); }
+    .price-btn.solid:hover { background: var(--accent-h); transform: translateY(-1px); }
+    .price-btn.outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+    .price-btn.outline:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .price-btn.is-current {
+      background: transparent; color: var(--success); border: 1.5px solid var(--success);
+      cursor: default; box-shadow: none;
+    }
+    .price-btn.is-current:hover { transform: none; }
+
+    /* ─── Trust note ──────────────────────────────── */
+    .trust {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem;
+      margin: 2.75rem auto 0; max-width: 1040px; position: relative; z-index: 1;
+      font-size: 0.8125rem; color: var(--muted);
+    }
+    .trust span { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .trust svg { width: 14px; height: 14px; color: var(--success); }
+
+    /* ─── Checkout modal ──────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(26,22,20,0.42); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center; padding: 1.25rem;
+    }
+    .modal-backdrop.open { display: flex; animation: fadeIn 0.18s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal {
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 16px;
+      box-shadow: var(--shadow-lg); width: 100%; max-width: 420px; padding: 1.75rem;
+      animation: modalUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes modalUp { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+    .modal-title { font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .modal-sub { font-size: 0.875rem; color: var(--muted); margin-bottom: 1.25rem; }
+    .modal-summary {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 11px;
+      padding: 1rem 1.15rem; margin-bottom: 1.25rem;
+    }
+    .modal-summary-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+    .modal-summary-plan { font-weight: 700; font-size: 1.05rem; }
+    .modal-summary-price { font-family: 'Lora', serif; font-weight: 700; font-size: 1.35rem; color: var(--accent); }
+    .modal-summary-meta { font-size: 0.8125rem; color: var(--muted); margin-top: 0.3rem; }
+    .modal-note {
+      display: flex; gap: 0.55rem; align-items: flex-start;
+      font-size: 0.8rem; color: var(--muted); line-height: 1.5; margin-bottom: 1.25rem;
+    }
+    .modal-note svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; color: var(--success); }
+    .modal-actions { display: flex; gap: 0.6rem; }
+    .modal-btn {
+      flex: 1; padding: 0.7rem 1rem; border-radius: 9px; font-size: 0.9375rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif; border: none; transition: all 0.15s;
+    }
+    .modal-btn.ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+    .modal-btn.ghost:hover { border-color: var(--muted); }
+    .modal-btn.primary { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(194,65,12,0.32); }
+    .modal-btn.primary:hover { background: var(--accent-h); }
+    .modal-btn:disabled { opacity: 0.6; cursor: default; }
+
+    /* ─── Toast ───────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--text); color: var(--bg); font-size: 0.875rem; font-weight: 500;
+      padding: 0.7rem 1.15rem; border-radius: 10px; box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 400;
+      max-width: 90vw;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <header class="top">
+    <a class="top-logo" href="/app" aria-label="Veexa"><img src="/logo.png" alt="Veexa"></a>
+    <a class="back-link" href="/app">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Zurück zur App
+    </a>
+  </header>
+
+  <main class="wrap">
+    <div class="head">
+      <span class="section-label">Tarif upgraden</span>
+      <h1 class="section-title">Wähle den Tarif, der zu dir passt</h1>
+      <p class="section-sub">Mehr Module, mehr KI-Fragen und unbegrenzte Probeklausuren. Alle Abos sind monatlich kündbar.</p>
+    </div>
+
+    <div class="billing-switch-wrap">
+      <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum">
+        <button class="bs-opt is-active" type="button" data-cycle="monthly" aria-pressed="true">Monatlich</button>
+        <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false">Jährlich <span class="bs-save">−33%</span></button>
+      </div>
+    </div>
+
+    <div class="pricing-grid" id="pricing-grid"><!-- gerendert via JS --></div>
+
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Monatlich kündbar</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Sichere Zahlung</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Jederzeit wechselbar</span>
+    </div>
+  </main>
+
+  <!-- Checkout-Bestätigung -->
+  <div class="modal-backdrop" id="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+    <div class="modal">
+      <div class="modal-title" id="checkout-title">Tarif wechseln</div>
+      <div class="modal-sub">Bitte bestätige deinen neuen Tarif.</div>
+      <div class="modal-summary">
+        <div class="modal-summary-row">
+          <span class="modal-summary-plan" id="co-plan">Student</span>
+          <span class="modal-summary-price" id="co-price">4,99€</span>
+        </div>
+        <div class="modal-summary-meta" id="co-meta">Monatliche Abrechnung · jederzeit kündbar</div>
+      </div>
+      <div class="modal-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Du wirst zur sicheren Zahlung weitergeleitet. Es werden keine Kosten fällig, bevor du den Kauf abschließt.</span>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn ghost" type="button" id="co-cancel">Abbrechen</button>
+        <button class="modal-btn primary" type="button" id="co-confirm">Weiter zur Zahlung</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (function () {
+    // ── Tarif-Daten (Quelle: landing.html) ─────────────────────────────
+    const PLANS = [
+      {
+        id: 'free', name: 'Free',
+        monthly: { amount: '0€', period: '/ Monat' },
+        yearly:  { amount: '0€', period: '/ Jahr' },
+        featured: false,
+        features: [
+          '1 Modul',
+          '50 KI-Fragen / Monat',
+          '2 Zusammenfassungen / Monat',
+          '1 Roadmap / Monat',
+          '3 Datei-Uploads',
+        ],
+      },
+      {
+        id: 'student', name: 'Student',
+        monthly: { amount: '4,99€', period: '/ Monat' },
+        yearly:  { amount: '39,99€', period: '/ Jahr' },
+        featured: true, badge: 'Beliebteste Wahl',
+        features: [
+          '5 Module',
+          '300 KI-Fragen / Monat (Haiku + Sonnet)',
+          '15 Zusammenfassungen / Monat',
+          '5 Roadmaps / Monat (editierbar)',
+          '5 Probeklausuren / Monat',
+          '25 Uploads · E-Mail-Support',
+        ],
+      },
+      {
+        id: 'pro', name: 'Pro',
+        monthly: { amount: '9,99€', period: '/ Monat' },
+        yearly:  { amount: '79,99€', period: '/ Jahr' },
+        featured: false,
+        features: [
+          'Unbegrenzte Module & KI-Fragen',
+          'Unbegrenzte Zusammenfassungen',
+          'Unbegrenzte Roadmaps + Export (PDF/Notion)',
+          'Unbegrenzte Klausuren + Lösungsanalyse',
+          'Daily Tasks: automatischer Lernplan',
+          'Uploads bis 500 MB · Prioritäts-Support (< 24h)',
+        ],
+      },
+    ];
+
+    // Aktueller Tarif: aus URL (?current=pro) übernommen, sonst 'free'.
+    const params = new URLSearchParams(location.search);
+    const CURRENT = (params.get('current') || 'free').toLowerCase();
+
+    let cycle = 'monthly';
+    const grid = document.getElementById('pricing-grid');
+
+    const checkSvg = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+    function render() {
+      grid.innerHTML = '';
+      PLANS.forEach(p => {
+        const isCurrent = p.id === CURRENT;
+        const price = p[cycle];
+
+        const card = document.createElement('div');
+        card.className = 'price-card' + (p.featured ? ' featured' : '') + (isCurrent ? ' current' : '');
+
+        let html = '';
+        if (isCurrent) {
+          html += '<div class="price-badge current-badge">Aktueller Tarif</div>';
+        } else if (p.badge) {
+          html += '<div class="price-badge">' + p.badge + '</div>';
+        }
+        html += '<div class="price-plan">' + p.name + '</div>';
+        html += '<div class="price-amount-wrap"><span class="price-amount">' + price.amount +
+                '</span><span class="price-period">' + price.period + '</span></div>';
+        html += '<ul class="price-list">' +
+          p.features.map(f => '<li><span class="chk">' + checkSvg + '</span> <span>' + f + '</span></li>').join('') +
+          '</ul>';
+
+        if (isCurrent) {
+          html += '<button class="price-btn is-current" type="button" disabled>Aktueller Tarif</button>';
+        } else {
+          const cls = p.featured ? 'solid' : 'outline';
+          html += '<button class="price-btn ' + cls + '" type="button" data-plan="' + p.id + '">' +
+                  p.name + ' wählen</button>';
+        }
+        card.innerHTML = html;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll('button[data-plan]').forEach(btn => {
+        btn.addEventListener('click', () => openCheckout(btn.dataset.plan));
+      });
+    }
+
+    // ── Abrechnungs-Toggle ─────────────────────────────────────────────
+    const opts = Array.from(document.querySelectorAll('.bs-opt'));
+    opts.forEach(o => o.addEventListener('click', () => {
+      cycle = o.dataset.cycle;
+      opts.forEach(x => {
+        const on = x.dataset.cycle === cycle;
+        x.classList.toggle('is-active', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      render();
+    }));
+
+    // ── Checkout-Modal ─────────────────────────────────────────────────
+    const modal = document.getElementById('checkout-modal');
+    const confirmBtn = document.getElementById('co-confirm');
+    let selected = null;
+
+    function openCheckout(planId) {
+      const p = PLANS.find(x => x.id === planId);
+      if (!p) return;
+      selected = p;
+      const price = p[cycle];
+      document.getElementById('co-plan').textContent = p.name;
+      document.getElementById('co-price').textContent = price.amount + ' ' + price.period;
+      document.getElementById('co-meta').textContent =
+        (cycle === 'yearly' ? 'Jährliche' : 'Monatliche') + ' Abrechnung · jederzeit kündbar';
+      modal.classList.add('open');
+      confirmBtn.focus();
+    }
+    function closeCheckout() { modal.classList.remove('open'); selected = null; }
+
+    document.getElementById('co-cancel').addEventListener('click', closeCheckout);
+    modal.addEventListener('click', e => { if (e.target === modal) closeCheckout(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeCheckout(); });
+
+    confirmBtn.addEventListener('click', () => {
+      if (!selected) return;
+      startCheckout(selected.id, cycle);
+    });
+
+    // ── Zahlung starten ───────────────────────────────────────────────
+    // Integrationspunkt: Hier den Checkout des Zahlungsanbieters (z. B. Stripe)
+    // anstoßen. Sobald ein Backend-Endpoint existiert, kann hier auf die
+    // Checkout-URL weitergeleitet werden, z. B.:
+    //
+    //   const token = window.__authToken;
+    //   const res = await fetch('/billing/checkout', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    //     body: JSON.stringify({ plan, cycle }),
+    //   });
+    //   const { url } = await res.json();
+    //   window.location.href = url;
+    //
+    async function startCheckout(plan, billingCycle) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Einen Moment …';
+      try {
+        const res = await fetch('/billing/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan, cycle: billingCycle }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.url) { window.location.href = data.url; return; }
+        }
+        throw new Error('no-checkout-endpoint');
+      } catch (_) {
+        closeCheckout();
+        toast('Zahlung noch nicht verbunden — Tarif „' + planName(plan) + '" gemerkt.');
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Weiter zur Zahlung';
+      }
+    }
+
+    function planName(id) { const p = PLANS.find(x => x.id === id); return p ? p.name : id; }
+
+    // ── Toast ──────────────────────────────────────────────────────────
+    let toastTimer = null;
+    const toastEl = document.getElementById('toast');
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3200);
+    }
+
+    render();
+  })();
+  </script>
+</body>
+</html>
