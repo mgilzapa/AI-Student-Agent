@@ -43,6 +43,8 @@ from app.lecture import exam_analyzer as ea
 from app.lecture.summarizer import summarize
 from app.lecture import exam_generator as eg
 from app.lecture import daily_tasks as dt
+from app.chat import orchestrator as chat_orchestrator
+from app.chat import tools as chat_tools
 
 
 load_dotenv()
@@ -58,6 +60,10 @@ RL_CHAT = os.getenv("RATELIMIT_CHAT", "15/minute")             # light: /ask, /a
 RL_HEAVY = os.getenv("RATELIMIT_HEAVY", "5/minute")            # heavy: generation endpoints
 RL_HEAVY_DAILY = os.getenv("RATELIMIT_HEAVY_DAILY", "50/day")  # shared per-user daily budget
 _RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", "no")
+
+# Chat orchestrator model: fast & cheap Haiku for routing + parameter extraction.
+# Bump to claude-sonnet-4-6 via env if tool-selection quality is insufficient.
+CHAT_MODEL = os.getenv("CHAT_MODEL", "claude-haiku-4-5")
 
 # ── Payload size limits ──────────────────────────────────────────────────────
 # Guards against memory-exhaustion DoS (huge uploads) and runaway LLM cost
@@ -212,6 +218,12 @@ class Question(BaseModel):
     question: str = Field(..., max_length=MAX_TEXT_CHARS)
     module_name: Optional[str] = Field(default=None, max_length=200)
     chat_history: List[dict] = []
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., max_length=MAX_TEXT_CHARS)
+    module_name: Optional[str] = Field(default=None, max_length=200)
+    chat_history: List[dict] = []
+    pending_proposal: Optional[dict] = None
 
 class LectureSummarizeRequest(BaseModel):
     filename: str
@@ -439,7 +451,9 @@ def _exam_analyze_cached(module_name: str, all_files: list[dict]) -> tuple[str, 
 
     current_hash = _exam_cache_hash(module_name, exam_files)
     cache = _load_exam_cache(module_name)
-    if cache and cache.get("hash") == current_hash:
+    # Only trust a cache hit that actually carries analysis — an earlier run whose
+    # exam download failed may have poisoned the cache with an empty style.
+    if cache and cache.get("hash") == current_hash and (cache.get("style") or cache.get("exam_profile_md")):
         return cache.get("exam_profile_md", ""), cache.get("style", "")
 
     profile = mp.load(module_name)
@@ -467,7 +481,10 @@ def _exam_analyze_cached(module_name: str, all_files: list[dict]) -> tuple[str, 
         except Exception as exc:
             print(f"[exam_cache] style analysis failed: {exc}")
 
-    _save_exam_cache(module_name, current_hash, exam_style, exam_profile_md)
+    # Don't cache an empty result — that would pin the failure for this file set
+    # until the files change. Leave it uncached so the next run retries.
+    if exam_style or exam_profile_md:
+        _save_exam_cache(module_name, current_hash, exam_style, exam_profile_md)
     return exam_profile_md, exam_style
 
 
@@ -525,6 +542,142 @@ async def ask_stream(request: Request, body: Question):
     async def event_stream():
         async for raw in ask_advanced(body.question, body.module_name, rag, body.chat_history):
             yield f"data: {raw}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# ── Chat agent (tool-use orchestrator) ─────────────────────────────────────────
+
+def _safe_module(name: Optional[str]) -> str:
+    """Sanitize a module name without raising on empty input."""
+    return chat_tools.sanitize_module_name(name or "")
+
+
+def _module_status(module_name: str) -> dict:
+    """Light module status for the chat system prompt (roadmap?, #exams, #files)."""
+    if not module_name:
+        return {}
+    try:
+        has_roadmap = bool(rm.load_roadmap_md(module_name))
+    except Exception:
+        has_roadmap = False
+    try:
+        n_exams = len(eg.list_exams(module_name))
+    except Exception:
+        n_exams = 0
+    try:
+        n_files = len(list_module_files(module_name))
+    except Exception:
+        n_files = 0
+    return {"roadmap": has_roadmap, "klausuren": n_exams, "dateien": n_files}
+
+
+def _all_module_names() -> List[str]:
+    try:
+        return get_modules().get("modules", [])
+    except Exception:
+        return []
+
+
+def _build_chat_system_prompt(active: str, all_modules: List[str], status: dict, today: str) -> str:
+    modul_list = ", ".join(all_modules) if all_modules else "(keine)"
+    if status:
+        rm_txt = "ja" if status.get("roadmap") else "nein"
+        status_txt = (f"Roadmap vorhanden: {rm_txt}; Klausuren: {status.get('klausuren', 0)}; "
+                      f"Dateien: {status.get('dateien', 0)}")
+    else:
+        status_txt = "(kein aktives Modul)"
+    return (
+        "Du bist die Steuerzentrale eines Lern-Assistenten. Du hilfst Studierenden, "
+        "Lerninhalte zu erstellen und ihren Arbeitsbereich anzusehen.\n\n"
+        f"Heutiges Datum: {today}\n"
+        f"Aktives Modul: {active or '(keines)'}\n"
+        f"Alle Module des Nutzers: {modul_list}\n"
+        f"Status des aktiven Moduls: {status_txt}\n\n"
+        "REGELN:\n"
+        "- Zum ERSTELLEN von Inhalten rufst du IMMER das passende Tool auf (das erzeugt "
+        "  einen Vorschlag). Behaupte NIEMALS, etwas sei erstellt, bevor der Nutzer bestätigt hat.\n"
+        "- Für einen Tagesplan ist eine vorhandene Roadmap nötig. Fehlt sie (siehe Status), "
+        "  schlage zuerst eine Roadmap vor (erstelle_roadmap).\n"
+        "- Für eine Zusammenfassung ohne genannte Datei: nutze zuerst zeige_dateien und frage, "
+        "  welche Datei zusammengefasst werden soll.\n"
+        "- Wenn du ein Lese-Tool benutzt, leite das Ergebnis mit EINEM kurzen Satz ein. "
+        "  Die Liste wird separat angezeigt — zähle die Einträge nicht selbst auf.\n"
+        "- Für normale Wissensfragen rufst du KEIN Tool auf; diese werden separat beantwortet.\n"
+        "- Antworte immer auf Deutsch."
+    )
+
+
+def _chat_read_executor(tool_name: str, raw: dict, active_module: str) -> dict:
+    """Execute a read tool and return {kind, items, result_text}. Items are
+    structured (never raw document text) to keep the prompt-injection surface small."""
+    module = _safe_module((raw or {}).get("modul") or active_module)
+
+    if tool_name == "zeige_klausuren":
+        exams = eg.list_exams(module)
+        items = [{"n": e.get("n"), "generated": e.get("generated", ""),
+                  "num_tasks": e.get("num_tasks", 0), "total_points": e.get("total_points", 0)}
+                 for e in exams]
+        txt = (f"{len(items)} Probeklausur(en): " + ", ".join(f"#{i['n']}" for i in items)) if items \
+            else "Keine Probeklausuren vorhanden."
+        return {"kind": "klausuren", "items": items, "result_text": txt}
+
+    if tool_name == "zeige_zusammenfassungen":
+        items = get_lecture_summaries(module).get("summaries", [])
+        txt = (f"{len(items)} Zusammenfassung(en): " + ", ".join(i.get("titel", "") for i in items)) if items \
+            else "Keine Zusammenfassungen vorhanden."
+        return {"kind": "zusammenfassungen", "items": items, "result_text": txt}
+
+    if tool_name == "zeige_dateien":
+        files = list_module_files(module)
+        items = [{"name": f.get("name"), "relative_path": f.get("relative_path"),
+                  "file_type": f.get("file_type", ""), "is_exam": f.get("is_exam", False)}
+                 for f in files]
+        txt = (f"{len(items)} Datei(en) im Modul.") if items else "Keine Dateien vorhanden."
+        return {"kind": "dateien", "items": items, "result_text": txt}
+
+    if tool_name == "zeige_lernfortschritt":
+        stats = dt.get_stats(module)
+        txt = f"{stats.get('total_completed', 0)} erledigte Aufgaben."
+        return {"kind": "lernfortschritt", "items": [stats], "result_text": txt}
+
+    return {"kind": "", "items": [], "result_text": ""}
+
+
+async def _chat_rag_streamer(message: str, module_name: str, chat_history: List[dict]):
+    """Adapt the existing RAG pipeline (yields JSON strings) into event dicts."""
+    async for raw in ask_advanced(message, module_name or None, rag, chat_history):
+        try:
+            yield json.loads(raw)
+        except (TypeError, ValueError):
+            continue
+
+
+@app.post("/chat/stream")
+@limiter.limit(RL_CHAT)
+async def chat_stream(request: Request, body: ChatRequest):
+    """Chat control center: routes a message to a proposal / read-nav action /
+    RAG fallback via a Claude tool-use loop. Mutating actions are never executed
+    here — the orchestrator only emits proposals; execution happens on an explicit
+    click via the existing rate-limited generator endpoints."""
+    active = _safe_module(body.module_name)
+    all_modules = _all_module_names()
+    status = _module_status(active)
+    system_prompt = _build_chat_system_prompt(active, all_modules, status, str(_date.today()))
+
+    async def event_stream():
+        async for ev in chat_orchestrator.run_chat(
+            message=body.message,
+            module_name=active,
+            chat_history=body.chat_history,
+            pending_proposal=body.pending_proposal,
+            client=anthropic_client,
+            model=CHAT_MODEL,
+            system_prompt=system_prompt,
+            read_executor=_chat_read_executor,
+            rag_streamer=_chat_rag_streamer,
+        ):
+            yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -984,37 +1137,118 @@ class RoadmapStatusRequest(BaseModel):
 _PENDING_ROADMAPS: dict = {}
 
 
+def _is_generated_source(src: str) -> bool:
+    """True for our own generated artifacts (practice exams, solved sheets) — these
+    must never feed back into generation context, or new exams just clone old ones."""
+    s = (src or "").replace("\\", "/").lower()
+    return ("/exams/exam_" in s or s.startswith("exams/exam_")
+            or "/solved_sheets/" in s or s.startswith("solved_sheets/"))
+
+
+def _exam_texts_from_index(file_names: set) -> dict:
+    """Reconstruct each exam file's text from its indexed pgvector chunks.
+
+    Used as a last resort when the raw upload is no longer in Storage (the chunk
+    text persists in pgvector even after the original PDF is gone). Chunk order
+    isn't guaranteed, but that's fine for style analysis (format / point
+    distribution / phrasing), which doesn't depend on exact sequence.
+    """
+    if not file_names:
+        return {}
+    try:
+        store = vector_store.get()
+    except Exception:
+        return {}
+    docs = store.get("documents") or []
+    metas = store.get("metadatas") or []
+    buckets: dict = {}
+    for doc, meta in zip(docs, metas):
+        if not doc or not meta:
+            continue
+        name = Path((meta.get("source") or "").replace("\\", "/")).name
+        if name in file_names:
+            buckets.setdefault(name, []).append(doc)
+    return {k: "\n".join(v) for k, v in buckets.items()}
+
+
 def _collect_exam_text(module_name: str) -> List[str]:
-    """Parse all files marked as exam into plain text.
-    Downloads from Supabase Storage to a temp file, then parses."""
+    """Plain text of every file marked as exam, for style analysis.
+
+    Resolution order per file: canonical Storage path (``{uid}/{slug}/{rel}``) →
+    DB ``storage_path`` (older uploads can carry a stale path) → local-disk scratch
+    copy → reconstruction from the pgvector index (covers files whose raw upload is
+    no longer in Storage but whose extracted text was indexed).
+    """
     import tempfile as _tf
+    uid = _supa_uid()
+    slug = _slug(sanitize_module_name(module_name))
     texts: List[str] = []
+    missing: set = set()
     for f in list_module_files(module_name):
         if not f.get("is_exam"):
             continue
+        rel = (f.get("relative_path") or f.get("name") or "").replace("\\", "/")
+        name = f.get("name") or rel
+
+        candidates: List[str] = []
+        if rel:
+            candidates.append(f"{uid}/{slug}/{rel}")
+        sp = f.get("storage_path")
+        if sp and sp not in candidates:
+            candidates.append(sp)
+
+        raw = None
+        for path in candidates:
+            try:
+                raw = _supa_client().storage.from_("raw-files").download(path)
+                if raw:
+                    break
+            except Exception:
+                raw = None
+
+        recovered = False
         try:
-            storage_path = f.get("storage_path")
-            if storage_path:
-                raw = _supa_client().storage.from_("raw-files").download(storage_path)
-                suffix = Path(f["file_name"]).suffix
-                with _tf.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            if raw:
+                with _tf.NamedTemporaryFile(suffix=Path(name).suffix, delete=False) as tmp:
                     tmp.write(raw)
                     tmp_path = Path(tmp.name)
                 try:
                     parsed = parse_document(tmp_path)
-                    if parsed.success and parsed.extracted_text:
-                        texts.append(parsed.extracted_text)
                 finally:
                     tmp_path.unlink(missing_ok=True)
             else:
-                # Fallback: local filesystem
-                target = _resolve_module_file(module_name, f["relative_path"])
-                parsed = parse_document(target)
-                if parsed.success and parsed.extracted_text:
-                    texts.append(parsed.extracted_text)
-        except Exception as exc:
-            print(f"[collect_exam_text] could not parse {f['name']}: {exc}")
+                # Local-disk fallback (processing scratch area / same-session uploads).
+                parsed = parse_document(_resolve_module_file(module_name, rel or name))
+            if parsed.success and parsed.extracted_text:
+                texts.append(parsed.extracted_text)
+                recovered = True
+        except Exception:
+            pass
+        if not recovered:
+            missing.add(name)
+
+    if missing:
+        backfill = _exam_texts_from_index(missing)
+        for name in missing:
+            if backfill.get(name):
+                texts.append(backfill[name])
+            else:
+                print(f"[collect_exam_text] no source for {name} (not in storage or index)")
     return texts
+
+
+def _course_context_excluding_generated(module_name: str, query: str, top_k: int = 20) -> str:
+    """Build a generation context from retrieved chunks, dropping our own generated
+    artifacts (practice exams / solved sheets) so new exams are built from the real
+    course material instead of cloning a previously generated exam."""
+    hits = rag.retrieve(query, top_k=top_k * 2, module_name=module_name)
+    real = [h for h in hits if not _is_generated_source(h.get("source", ""))][:top_k]
+    if not real:
+        return ""
+    return "\n\n".join(
+        f"[{Path(h['source']).name}]\n{(h.get('text') or '').strip()}"
+        for h in real
+    )
 
 
 @app.post("/roadmap/generate")
@@ -1723,13 +1957,12 @@ async def exam_generate(request: Request, body: ExamGenerateRequest):
         except Exception as exc:
             print(f"[exam_generate] Stilanalyse fehlgeschlagen (nicht fatal): {exc}")
 
-    # RAG-Kontext
-    rag_result = rag.ask(
-        "Fasse alle wichtigen Konzepte, Definitionen, Methoden und prüfungsrelevanten Inhalte zusammen.",
-        module_name=clean_name,
+    # RAG context from real course material only (never previously generated exams).
+    rag_context = _course_context_excluding_generated(
+        clean_name,
+        "Wichtige Konzepte, Definitionen, Methoden und prüfungsrelevante Inhalte.",
         top_k=20,
     )
-    rag_context = rag_result.get("answer", "") or ""
     if not rag_context:
         raise HTTPException(
             status_code=422,
@@ -1749,12 +1982,9 @@ async def exam_generate(request: Request, body: ExamGenerateRequest):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Generierung fehlgeschlagen: {exc}")
 
+    # Note: generated exams are deliberately NOT indexed into pgvector — doing so
+    # would feed them back into the generation context and clone old exams.
     n = eg.save_exam(clean_name, md_content)
-    try:
-        exam_path = str(eg._exams_dir(clean_name) / f"exam_{n}.md")
-        _index_generated_content(md_content, exam_path, clean_name)
-    except Exception as exc:
-        print(f"[exam_generate] RAG-Indizierung fehlgeschlagen (nicht fatal): {exc}")
     return {"success": True, "n": n, "module_name": clean_name}
 
 
@@ -1780,15 +2010,14 @@ async def exam_generate_stream(request: Request, body: ExamGenerateRequest):
         try:
             analyze_coro = asyncio.to_thread(_exam_analyze_cached, clean_name, all_files)
             rag_coro = asyncio.to_thread(
-                rag.ask,
-                "Fasse alle wichtigen Konzepte, Definitionen, Methoden und prüfungsrelevanten Inhalte zusammen.",
-                module_name=clean_name,
-                top_k=20,
+                _course_context_excluding_generated,
+                clean_name,
+                "Wichtige Konzepte, Definitionen, Methoden und prüfungsrelevante Inhalte.",
+                20,
             )
 
-            (_, exam_style), rag_result = await asyncio.gather(analyze_coro, rag_coro)
+            (_, exam_style), rag_context = await asyncio.gather(analyze_coro, rag_coro)
 
-            rag_context = rag_result.get("answer", "") or ""
             if not rag_context:
                 yield f"data: {json.dumps({'type': 'error', 'detail': 'Keine Inhalte gefunden. Bitte zuerst Materialien hochladen.'})}\n\n"
                 return
@@ -1806,12 +2035,9 @@ async def exam_generate_stream(request: Request, body: ExamGenerateRequest):
                 total_points=body.total_points,
             )
 
+            # Generated exams are deliberately NOT indexed into pgvector (avoids the
+            # feedback loop where a new exam clones a previously generated one).
             n = eg.save_exam(clean_name, md_content)
-            try:
-                exam_path = str(eg._exams_dir(clean_name) / f"exam_{n}.md")
-                await asyncio.to_thread(_index_generated_content, md_content, exam_path, clean_name)
-            except Exception as exc:
-                print(f"[exam_stream] RAG-Indizierung fehlgeschlagen (nicht fatal): {exc}")
             yield f"data: {json.dumps({'type': 'result', 'data': {'success': True, 'n': n, 'module_name': clean_name}})}\n\n"
 
         except Exception as exc:

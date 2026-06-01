@@ -744,6 +744,61 @@
   .stream-cursor { display: inline-block; width: 2px; height: 0.82em; background: var(--accent); margin-left: 1px; vertical-align: text-bottom; border-radius: 1px; animation: cursorBlink 0.75s step-end infinite; }
   @keyframes cursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
 
+  /* ── Chat agent: proposal card & inline data lists ───────────────────────── */
+  .msg.agent .bubble > .agent-extras { margin-top: 0.7em; }
+  .chat-proposal {
+    background: var(--bg); border: 1px solid var(--accent-border); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-proposal-summary { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
+  .chat-proposal-fields { display: grid; gap: 10px; }
+  .chat-proposal-field { display: flex; flex-direction: column; gap: 4px; }
+  .chat-proposal-field label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .chat-proposal-field input, .chat-proposal-field textarea {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 11px; color: var(--text); font: inherit; font-size: 0.86rem; outline: none;
+    transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  }
+  .chat-proposal-field input:focus, .chat-proposal-field textarea:focus {
+    border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .chat-proposal-field textarea { resize: vertical; min-height: 60px; }
+  .chat-proposal-actions { display: flex; gap: 8px; }
+  .chat-proposal-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px;
+    border-radius: 8px; font: inherit; font-size: 0.84rem; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out), transform 0.1s var(--ease-out);
+  }
+  .chat-proposal-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chat-proposal-btn.primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .chat-proposal-btn.ghost:hover { background: var(--panel-soft); border-color: var(--accent-border); }
+  .chat-proposal-btn:disabled { opacity: 0.5; cursor: default; transform: none; filter: none; }
+  .chat-proposal-status { font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .chat-proposal-status .step-spinner,
+  .chat-proposal-status .modal-spinner { width: 14px; height: 14px; }
+
+  .chat-data-list { display: grid; gap: 6px; }
+  .chat-data-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    padding: 9px 12px; color: var(--text); font: inherit; font-size: 0.86rem; cursor: pointer;
+    transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
+  }
+  .chat-data-item:hover { background: var(--panel-soft); border-color: var(--accent-border); }
+  .chat-data-item .cdi-icon { flex: 0 0 auto; font-size: 1rem; }
+  .chat-data-item .cdi-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .chat-data-item .cdi-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chat-data-item .cdi-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.05em; color: var(--muted); text-transform: uppercase; }
+  .chat-data-empty { font-size: 0.84rem; color: var(--muted); }
+  .chat-stats { display: flex; flex-direction: column; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; }
+  .chat-stats-total { font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 600; color: var(--text); }
+  .chat-stats-topics { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chat-stats-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.05em; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-border); padding: 3px 9px; border-radius: 999px; }
+
   .thinking .bubble { display: flex; gap: 5px; align-items: center; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: dotBounce 1.2s ease-in-out infinite; }
   .dot:nth-child(2) { animation-delay: 0.18s; }
@@ -4586,6 +4641,9 @@ function showSetup() {
 }
 
 function resetChat() {
+  state.chatHistory = [];
+  state.pendingProposal = null;
+  state.lastProposalCard = null;
   chat.innerHTML = `
     <div class="chat-empty" id="empty">
       <div class="chat-empty-inner">
@@ -7503,29 +7561,59 @@ async function sendQuestion() {
   input.style.height = '';
   sendBtn.disabled = true;
   addMsg('user', question);
+  state.chatHistory = state.chatHistory || [];
+  state.chatHistory.push({ role: 'user', content: question });
   const thinking = addThinking();
+
+  // A text message sent while a proposal card is open is treated as an
+  // adjustment: the open proposal travels back so Claude can revise it.
+  const pendingProposal = state.pendingProposal;
+  state.pendingProposal = null;
+
+  let agentWrap = null, textEl = null, extras = null;
+  let rawText = '', sources = [], buf = '';
+  let hadProposal = false, hadData = false;
+  const clientActions = [];
+  let pendingRender = false;
+
+  function ensureAgent() {
+    if (agentWrap) return;
+    thinking.remove();
+    agentWrap = document.createElement('div'); agentWrap.className = 'msg agent';
+    const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = t('chat-label-agent');
+    const bubble = document.createElement('div'); bubble.className = 'bubble';
+    textEl = document.createElement('div'); textEl.className = 'agent-text';
+    extras = document.createElement('div'); extras.className = 'agent-extras';
+    bubble.append(textEl, extras);
+    agentWrap.append(lbl, bubble);
+    chat.appendChild(agentWrap);
+  }
+  function scheduleRender() {
+    if (pendingRender) return;
+    pendingRender = true;
+    requestAnimationFrame(() => {
+      pendingRender = false;
+      if (textEl) {
+        textEl.innerHTML = renderMarkdown(rawText) + '<span class="stream-cursor"></span>';
+        chat.scrollTop = chat.scrollHeight;
+      }
+    });
+  }
+
   try {
-    const res = await fetch('/ask/stream', {
+    const res = await fetch('/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, module_name: state.moduleName }),
+      body: JSON.stringify({
+        message: question,
+        module_name: state.moduleName,
+        chat_history: state.chatHistory.slice(-12),
+        pending_proposal: pendingProposal || null,
+      }),
     });
     if (!res.ok) throw new Error(res.statusText);
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let agentWrap = null, bubble = null, rawText = '', sources = [], buf = '';
-    let pendingRender = false;
-    function scheduleRender() {
-      if (pendingRender) return;
-      pendingRender = true;
-      requestAnimationFrame(() => {
-        pendingRender = false;
-        if (bubble) {
-          bubble.innerHTML = renderMarkdown(rawText) + '<span class="stream-cursor"></span>';
-          chat.scrollTop = chat.scrollHeight;
-        }
-      });
-    }
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -7536,36 +7624,355 @@ async function sendQuestion() {
         if (!line.startsWith('data: ')) continue;
         let msg; try { msg = JSON.parse(line.slice(6)); } catch { continue; }
         if (msg.type === 'token') {
-          if (!agentWrap) {
-            thinking.remove();
-            agentWrap = document.createElement('div'); agentWrap.className = 'msg agent';
-            const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = t('chat-label-agent');
-            bubble = document.createElement('div'); bubble.className = 'bubble';
-            agentWrap.append(lbl, bubble);
-            chat.appendChild(agentWrap);
-          }
+          ensureAgent();
           rawText += msg.content;
           scheduleRender();
+        } else if (msg.type === 'proposal') {
+          ensureAgent();
+          renderProposalCard(extras, msg.action, msg.params || {}, msg.summary || '');
+          hadProposal = true;
+        } else if (msg.type === 'data') {
+          ensureAgent();
+          renderDataList(extras, msg.kind, msg.items || []);
+          hadData = true;
+        } else if (msg.type === 'client_action') {
+          clientActions.push(msg);
         } else if (msg.type === 'done') {
-          sources = msg.sources || [];
+          sources = msg.sources || sources;
+        } else if (msg.type === 'error') {
+          ensureAgent();
+          rawText += (rawText ? '\n\n' : '') + `❌ ${msg.detail || 'Fehler.'}`;
+          scheduleRender();
         }
       }
     }
     pendingRender = false;
-    if (agentWrap && bubble) {
-      bubble.innerHTML = renderMarkdown(rawText);
-      renderMathIn(bubble);
+    if (agentWrap && textEl) {
+      if (rawText.trim()) {
+        textEl.innerHTML = renderMarkdown(rawText);
+        renderMathIn(textEl);
+      } else {
+        textEl.remove();
+      }
+      if (sources.length) {
+        const srcWrap = document.createElement('div'); srcWrap.className = 'sources';
+        sources.forEach(s => { const tag = document.createElement('span'); tag.className = 'source-tag'; tag.textContent = (s.source || s).split(/[\\/]/).pop(); srcWrap.appendChild(tag); });
+        agentWrap.appendChild(srcWrap);
+      }
       chat.scrollTop = chat.scrollHeight;
-    } else {
+    } else if (!clientActions.length) {
       thinking.remove();
       addMsg('agent', 'Ich konnte keine Antwort erzeugen.');
+    } else {
+      thinking.remove();
     }
-  } catch {
+
+    // Record the assistant turn for follow-up context.
+    let marker = rawText.trim();
+    if (!marker) {
+      if (hadProposal) marker = '[Vorschlag angezeigt — wartet auf Bestätigung.]';
+      else if (hadData) marker = '[Liste im Chat angezeigt.]';
+      else if (clientActions.length) marker = '[Oberflächen-Aktion ausgeführt.]';
+    }
+    if (marker) state.chatHistory.push({ role: 'assistant', content: marker });
+
+    // Run navigation actions last (some reset the chat view).
+    clientActions.forEach(ca => handleClientAction(ca.action, ca.args || {}));
+  } catch (err) {
     thinking.remove();
     addMsg('agent', 'Fehler beim Verbinden mit dem Server.');
   } finally {
     sendBtn.disabled = false;
     input.focus();
+  }
+}
+
+// ── Chat agent: proposal card, inline data lists, client actions ─────────────
+const PROPOSAL_FIELDS = {
+  erstelle_klausur: [
+    { key: 'anzahl_aufgaben', label: 'Aufgaben', type: 'number', min: 1, max: 20, step: 1 },
+    { key: 'punkte', label: 'Punkte', type: 'number', min: 1, max: 500, step: 1 },
+  ],
+  erstelle_roadmap: [
+    { key: 'klausur_datum', label: 'Prüfungsdatum (optional)', type: 'date' },
+    { key: 'fokus', label: 'Fokus (optional)', type: 'text' },
+  ],
+  erstelle_zusammenfassung: [
+    { key: 'datei', label: 'Datei', type: 'text' },
+  ],
+  erstelle_loesungsblatt: [
+    { key: 'quelle', label: 'Übungsblatt-Datei oder Aufgabentext', type: 'textarea' },
+  ],
+  erstelle_tagesplan: [
+    { key: 'taegliche_stunden', label: 'Stunden pro Tag', type: 'number', min: 0.5, max: 12, step: 0.5 },
+  ],
+};
+
+function renderProposalCard(extras, action, params, summary) {
+  // Supersede any previous still-open card (text-adjustment flow).
+  if (state.lastProposalCard && state.lastProposalCard.isConnected) {
+    const acts = state.lastProposalCard.querySelector('.chat-proposal-actions');
+    if (acts) {
+      acts.remove();
+      const st = state.lastProposalCard.querySelector('.chat-proposal-status');
+      if (st && !st.textContent.trim()) st.textContent = '↓ angepasst';
+    }
+  }
+
+  const card = document.createElement('div');
+  card.className = 'chat-proposal';
+  const fields = PROPOSAL_FIELDS[action] || [];
+  card.innerHTML = `<div class="chat-proposal-summary">${escHtml(summary)}</div>`;
+
+  const fieldWrap = document.createElement('div');
+  fieldWrap.className = 'chat-proposal-fields';
+  fields.forEach(f => {
+    const row = document.createElement('div'); row.className = 'chat-proposal-field';
+    const id = `pf-${action}-${f.key}-${Date.now()}`;
+    const val = params[f.key] != null ? params[f.key] : '';
+    let control;
+    if (f.type === 'textarea') {
+      control = `<textarea id="${id}" data-key="${f.key}">${escHtml(String(val))}</textarea>`;
+    } else {
+      const attrs = [`type="${f.type}"`, `id="${id}"`, `data-key="${f.key}"`, `value="${escHtml(String(val))}"`];
+      if (f.min != null) attrs.push(`min="${f.min}"`);
+      if (f.max != null) attrs.push(`max="${f.max}"`);
+      if (f.step != null) attrs.push(`step="${f.step}"`);
+      control = `<input ${attrs.join(' ')}>`;
+    }
+    row.innerHTML = `<label for="${id}">${escHtml(f.label)}</label>${control}`;
+    fieldWrap.appendChild(row);
+  });
+  if (fields.length) card.appendChild(fieldWrap);
+
+  const actions = document.createElement('div');
+  actions.className = 'chat-proposal-actions';
+  const createBtn = document.createElement('button');
+  createBtn.className = 'chat-proposal-btn primary'; createBtn.textContent = '✓ Erstellen';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'chat-proposal-btn ghost'; cancelBtn.textContent = '✗ Abbrechen';
+  actions.append(createBtn, cancelBtn);
+  card.appendChild(actions);
+
+  const status = document.createElement('div');
+  status.className = 'chat-proposal-status';
+  card.appendChild(status);
+
+  createBtn.addEventListener('click', () => {
+    const merged = { ...params };
+    fieldWrap.querySelectorAll('[data-key]').forEach(el => {
+      const k = el.dataset.key;
+      let v = el.value;
+      if (el.type === 'number') v = v === '' ? params[k] : parseFloat(v);
+      merged[k] = v;
+    });
+    state.pendingProposal = null;
+    state.lastProposalCard = null;
+    executeProposal(action, merged, card);
+  });
+  cancelBtn.addEventListener('click', () => {
+    state.pendingProposal = null;
+    state.lastProposalCard = null;
+    fieldWrap.remove(); actions.remove();
+    status.textContent = 'Abgebrochen.';
+  });
+
+  extras.appendChild(card);
+  state.pendingProposal = { action, params, summary };
+  state.lastProposalCard = card;
+}
+
+async function executeProposal(action, params, card) {
+  const status = card.querySelector('.chat-proposal-status');
+  card.querySelectorAll('button').forEach(b => b.disabled = true);
+  status.innerHTML = '<span class="modal-spinner"></span> Wird erstellt…';
+  try {
+    let res;
+    if (action === 'erstelle_klausur')            res = await execExamProposal(params);
+    else if (action === 'erstelle_roadmap')       res = await execRoadmapProposal(params);
+    else if (action === 'erstelle_zusammenfassung') res = await execSummaryProposal(params);
+    else if (action === 'erstelle_loesungsblatt')  res = await execSolveProposal(params);
+    else if (action === 'erstelle_tagesplan')      res = await execDailyProposal(params);
+    else throw new Error('Unbekannte Aktion');
+    renderProposalDone(card, res);
+  } catch (err) {
+    status.innerHTML = '';
+    const e = document.createElement('div');
+    e.style.color = 'var(--danger)'; e.style.fontSize = '0.84rem';
+    e.textContent = (err && err.message) ? err.message : 'Fehlgeschlagen.';
+    status.appendChild(e);
+    card.querySelectorAll('.chat-proposal-actions button').forEach(b => b.disabled = false);
+  }
+}
+
+function renderProposalDone(card, res) {
+  card.querySelector('.chat-proposal-fields')?.remove();
+  card.querySelector('.chat-proposal-actions')?.remove();
+  const status = card.querySelector('.chat-proposal-status');
+  status.innerHTML = '';
+  const ok = document.createElement('span');
+  ok.textContent = '✓ Erstellt.'; ok.style.color = 'var(--success)';
+  status.appendChild(ok);
+  if (res && res.already) return;
+  if (res && res.open && res.inActive) {
+    const btn = document.createElement('button');
+    btn.className = 'chat-proposal-btn ghost'; btn.style.height = '30px';
+    btn.textContent = res.label || 'Öffnen';
+    btn.addEventListener('click', res.open);
+    status.appendChild(btn);
+  } else if (res && !res.inActive) {
+    const note = document.createElement('span');
+    note.style.color = 'var(--muted)'; note.style.fontSize = '0.8rem';
+    note.textContent = ' (in einem anderen Modul gespeichert)';
+    status.appendChild(note);
+  }
+}
+
+async function execExamProposal(params) {
+  let result = null;
+  for await (const msg of streamSteps('/exam/generate/stream',
+      { module_name: params.modul, num_tasks: params.anzahl_aufgaben, total_points: params.punkte })) {
+    if (msg.type === 'result') result = msg.data;
+    else if (msg.type === 'error') throw new Error(msg.detail);
+  }
+  if (!result) throw new Error('Keine Antwort vom Server.');
+  const inActive = params.modul === state.moduleName;
+  if (inActive) { await loadProbeklausuren(state.moduleName); renderWorkspaceFiles(state.moduleFiles); }
+  return { inActive, label: `Probeklausur ${result.n} öffnen`, open: () => {
+    const ex = (state.probeklausuren || []).find(e => e.n === result.n);
+    if (ex) openProbeklausurTab(ex);
+  } };
+}
+
+async function execRoadmapProposal(params) {
+  let result = null;
+  for await (const msg of streamSteps('/roadmap/generate/stream',
+      { module_name: params.modul, exam_date: params.klausur_datum || null, focus: params.fokus || null })) {
+    if (msg.type === 'result') result = msg.data;
+    else if (msg.type === 'error') throw new Error(msg.detail);
+  }
+  if (!result) throw new Error('Keine Antwort vom Server.');
+  const inActive = params.modul === state.moduleName;
+  if (inActive) {
+    state.roadmapPending = result;
+    if (result.is_first_generation) await acceptPendingRoadmap(null);
+  }
+  return { inActive, label: 'Roadmap öffnen', open: () => openRoadmapTab() };
+}
+
+async function execSummaryProposal(params) {
+  const r = await fetch('/lecture/summarize', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: params.datei, module_name: params.modul }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.detail || 'Fehler bei der Zusammenfassung.');
+  if (d.needs_onboarding) throw new Error('Für dieses Modul fehlt ein Profil. Bitte zuerst über „Zusammenfassen" anlegen.');
+  const inActive = params.modul === state.moduleName;
+  let saved = null;
+  if (inActive) {
+    delete state.summariesByModule[state.moduleName];
+    await loadSummaries(state.moduleName, true);
+    renderWorkspaceFiles(state.moduleFiles);
+    const all = state.summariesByModule[state.moduleName] || [];
+    saved = d.saved_to ? all.find(s => (s.path || '').replace(/\\/g, '/').endsWith((d.saved_to || '').replace(/\\/g, '/'))) : null;
+    if (!saved) saved = all[0];
+    if (saved) state.summaryContentCache[saved.path] = d.summary;
+  }
+  return { inActive: inActive && !!saved, label: 'Zusammenfassung öffnen', open: () => { if (saved) openSummary(saved); } };
+}
+
+async function execSolveProposal(params) {
+  const quelle = params.quelle || '';
+  const inActive = params.modul === state.moduleName;
+  const file = (state.moduleFiles || []).find(f => f.name === quelle || (f.relative_path || '') === quelle);
+  if (file && inActive) {
+    await solveSheet(file);            // fetches text, solves, opens the solution tab itself
+    return { already: true, inActive: true };
+  }
+  const r = await fetch('/solve-sheet', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sheet_text: quelle, module_id: params.modul }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.detail || 'Lösen fehlgeschlagen.');
+  let solEntry = null;
+  if (inActive) {
+    solEntry = { path: `solution:chat-${Date.now()}`, name: 'Lösung (Chat)', solveData: d };
+    state.solvedSheets.push(solEntry);
+    try { localStorage.setItem(`studyAgent.solutions.${state.moduleName}`, JSON.stringify(state.solvedSheets)); } catch {}
+    renderWorkspaceFiles(state.moduleFiles);
+  }
+  return { inActive: inActive && !!solEntry, label: 'Lösung öffnen', open: () => { if (solEntry) openSolution(solEntry); } };
+}
+
+async function execDailyProposal(params) {
+  const r = await fetch(`/daily/${encodeURIComponent(params.modul)}/generate`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ daily_hours: params.taegliche_stunden }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.detail || 'Plan-Generierung fehlgeschlagen.');
+  const inActive = params.modul === state.moduleName;
+  if (inActive) { state.dailyPlan = d.exists === false ? null : d; refreshDailyView(); }
+  return { inActive, label: 'Tagesplan öffnen', open: () => openDailyTab() };
+}
+
+function renderDataList(extras, kind, items) {
+  if (kind === 'lernfortschritt') { renderStatsCard(extras, (items && items[0]) || {}); return; }
+  if (!items || !items.length) {
+    const e = document.createElement('div'); e.className = 'chat-data-empty';
+    e.textContent = 'Nichts gefunden.'; extras.appendChild(e); return;
+  }
+  const list = document.createElement('div'); list.className = 'chat-data-list';
+  items.forEach(it => {
+    const b = document.createElement('button'); b.className = 'chat-data-item';
+    let icon = '📄', title = '', meta = '';
+    if (kind === 'klausuren') {
+      icon = '📝'; title = `Probeklausur ${it.n}`;
+      meta = `${it.num_tasks || 0} Aufgaben · ${it.total_points || 0} Punkte${it.generated ? ` · ${it.generated}` : ''}`;
+      b.addEventListener('click', () => openProbeklausurTab(it));
+    } else if (kind === 'zusammenfassungen') {
+      icon = '📑'; title = it.titel || 'Zusammenfassung'; meta = it.date || '';
+      b.addEventListener('click', () => openSummary(it));
+    } else if (kind === 'dateien') {
+      icon = fileIconFor(it.file_type); title = it.name || '';
+      meta = (it.file_type || '').toUpperCase() + (it.is_exam ? ' · Altklausur' : '');
+      b.addEventListener('click', () => openFile(it));
+    }
+    b.innerHTML = `<span class="cdi-icon">${icon}</span><span class="cdi-main"><span class="cdi-title">${escHtml(title)}</span>${meta ? `<span class="cdi-meta">${escHtml(meta)}</span>` : ''}</span>`;
+    list.appendChild(b);
+  });
+  extras.appendChild(list);
+}
+
+function renderStatsCard(extras, stats) {
+  const c = document.createElement('div'); c.className = 'chat-stats';
+  const total = document.createElement('div'); total.className = 'chat-stats-total';
+  total.textContent = `${stats.total_completed || 0} erledigte Aufgaben`;
+  c.appendChild(total);
+  const topics = (stats.per_topic || []).slice(0, 6);
+  if (topics.length) {
+    const wrap = document.createElement('div'); wrap.className = 'chat-stats-topics';
+    topics.forEach(tp => {
+      const chip = document.createElement('span'); chip.className = 'chat-stats-chip';
+      chip.textContent = `${tp.topic_name || tp.topic_id} (${tp.count})`;
+      wrap.appendChild(chip);
+    });
+    c.appendChild(wrap);
+  }
+  extras.appendChild(c);
+}
+
+function handleClientAction(action, args) {
+  if (action === 'wechsle_modul') {
+    if (args.modul && args.modul !== state.moduleName) loadModuleWorkspace(args.modul);
+  } else if (action === 'oeffne_roadmap') {
+    openRoadmapTab();
+  } else if (action === 'oeffne_datei') {
+    const f = (state.moduleFiles || []).find(x => x.name === args.datei || (x.relative_path || '') === args.datei);
+    if (f) openFile(f);
+    else addMsg('agent', `Datei „${args.datei}" wurde nicht gefunden.`);
   }
 }
 
