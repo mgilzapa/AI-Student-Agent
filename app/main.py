@@ -141,8 +141,13 @@ def load_chunks_for_indexing(processed_dir: Path) -> List[Dict[str, Any]]:
     return [c for c in chunks if c.get("chunk_text", "").strip()]
 
 
-def index_chunks(config: Dict[str, Any]) -> None:
-    """Index all chunks into pgvector using OpenAI embeddings."""
+def index_chunks(config: Dict[str, Any], module_name: Optional[str] = None) -> None:
+    """Index all chunks into pgvector using OpenAI embeddings.
+
+    When ``module_name`` is given, only chunks for that module are indexed so
+    that orphaned .jsonl files from previously-deleted modules are never
+    re-indexed (which would auto-recreate their ``modules`` DB row).
+    """
     logger.info("-" * 50)
     logger.info("Indexing chunks into pgvector...")
 
@@ -158,6 +163,15 @@ def index_chunks(config: Dict[str, Any]) -> None:
     # Only index chunks not already in pgvector
     existing_ids = set(vector_store.get()["ids"])
     new_chunks = [c for c in chunks if c["chunk_id"] not in existing_ids]
+
+    # Scope to a specific module when called from the web-upload path so that
+    # leftover .jsonl files for deleted modules are not accidentally re-indexed.
+    if module_name:
+        module_lower = module_name.lower()
+        new_chunks = [
+            c for c in new_chunks
+            if c.get("metadata", {}).get("module_name", "").lower() == module_lower
+        ]
 
     if not new_chunks:
         logger.info("All chunks already indexed — nothing to do.")
