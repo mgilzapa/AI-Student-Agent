@@ -19,6 +19,7 @@ import json
 import random
 import re
 from datetime import date
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
@@ -266,8 +267,15 @@ def _refresh_progress(md: str) -> str:
 
 # ─────────────────────────── Task toggle ────────────────────────────────────
 
-def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) -> str:
-    """Toggle a single task checkbox. Returns updated markdown. Raises ValueError if no plan."""
+def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) -> Dict[str, Any]:
+    """Toggle a single task checkbox and sync the topic pool.
+
+    Returns ``{"md", "card_completed", "topic_id", "topic_name"}``.
+    ``card_completed`` is True only when checking a task exhausts the topic's pool.
+    Raises ValueError if no plan exists.
+    """
+    from . import topic_pool as tp
+
     md = load_plan(module_name)
     if not md:
         raise ValueError("Kein aktiver Plan vorhanden.")
@@ -276,12 +284,13 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
     in_topic = False
     task_count = 0
     current_topic_name = ""
+    task_text = ""
 
     for i, line in enumerate(lines):
         tm = _TOPIC_RE.match(line)
         if tm:
             in_topic = (tm.group("id") == topic_id)
-            current_topic_name = tm.group("name").strip() if in_topic else ""
+            current_topic_name = tm.group("name").strip() if in_topic else current_topic_name
             task_count = 0
             continue
         if in_topic:
@@ -303,7 +312,22 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
         updated += "\n"
     updated = _refresh_progress(updated)
     save_plan(module_name, updated)
-    return updated
+
+    # Mirror the toggle into the topic pool. Review cards (`tX_review`) have no pool.
+    card_completed = False
+    if task_text and not topic_id.endswith("_review"):
+        if done:
+            tp.mark_task_done(module_name, topic_id, task_text)
+            card_completed = tp.is_pool_complete(module_name, topic_id)
+        else:
+            tp.unmark_task(module_name, topic_id, task_text)
+
+    return {
+        "md": updated,
+        "card_completed": card_completed,
+        "topic_id": topic_id,
+        "topic_name": current_topic_name,
+    }
 
 
 # ─────────────────────────── Archive ────────────────────────────────────────
@@ -474,47 +498,7 @@ def _split_files(
     return lecture_files, merged_exercises
 
 
-# ─────────────────────────── LLM task generation ────────────────────────────
-
-_TASK_PROMPT = """\
-Du bist ein AI Lerncoach. Dein Ziel ist es, eine effektive, fokussierte Tageslernplan 
-mit {n} konkreten Aufgaben zu erstellen, basierend auf dem Thema und den verfügbaren Materialien. 
-Du musst auch verstehen um was für ein modul es sich handelt. Wenn es z.B. um ein Informatik/Mathematik Modul geht, 
-dann sollten die aufgaben eher praktisch sein, während es bei einem theoriekurs, wie Wirtschaftswissenschaften/Linguistik/Recht geht,  
-dann eher um das verstehen von konzepten geht.
-Jede Aufgabe sollte klar und umsetzbar sein, damit der Lernende direkt loslegen kann.
-Hier sind die Daten, die du für die Planung verwenden kannst:
-THEMA: {topic_name}
-SUBTOPICS: {subtopics}
-LERNZEIT HEUTE: {hours}h
-VERFÜGBARE DATEIEN: {files}
-ÜBUNGSBLÄTTER: {exercises}
-{rag_section}{already_done_section}
-Hier sind einige Richtlinien für die Aufgabenerstellung:
-- Priorisiere Aufgaben, die direkt mit den verfügbaren Dateien und Übungen verbunden sind.
-- Berücksichtige die Unterthemen, um sicherzustellen, dass die Aufgaben relevante Konzepte abdecken.
-- Versuche, die Lernzeit optimal zu nutzen, indem du eine Mischung aus Theorie und Praxis vorschlägst
-- Ein Übungsblatt könnte z.B. die Aufgabe sein, eine bestimmte Übungsaufgabe zu lösen, während eine Datei die Aufgabe sein könnte, ein bestimmtes Kapitel durchzuarbeiten und die Kernkonzepte zusammenzufassen.
-- Du schreibst keine aufgabenstellungen, sondern kurze Referenzen, die den Lernenden anleiten, was genau zu tun ist (z.B. "Löse Aufgabe 3 aus Blatt3" oder "Fasse Kapitel 4 der VL5 zusammen").
-- Vermeide vage Formulierungen wie "Lerne Thema X" oder "Verstehe Konzept Y". Sei stattdessen so konkret und handlungsorientiert wie möglich.
-- Wenn es viel Theorie Material gibt zb. Skripte oder Vorlesungsfolien, dann sollten die Aufgaben eher darauf fokussieren, die Kernkonzepte zu verstehen und in eigenen Worten zusammenzufassen. 
-- Wenn es viele Übungsblätter gibt, dann sollten die Aufgaben eher darauf fokussieren, konkrete Übungsaufgaben zu lösen.
-
-Hier ist ein beispiel für die task generierung:
-
-<example> 
-"Löse Aufgabe 3 aus Blatt3 vollständig und kontrolliere deine lösungen."
-"Lese Kapitel 4 der VL5 und fasse die 3 wichtigsten Konzepte in eigenen Worten zusammen."
-"Löse die Übungsaufgaben 2, 4 und 5 aus Blatt3, da sie wichtige prüfungsrelevante Konzepte abdecken."
-"Verbringe 30 Minuten damit, die Normalformen (1NF, 2NF, 3NF) anhand von Beispielen zu erklären und zu verstehen."
-"Schreibe eine kurze Zusammenfassung der wichtigsten Punkte aus Skript Kapitel 4 zum Algorithmus X, um dein Verständnis zu vertiefen."
-</example>
-
-Wie erstellst du den Tagesplan?
-Denk erstmal was du schreiben willst bevor du antwortest.
-
-Antworte NUR als JSON-Array mit genau {n} Strings.\
-"""
+# ─────────────────────────── Task sizing ────────────────────────────────────
 
 
 def _task_count_for_hours(hours: float) -> int:
@@ -529,58 +513,104 @@ def _task_count_for_hours(hours: float) -> int:
         return min(6, 4 + round(hours - 3.5))
 
 
-def _build_tasks_from_metadata(
-    topic: Dict[str, Any],
-    hours: float = 2.0,
-    completed_texts: Optional[List[str]] = None,
-    file_types: Optional[Dict[str, str]] = None,
+def _pool_size(hours: float, n_files: int, n_subtopics: int) -> int:
+    """Total number of tasks the pool should hold for a topic. Clamped to [4, 20]."""
+    return max(4, min(20, round(hours * 2 + n_files * 1.5 + n_subtopics * 0.5)))
+
+
+_POOL_PROMPT = """\
+Du bist ein AI Lerncoach. Erstelle einen vollständigen Aufgaben-Pool für EIN Thema.
+Der Pool umfasst ALLE Aufgaben, die der Lernende über mehrere Lerntage hinweg
+abarbeiten muss, um das Thema vollständig zu beherrschen. Wenn der Pool leer ist,
+gilt das Thema als gemeistert.
+
+Verstehe zuerst, um was für ein Modul es sich handelt:
+- Informatik/Mathematik/Technik → eher praktische Aufgaben (Übungen lösen, Algorithmen, Code).
+- Theoriekurse (Wirtschaft/Linguistik/Recht) → eher Konzepte verstehen und zusammenfassen.
+
+THEMA: {topic_name}
+SUBTOPICS: {subtopics}
+VERFÜGBARE DATEIEN: {files}
+ÜBUNGSBLÄTTER: {exercises}
+{rag_section}
+ANZAHL AUFGABEN: genau {n}
+
+Richtlinien:
+- Decke das gesamte Thema und alle Subtopics ab — vom Verstehen der Grundlagen
+  bis zum prüfungsnahen Anwenden.
+- Priorisiere Aufgaben, die direkt mit den verfügbaren Dateien und Übungen verbunden sind.
+- Schreibe keine Aufgabenstellungen, sondern kurze, konkrete Referenzen, die anleiten,
+  was genau zu tun ist (z.B. "Löse Aufgabe 3 aus Blatt3" oder "Fasse Kapitel 4 der VL5 zusammen").
+- Vermeide vage Formulierungen wie "Lerne Thema X". Sei konkret und handlungsorientiert.
+- Steigere die Schwierigkeit über den Pool hinweg leicht (erst Verständnis, dann Anwendung).
+- Keine Dopplungen.
+
+Beispiele für gute Aufgaben:
+- "Löse Aufgabe 3 aus Blatt3 vollständig und kontrolliere deine Lösungen."
+- "Lese Kapitel 4 der VL5 und fasse die 3 wichtigsten Konzepte in eigenen Worten zusammen."
+- "Erkläre die Normalformen (1NF, 2NF, 3NF) anhand eigener Beispiele."
+
+Antworte NUR als JSON-Array mit genau {n} Strings."""
+
+
+def _fallback_pool_tasks(
+    files: List[str], exercises: List[str], subtopics: List[str], name: str, n: int
 ) -> List[Dict[str, Any]]:
-    """Fallback: build tasks from topic metadata without LLM."""
-    files, exercises = _split_files(
-        topic.get("dateien") or topic.get("files") or [],
-        topic.get("aufgaben") or topic.get("exercises") or [],
-        file_types,
-    )
-    n = _task_count_for_hours(hours)
-    done_set = set(completed_texts or [])
-    name = topic.get("name", "Topic")
-    subtopics = [str(s).strip() for s in (topic.get("subtopics") or topic.get("untergruppen") or []) if str(s).strip()]
-    focus = f"Fokus: {', '.join(subtopics[:2])}" if subtopics else "Kernkonzepte erarbeiten"
-    theory_min = round(hours * 0.5 * 60)
-    practice_min = round(hours * 0.4 * 60)
-
+    """Build pool tasks from metadata when the LLM is unavailable."""
     tasks: List[Dict[str, Any]] = []
-
     for ex in exercises:
         if len(tasks) >= n:
             break
-        text = ex
-        if text not in done_set:
-            tasks.append({"text": text, "done": False})
-
+        tasks.append({"text": ex, "done": False})
     for f in files:
         if len(tasks) >= n:
             break
         label = f"{f} – {subtopics[0]}" if subtopics else f"{f} – {name}"
-        if label not in done_set:
-            tasks.append({"text": label, "done": False})
-
-    if not tasks:
-        tasks.append({"text": f"{name}" + (f" – {subtopics[0]}" if subtopics else ""), "done": False})
-
+        tasks.append({"text": label, "done": False})
+    _PAD_TEMPLATES = [
+        "Lies deine Notizen zu '{}' und markiere unverstandene Stellen.",
+        "Fasse '{}' in 5 Sätzen zusammen.",
+        "Erkläre '{}' so, als würdest du es einem Kommilitonen erklären.",
+        "Notiere 3 mögliche Prüfungsfragen zu '{}' und beantworte sie.",
+        "Erstelle eine Mindmap zu '{}'.",
+        "Überprüfe dein Verständnis von '{}' mit einer Selbstabfrage.",
+    ]
+    i = 0
+    while len(tasks) < n and subtopics:
+        sub = subtopics[i % len(subtopics)]
+        text = f"Erkläre '{sub}' aus {name} in eigenen Worten mit einem Beispiel."
+        if not any(t["text"] == text for t in tasks):
+            tasks.append({"text": text, "done": False})
+        i += 1
+        if i > n * 3:
+            break
+    pad_idx = 0
+    while len(tasks) < n:
+        text = _PAD_TEMPLATES[pad_idx % len(_PAD_TEMPLATES)].format(name)
+        if not any(t["text"] == text for t in tasks):
+            tasks.append({"text": text, "done": False})
+        pad_idx += 1
+        if pad_idx > n * len(_PAD_TEMPLATES):
+            break
     return tasks[:n]
 
 
-def _generate_tasks_for_topic(
+def _generate_pool(
     topic: Dict[str, Any],
     module_name: str,
-    rag_fn: Callable,
-    hours: float = 2.0,
-    completed_texts: Optional[List[str]] = None,
-) -> List[Dict[str, Any]]:
-    """Generate content-grounded tasks using RAG + topic metadata."""
-    name = topic.get("name", "")
-    subtopics = [str(s).strip() for s in (topic.get("subtopics") or topic.get("untergruppen") or []) if str(s).strip()]
+    rag_fn: Optional[Callable] = None,
+) -> None:
+    """Generate all pool tasks for a topic in one LLM call and persist via topic_pool."""
+    from . import topic_pool as tp
+
+    topic_id = str(topic.get("id") or "")
+    name = str(topic.get("name") or "")
+
+    subtopics = [
+        str(s).strip()
+        for s in (topic.get("subtopics") or topic.get("untergruppen") or [])
+        if str(s).strip()
+    ]
     profile = mp.load(module_name)
     file_types: Dict[str, str] = (profile.get("file_types") or {}) if profile else {}
     files, exercises = _split_files(
@@ -588,57 +618,69 @@ def _generate_tasks_for_topic(
         topic.get("aufgaben") or topic.get("exercises") or [],
         file_types,
     )
+    try:
+        hours = float(topic.get("hours") or 2.0)
+    except (TypeError, ValueError):
+        hours = 2.0
 
-    # Query RAG: topic name + subtopics for richer, content-grounded tasks
+    n = _pool_size(hours, len(files), len(subtopics))
+
     rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
-    rag_content = rag_fn(rag_query, module_name, 6) if rag_fn else ""
+    rag_content = rag_fn(rag_query, module_name, 8) if rag_fn else ""
+    rag_section = f"INHALT AUS DEM LERNMATERIAL:\n{rag_content[:3500]}\n\n" if rag_content else ""
 
-    n = _task_count_for_hours(hours)
-    done_list = completed_texts or []
-
-    rag_section = ""
-    if rag_content:
-        rag_section = f"INHALT AUS DEM LERNMATERIAL:\n{rag_content[:3000]}\n\n"
-
-    already_done_section = ""
-    if done_list:
-        already_done_section = (
-            "BEREITS ERLEDIGT (nicht wiederholen):\n"
-            + "\n".join(f"- {t}" for t in done_list)
-            + "\n\n"
-        )
-
-    prompt = _TASK_PROMPT.format(
-        n=n,
+    prompt = _POOL_PROMPT.format(
         topic_name=name,
         subtopics=", ".join(subtopics) if subtopics else "—",
-        hours=hours,
         files=", ".join(files) if files else "—",
         exercises=", ".join(exercises) if exercises else "—",
         rag_section=rag_section,
-        already_done_section=already_done_section,
+        n=n,
     )
 
+    tasks: List[Dict[str, Any]] = []
     try:
         resp = _get_client().messages.create(
             model=MODEL,
-            max_tokens=600,
-            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            messages=[
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": "["},
+            ],
         )
-        raw = resp.content[0].text.strip()
-        raw = re.sub(r"^```(?:json)?\s*\n?", "", raw)
+        text_block = next((b for b in resp.content if getattr(b, "type", None) == "text"), None)
+        if not text_block:
+            raise ValueError("No text block in response")
+        raw = "[" + text_block.text.strip()
         raw = re.sub(r"\n?```\s*$", "", raw).strip()
+        last_bracket = raw.rfind("]")
+        if last_bracket != -1:
+            raw = raw[: last_bracket + 1]
         task_texts = json.loads(raw)
         if not isinstance(task_texts, list):
             raise ValueError("Expected list")
-        return [
-            {"text": str(t).strip(), "done": False}
-            for t in task_texts[:n]
-            if str(t).strip()
-        ]
+        seen: set = set()
+        for t in task_texts:
+            text = str(t).strip()
+            if text and text not in seen:
+                seen.add(text)
+                tasks.append({"text": text, "done": False})
+            if len(tasks) >= n:
+                break
     except Exception as exc:
-        print(f"[daily_tasks] LLM task gen failed for {name}: {exc}")
-        return _build_tasks_from_metadata(topic, hours, completed_texts, file_types)
+        print(f"[daily_tasks] pool gen failed for {name}: {exc}")
+
+    if not tasks:
+        tasks = _fallback_pool_tasks(files, exercises, subtopics, name, n)
+
+    pool = {
+        "topic_id": topic_id,
+        "topic_name": name,
+        "generated_at": date.today().isoformat(),
+        "pool_size": len(tasks),
+        "tasks": tasks,
+    }
+    tp.save_pool(module_name, topic_id, pool)
 
 
 # ─────────────────────────── Main generate ──────────────────────────────────
@@ -670,14 +712,22 @@ def generate(
     selected = _select_topics(roadmap_data, daily_hours)
     carry_ids = {t["id"] for t in carry_topics}
 
-    # 4) Build new topic list (carryover first, then new)
+    # 4) Build new topic list (carryover first, then new). Tasks are drawn
+    #    sequentially from each topic's pool; the pool is generated lazily the
+    #    first time a topic is scheduled.
+    from . import topic_pool as tp
+
     new_topics: List[Dict] = []
     for topic, alloc_hours in selected:
         tid = str(topic.get("id") or "")
         if tid in carry_ids:
             continue
-        completed_texts = get_completed_texts_for_topic(module_name, tid)
-        tasks = _generate_tasks_for_topic(topic, module_name, rag_fn, alloc_hours, completed_texts)
+        if not tp.load_pool(module_name, tid):
+            _generate_pool(topic, module_name, rag_fn)
+        n = _task_count_for_hours(alloc_hours)
+        tasks = tp.get_next_tasks(module_name, tid, n)
+        if not tasks:
+            continue  # pool exhausted — nothing left to schedule for this card
         new_topics.append({
             "id": tid,
             "name": str(topic.get("name", "")),

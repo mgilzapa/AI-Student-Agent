@@ -43,6 +43,7 @@ from app.lecture import exam_analyzer as ea
 from app.lecture.summarizer import summarize
 from app.lecture import exam_generator as eg
 from app.lecture import daily_tasks as dt
+from app.lecture import topic_quiz as tq
 from app.chat import orchestrator as chat_orchestrator
 from app.chat import tools as chat_tools
 
@@ -554,7 +555,7 @@ def _safe_module(name: Optional[str]) -> str:
 
 
 def _module_status(module_name: str) -> dict:
-    """Light module status for the chat system prompt (roadmap?, #exams, #files)."""
+    """Light module status for the chat system prompt (roadmap?, #exams, files list)."""
     if not module_name:
         return {}
     try:
@@ -565,11 +566,12 @@ def _module_status(module_name: str) -> dict:
         n_exams = len(eg.list_exams(module_name))
     except Exception:
         n_exams = 0
+    file_names: list[str] = []
     try:
-        n_files = len(list_module_files(module_name))
+        file_names = [f.get("name", "") for f in list_module_files(module_name) if f.get("name")]
     except Exception:
-        n_files = 0
-    return {"roadmap": has_roadmap, "klausuren": n_exams, "dateien": n_files}
+        pass
+    return {"roadmap": has_roadmap, "klausuren": n_exams, "dateien": file_names}
 
 
 def _all_module_names() -> List[str]:
@@ -583,8 +585,11 @@ def _build_chat_system_prompt(active: str, all_modules: List[str], status: dict,
     modul_list = ", ".join(all_modules) if all_modules else "(keine)"
     if status:
         rm_txt = "ja" if status.get("roadmap") else "nein"
+        file_names: list = status.get("dateien") or []
+        n_files = len(file_names)
+        files_txt = ", ".join(file_names) if file_names else "(keine)"
         status_txt = (f"Roadmap vorhanden: {rm_txt}; Klausuren: {status.get('klausuren', 0)}; "
-                      f"Dateien: {status.get('dateien', 0)}")
+                      f"Dateien ({n_files}): {files_txt}")
     else:
         status_txt = "(kein aktives Modul)"
     return (
@@ -599,10 +604,17 @@ def _build_chat_system_prompt(active: str, all_modules: List[str], status: dict,
         "  einen Vorschlag). Behaupte NIEMALS, etwas sei erstellt, bevor der Nutzer bestätigt hat.\n"
         "- Für einen Tagesplan ist eine vorhandene Roadmap nötig. Fehlt sie (siehe Status), "
         "  schlage zuerst eine Roadmap vor (erstelle_roadmap).\n"
-        "- Für eine Zusammenfassung ohne genannte Datei: nutze zuerst zeige_dateien und frage, "
-        "  welche Datei zusammengefasst werden soll.\n"
+        "- Datei-Auflösung: Wenn der Nutzer eine Datei mit einer Beschreibung nennt (z.B. "
+        "  'Blatt 9', 'zweite Übung', 'Aufgabe 3'), wähle den besten passenden Dateinamen aus "
+        "  der obigen Dateiliste und verwende DIESEN exakten Namen als Parameter. "
+        "  Frage NIEMALS nach dem genauen Dateinamen — löse ihn selbst auf.\n"
+        "- Für eine Zusammenfassung ohne genannte Datei: frage, welche Datei zusammengefasst "
+        "  werden soll (zeige dabei die Dateiliste aus dem Status).\n"
         "- Wenn du ein Lese-Tool benutzt, leite das Ergebnis mit EINEM kurzen Satz ein. "
         "  Die Liste wird separat angezeigt — zähle die Einträge nicht selbst auf.\n"
+        "- `zeige_dateien` nur aufrufen, wenn der Nutzer EXPLIZIT alle Dateien des Moduls sehen "
+        "  will ('zeig mir alle Dateien', 'welche Dokumente gibt es'). Fragen wie 'wo finde ich "
+        "  etwas zu Thema X' oder 'in welcher Datei steht Y' sind Wissensfragen → KEIN Tool.\n"
         "- Für normale Wissensfragen rufst du KEIN Tool auf; diese werden separat beantwortet.\n"
         "- Antworte immer auf Deutsch."
     )
@@ -1121,6 +1133,13 @@ def rename_module_file(module_name: str, body: FileRenameRequest):
 class SolveSheetRequest(BaseModel):
     sheet_text: str = Field(..., max_length=MAX_TEXT_CHARS)
     module_id: str = Field(..., max_length=200)
+    sheet_name: str = Field(default="", max_length=500)
+    sheet_path: str = Field(default="", max_length=1000)
+
+
+class SolutionRenameRequest(BaseModel):
+    path: str
+    new_name: str
 
 
 class RoadmapGenerateRequest(BaseModel):
@@ -1565,7 +1584,7 @@ async def upload_module(
     with ThreadPoolExecutor(max_workers=min(len(saved_paths), 2)) as pool:
         futures = {pool.submit(process_document, path, config["processed_path"], True, module_name=clean_module): path for path in saved_paths}
         results = [f.result() for f in as_completed(futures)]
-    index_chunks(config)
+    index_chunks(config, module_name=clean_module)
 
     processed = sum(1 for result in results if result.get("parseSuccess"))
     skipped = sum(1 for result in results if result.get("skipped"))
@@ -1742,6 +1761,111 @@ def get_lecture_summary(path: str):
     return {"content": content}
 
 
+class SummaryRenameRequest(BaseModel):
+    path: str   # storage_path of the summary
+    title: str
+
+
+@app.patch("/lecture/summaries/{module_name}")
+def rename_lecture_summary(module_name: str, body: SummaryRenameRequest):
+    """Benennt eine Zusammenfassung um. Ändert nur den DB-`title`; der Storage-Pfad
+    bleibt unverändert (der angezeigte Name kommt aus `title`)."""
+    new_title = body.title.strip()
+    if not new_title:
+        raise HTTPException(status_code=400, detail="Titel darf nicht leer sein.")
+    profile = mp.load(module_name)
+    if not profile or not profile.get("id"):
+        raise HTTPException(status_code=404, detail="Modul nicht gefunden.")
+    try:
+        _supa_client().table("summaries").update({"title": new_title}) \
+            .eq("module_id", profile["id"]).eq("storage_path", body.path).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Umbenennen fehlgeschlagen: {exc}")
+    return {"success": True, "title": new_title}
+
+
+@app.delete("/lecture/summaries/{module_name}")
+def delete_lecture_summary(module_name: str, path: str):
+    """Löscht eine Zusammenfassung: Storage-Objekt + DB-Row. Der `module_id`-Filter
+    ist sicherheitsrelevant, da der Service-Key RLS umgeht."""
+    from app.storage import storage_backend as sb
+    profile = mp.load(module_name)
+    if not profile or not profile.get("id"):
+        raise HTTPException(status_code=404, detail="Modul nicht gefunden.")
+    sb.delete(path)
+    try:
+        _supa_client().table("summaries").delete() \
+            .eq("module_id", profile["id"]).eq("storage_path", path).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Löschen fehlgeschlagen: {exc}")
+    return {"success": True}
+
+
+# ─────────────────────── Solutions endpoints ──────────────────────────────────
+
+@app.get("/lecture/solutions/{module_name}")
+def get_lecture_solutions(module_name: str):
+    """Listet alle gespeicherten Lösungen eines Moduls."""
+    try:
+        profile = mp.load(module_name)
+        if profile and profile.get("id"):
+            rows = (
+                _supa_client()
+                .table("solutions")
+                .select("name, sheet_path, storage_path, solve_data, created_at")
+                .eq("module_id", profile["id"])
+                .order("created_at", desc=True)
+                .execute()
+            ).data or []
+            solutions = [
+                {
+                    "name":         r.get("name") or "Lösung",
+                    "sheet_path":   r.get("sheet_path", ""),
+                    "storage_path": r.get("storage_path", ""),
+                    "solve_data":   r.get("solve_data"),
+                    "date":         str(r.get("created_at", ""))[:10],
+                }
+                for r in rows
+            ]
+            return {"solutions": solutions}
+    except Exception:
+        pass
+    return {"solutions": []}
+
+
+@app.patch("/lecture/solutions/{module_name}")
+def rename_lecture_solution(module_name: str, body: SolutionRenameRequest):
+    """Benennt eine Lösung um (nur DB-`name`; Storage-Pfad bleibt unverändert)."""
+    new_name = body.new_name.strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Name darf nicht leer sein.")
+    profile = mp.load(module_name)
+    if not profile or not profile.get("id"):
+        raise HTTPException(status_code=404, detail="Modul nicht gefunden.")
+    try:
+        _supa_client().table("solutions").update({"name": new_name}) \
+            .eq("module_id", profile["id"]).eq("storage_path", body.path).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Umbenennen fehlgeschlagen: {exc}")
+    return {"success": True, "name": new_name}
+
+
+@app.delete("/lecture/solutions/{module_name}")
+def delete_lecture_solution(module_name: str, path: str):
+    """Löscht eine Lösung: Storage-Objekt + DB-Row."""
+    from app.storage import storage_backend as sb
+    profile = mp.load(module_name)
+    if not profile or not profile.get("id"):
+        raise HTTPException(status_code=404, detail="Modul nicht gefunden.")
+    sb.delete(path)
+    try:
+        _supa_client().table("solutions").delete() \
+            .eq("module_id", profile["id"]).eq("storage_path", path).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Löschen fehlgeschlagen: {exc}")
+    return {"success": True}
+
+
 @app.post("/solve-sheet")
 @limiter.limit(RL_HEAVY)
 @_heavy_daily
@@ -1760,6 +1884,18 @@ async def solve_sheet(request: Request, body: SolveSheetRequest):
         models_used[r.model_used] = models_used.get(r.model_used, 0) + 1
 
     # Gelöstes Blatt speichern und in RAG indizieren
+    storage_path = ""
+    results_dicts = [
+        {
+            "aufgabe_nr":   r.aufgabe_nr,
+            "aufgabe_text": r.aufgabe_text,
+            "loesung":      r.loesung,
+            "model_used":   r.model_used,
+            "route":        r.route,
+            "tokens_used":  r.tokens_used,
+        }
+        for r in results
+    ]
     try:
         md_lines = [f"# Gelöstes Übungsblatt — {body.module_id}", f"**Datum:** {_date.today()}", ""]
         for r in results:
@@ -1771,28 +1907,35 @@ async def solve_sheet(request: Request, body: SolveSheetRequest):
         md_content = "\n".join(md_lines)
 
         from app.storage import storage_backend as sb
+        from app.storage.supabase_client import get_client as _get_supa, get_user_id as _get_uid
         sheet_hash = hashlib.md5(body.sheet_text.encode()).hexdigest()[:8]
         storage_path = f"{_slug(body.module_id)}/solved_sheets/{_date.today()}_{sheet_hash}.md"
         sb.write_text(storage_path, md_content)
+
+        # DB-Eintrag (wie summaries)
+        try:
+            profile = mp.load(body.module_id)
+            if profile and profile.get("id"):
+                _get_supa().table("solutions").insert({
+                    "user_id":      _get_uid(),
+                    "module_id":    profile["id"],
+                    "sheet_path":   body.sheet_path,
+                    "name":         body.sheet_name or f"Lösung {_date.today()}",
+                    "storage_path": storage_path,
+                    "solve_data":   {"results": results_dicts, "total_tokens": total_tokens, "models_used": models_used},
+                }).execute()
+        except Exception as db_exc:
+            print(f"[solve_sheet] DB-Eintrag fehlgeschlagen (nicht fatal): {db_exc}")
 
         await asyncio.to_thread(_index_generated_content, md_content, storage_path, body.module_id)
     except Exception as exc:
         print(f"[solve_sheet] Speichern/Indizieren fehlgeschlagen (nicht fatal): {exc}")
 
     return {
-        "results": [
-            {
-                "aufgabe_nr": r.aufgabe_nr,
-                "aufgabe_text": r.aufgabe_text,
-                "loesung": r.loesung,
-                "model_used": r.model_used,
-                "route": r.route,
-                "tokens_used": r.tokens_used,
-            }
-            for r in results
-        ],
+        "results": results_dicts,
         "total_tokens": total_tokens,
         "models_used": models_used,
+        "storage_path": storage_path,
     }
 
 
@@ -2125,13 +2268,19 @@ def daily_task_patch(module_name: str, body: DailyTaskPatchRequest):
     """Toggle a single task checkbox (done or undone)."""
     clean = sanitize_module_name(module_name)
     try:
-        updated_md = dt.toggle_task(clean, body.topic_id, body.task_index, body.done)
+        result = dt.toggle_task(clean, body.topic_id, body.task_index, body.done)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-    parsed = dt.parse_plan(updated_md)
-    return {"success": True, "progress": parsed["progress"]}
+    parsed = dt.parse_plan(result["md"])
+    return {
+        "success": True,
+        "progress": parsed["progress"],
+        "card_completed": result["card_completed"],
+        "topic_id": result["topic_id"],
+        "topic_name": result["topic_name"],
+    }
 
 
 @app.get("/daily/{module_name}/stats")
@@ -2154,4 +2303,86 @@ def daily_history_delete(module_name: str):
     clean = sanitize_module_name(module_name)
     from app.storage import storage_backend as sb
     sb.delete(dt.task_history_path(clean))
+    return {"success": True}
+
+
+# ─────────────────────── Topic completion quiz endpoints ──────────────────────
+
+@app.get("/quiz/topic/{module_name}")
+def topic_quiz_list(module_name: str):
+    """List metadata of all saved completion quizzes for a module."""
+    clean = sanitize_module_name(module_name)
+    return {"quizzes": tq.list_quizzes(clean)}
+
+
+@app.get("/quiz/topic/{module_name}/{topic_id}")
+def topic_quiz_get(module_name: str, topic_id: str):
+    """Load a saved quiz without regenerating it."""
+    clean = sanitize_module_name(module_name)
+    quiz = tq.load_quiz(clean, topic_id)
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz nicht gefunden.")
+    return {"success": True, **quiz}
+
+
+@app.delete("/quiz/topic/{module_name}/{topic_id}")
+def topic_quiz_delete(module_name: str, topic_id: str):
+    """Delete a saved quiz."""
+    clean = sanitize_module_name(module_name)
+    deleted = tq.delete_quiz(clean, topic_id)
+    return {"success": deleted}
+
+
+def _find_roadmap_topic(roadmap_data: dict, topic_id: str) -> Optional[dict]:
+    for phase in roadmap_data.get("phases", []):
+        for topic in phase.get("topics", []):
+            if topic.get("id") == topic_id:
+                return topic
+    return None
+
+
+@app.post("/quiz/topic/{module_name}/{topic_id}")
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def topic_quiz_generate(request: Request, module_name: str, topic_id: str):
+    """Generate (and persist) a completion quiz for a roadmap topic."""
+    clean = sanitize_module_name(module_name)
+    roadmap_md = rm.load_roadmap_md(clean)
+    if not roadmap_md:
+        raise HTTPException(status_code=404, detail="Keine Roadmap gefunden.")
+    roadmap_data = rm.parse_md(roadmap_md)
+    topic = _find_roadmap_topic(roadmap_data, topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail=f"Thema {topic_id} nicht gefunden.")
+
+    name = topic.get("name", "")
+    subtopics = topic.get("subtopics") or []
+    rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
+    rag_context = await asyncio.to_thread(
+        _course_context_excluding_generated,
+        clean,
+        rag_query or "Wichtige Konzepte und Definitionen.",
+        10,
+    )
+
+    try:
+        quiz = await asyncio.to_thread(tq.generate, clean, topic, rag_context)
+    except Exception as exc:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Quiz-Generierung fehlgeschlagen: {exc}")
+    return {"success": True, **quiz}
+
+
+@app.post("/quiz/topic/{module_name}/{topic_id}/complete")
+def topic_quiz_complete(module_name: str, topic_id: str):
+    """Mark the roadmap card as done after the user finishes its completion quiz."""
+    clean = sanitize_module_name(module_name)
+    md = rm.load_roadmap_md(clean)
+    if not md:
+        raise HTTPException(status_code=404, detail="Keine Roadmap gefunden.")
+    try:
+        md = rm.update_topic_status(md, topic_id, "done")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    rm.save_roadmap_md(clean, md)
     return {"success": True}

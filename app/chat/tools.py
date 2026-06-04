@@ -29,6 +29,7 @@ TOOL_CLASS: Dict[str, str] = {
     "erstelle_zusammenfassung":  MUTATING,
     "erstelle_loesungsblatt":    MUTATING,
     "erstelle_tagesplan":        MUTATING,
+    "erstelle_quiz":             MUTATING,
     "zeige_klausuren":           READ,
     "zeige_zusammenfassungen":   READ,
     "zeige_dateien":             READ,
@@ -164,6 +165,23 @@ def tool_definitions() -> List[dict]:
             },
         },
         {
+            "name": "erstelle_quiz",
+            "description": (
+                "Schlage vor, ein Abschluss-Quiz für ein konkretes Roadmap-Thema zu erstellen. "
+                "Verwende dieses Tool, wenn der Nutzer ein Quiz, eine Wissensabfrage oder einen "
+                "Self-Test zu einem bestimmten Thema möchte. Setzt eine vorhandene Roadmap voraus. "
+                "Es wird NICHT sofort erstellt — der Nutzer muss zuerst bestätigen."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "modul": {"type": "string", "description": "Modulname (Standard: aktives Modul)."},
+                    "thema": {"type": "string", "description": "Name des Roadmap-Themas, für das das Quiz erstellt werden soll."},
+                },
+                "required": ["thema"],
+            },
+        },
+        {
             "name": "zeige_klausuren",
             "description": "Liste die vorhandenen Probeklausuren eines Moduls auf.",
             "input_schema": {
@@ -261,6 +279,11 @@ def normalize_mutation(tool_name: str, raw: dict, active_module: str) -> dict:
             "modul": modul,
             "taegliche_stunden": _clamp_float(raw.get("taegliche_stunden"), DAILY_HOURS_MIN, DAILY_HOURS_MAX, 2.0),
         }
+    if tool_name == "erstelle_quiz":
+        return {
+            "modul": modul,
+            "thema": str(raw.get("thema") or "")[:200].strip(),
+        }
     # Unknown mutating tool — return sanitized module only.
     return {"modul": modul}
 
@@ -282,27 +305,34 @@ def normalize_client(tool_name: str, raw: dict, active_module: str) -> dict:
 def build_summary(tool_name: str, params: dict) -> str:
     modul = params.get("modul", "")
     if tool_name == "erstelle_klausur":
-        return (f"Ich erstelle eine Probeklausur für „{modul}“ mit "
-                f"{params['anzahl_aufgaben']} Aufgaben und {params['punkte']} Punkten "
-                f"im Stil deiner Altklausuren.")
+        return (
+            'Ich erstelle eine Probeklausur fuer "' + modul + '" mit '
+            + str(params["anzahl_aufgaben"]) + " Aufgaben und "
+            + str(params["punkte"]) + " Punkten im Stil deiner Altklausuren."
+        )
     if tool_name == "erstelle_roadmap":
         extra = []
         if params.get("klausur_datum"):
-            extra.append(f"Prüfung am {params['klausur_datum']}")
+            extra.append("Pruefung am " + str(params["klausur_datum"]))
         if params.get("fokus"):
-            extra.append(f"Fokus: {params['fokus']}")
+            extra.append("Fokus: " + str(params["fokus"]))
         tail = (" (" + ", ".join(extra) + ")") if extra else ""
-        return f"Ich erstelle eine Lern-Roadmap für „{modul}“{tail}."
+        return 'Ich erstelle eine Lern-Roadmap fuer "' + modul + '"' + tail + "."
     if tool_name == "erstelle_zusammenfassung":
         datei = params.get("datei")
         if datei:
-            return f"Ich fasse die Datei „{datei}“ aus „{modul}“ zusammen."
-        return f"Ich erstelle eine Zusammenfassung für „{modul}“."
+            return 'Ich fasse die Datei "' + str(datei) + '" aus "' + modul + '" zusammen.'
+        return 'Ich erstelle eine Zusammenfassung fuer "' + modul + '".'
     if tool_name == "erstelle_loesungsblatt":
         quelle = params.get("quelle", "")
-        kurz = quelle if len(quelle) <= 40 else quelle[:40] + "…"
-        return f"Ich löse das Übungsblatt für „{modul}“ ({kurz})."
+        kurz = quelle if len(quelle) <= 40 else quelle[:40] + "..."
+        return 'Ich loese das Uebungsblatt fuer "' + modul + '" (' + kurz + ")."
     if tool_name == "erstelle_tagesplan":
-        return (f"Ich erstelle einen Tagesplan für „{modul}“ mit "
-                f"{params['taegliche_stunden']} Stunden pro Tag.")
-    return f"Vorschlag für „{modul}“."
+        return (
+            'Ich erstelle einen Tagesplan fuer "' + modul + '" mit '
+            + str(params["taegliche_stunden"]) + " Stunden pro Tag."
+        )
+    if tool_name == "erstelle_quiz":
+        thema = params.get("thema", "")
+        return 'Ich erstelle ein Abschluss-Quiz zum Thema "' + thema + '" in "' + modul + '".'
+    return 'Vorschlag fuer "' + modul + '".'
