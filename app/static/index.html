@@ -749,7 +749,18 @@
   .chat-proposal {
     background: var(--bg); border: 1px solid var(--accent-border); border-radius: 12px;
     padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden;
   }
+  .proposal-loading-overlay {
+    position: absolute; inset: 0; border-radius: 12px;
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    background: rgba(0,0,0,0.08);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    z-index: 2;
+  }
+  [data-theme="dark"] .proposal-loading-overlay { background: rgba(0,0,0,0.22); }
+  .proposal-loading-overlay .modal-spinner { width: 34px; height: 34px; }
+  .proposal-loading-hint { font-size: 0.8rem; color: var(--muted); }
   .chat-proposal-summary { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
   .chat-proposal-fields { display: grid; gap: 10px; }
   .chat-proposal-field { display: flex; flex-direction: column; gap: 4px; }
@@ -1905,6 +1916,26 @@
     background: var(--accent-glow);
     border-color: var(--accent);
   }
+  .rm-quiz-section {
+    margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .rm-quiz-btn {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.04em; padding: 8px 14px; border-radius: 7px; cursor: pointer;
+    background: var(--accent); color: #fff; border: none; width: 100%;
+    transition: opacity 0.15s;
+  }
+  .rm-quiz-btn:hover:not(:disabled) { opacity: 0.85; }
+  .rm-quiz-btn.locked {
+    background: var(--panel-soft); color: var(--muted);
+    cursor: default; border: 1px solid var(--border);
+  }
+  .rm-quiz-lock-msg {
+    font-size: 0.67rem; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    text-align: center; line-height: 1.4;
+  }
+  .rm-quiz-status { font-size: 0.78rem; color: var(--muted); }
 
   .roadmap-empty-detail {
     display: grid; place-items: center; height: 100%;
@@ -2044,8 +2075,13 @@
     padding: 12px 6px 4px;
     border-top: 1px solid var(--border);
     margin-top: 4px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
   }
+  .files-section-header:hover { color: var(--text); }
   .files-section-header:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .section-chevron { font-style: normal; opacity: 0.6; transition: transform 0.15s var(--ease-out); font-size: 0.65rem; }
+  .files-section-header.collapsed .section-chevron { transform: rotate(-90deg); }
 
   .tab-bar {
     display: flex; align-items: center;
@@ -4195,6 +4231,7 @@ const state = {
   parsedTextCache: {},        // {path: text}
   summaryContentCache: {},    // {summaryPath: markdown}
   summariesByModule: {},      // {moduleName: [summary,...]}
+  solutionsByModule: {},      // {moduleName: [solution,...]} — server-side source of truth
   moduleFiles: [],
   pdfFrames: {},              // {path: iframeElement} — kept alive across pane re-renders so PDF page/scroll persist
 };
@@ -4340,6 +4377,7 @@ function isExerciseSheet(filename) {
 // ── Solved sheets (in-memory per session) ─────────────────────────────────────
 state.solvedSheets = [];   // [{path, name, solveData}]
 state.probeklausuren = [];  // [{n, generated, num_tasks, total_points}] — loaded from server
+state.topicQuizzes = [];    // [{topic_id, topic_name, generated_at, num_questions}] — loaded from server
 
 function openSolution(sol) {
   const paneIdx = state.focusedPane;
@@ -4372,13 +4410,22 @@ async function solveSheet(file, btnEl) {
     return;
   }
 
+  const solPath = `solution:${file.relative_path || file.name}`;
+  const solName = `Lösung: ${file.name}`;
+  const sheetFilePath = file.relative_path || file.name;
+
   // 2) Solve
   let solveData;
   try {
     const r = await fetch('/solve-sheet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sheet_text: sheetText, module_id: state.moduleName }),
+      body: JSON.stringify({
+        sheet_text: sheetText,
+        module_id:  state.moduleName,
+        sheet_name: solName,
+        sheet_path: sheetFilePath,
+      }),
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.detail || r.statusText);
@@ -4391,16 +4438,22 @@ async function solveSheet(file, btnEl) {
 
   if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
 
-  const solPath = `solution:${file.relative_path || file.name}`;
-  const solName = `Lösung: ${file.name}`;
+  const storagePath = solveData.storage_path || '';
 
   // Update or append in solved list
   const existing = state.solvedSheets.findIndex(s => s.path === solPath);
-  const solEntry = { path: solPath, name: solName, solveData };
+  const solEntry = { path: solPath, name: solName, solveData, storage_path: storagePath };
   if (existing >= 0) state.solvedSheets[existing] = solEntry;
   else state.solvedSheets.push(solEntry);
 
-  // Persist solved sheets so they survive page reloads and course switches
+  // Mirror into solutionsByModule so isValid and renderWorkspaceFiles stay in sync
+  if (!state.solutionsByModule[state.moduleName]) state.solutionsByModule[state.moduleName] = [];
+  const modSols = state.solutionsByModule[state.moduleName];
+  const existingMod = modSols.findIndex(s => s.sheet_path === sheetFilePath);
+  const modEntry = { name: solName, sheet_path: sheetFilePath, storage_path: storagePath, solve_data: solveData };
+  if (existingMod >= 0) modSols[existingMod] = modEntry; else modSols.unshift(modEntry);
+
+  // localStorage als Fallback-Cache
   try { localStorage.setItem(`studyAgent.solutions.${state.moduleName}`, JSON.stringify(state.solvedSheets)); } catch {}
 
   // Refresh files panel to show/update "Lösungen" section
@@ -4586,9 +4639,6 @@ async function uploadModule() {
     autoPopulateFolderConfig(data.module_name, data.files || []);
     openWorkspace(data.module_name, data.files || []);
     resetUploadForm();
-    if (data.needs_onboarding) openOnboardingModal('profile_only');
-    // Auto-trigger roadmap after new upload
-    setTimeout(() => openExamModal(), 700);
   } catch (err) {
     setStatus(err.message || t('upload-failed'), 'error');
   } finally {
@@ -4603,6 +4653,7 @@ function openWorkspace(moduleName, files) {
   if (state.moduleName && state.moduleName !== moduleName) {
     disposeAllPdfFrames();
     state.solvedSheets = [];
+    state.topicQuizzes = [];
   }
   state.moduleName = moduleName;
   state.moduleFiles = files || [];
@@ -4622,7 +4673,7 @@ function openWorkspace(moduleName, files) {
 
   // Pre-load summaries + roadmap before restoring so saved tabs validate
   // and the left-panel sections (Roadmap + Zusammenfassungen) paint correctly.
-  Promise.all([loadSummaries(moduleName), loadRoadmapForCurrentModule(), loadProbeklausuren(moduleName)]).then(() => {
+  Promise.all([loadSummaries(moduleName), loadSolutions(moduleName), loadRoadmapForCurrentModule(), loadProbeklausuren(moduleName), loadTopicQuizzes(moduleName)]).then(() => {
     restoreWorkspace(moduleName);
     renderWorkspaceFiles(state.moduleFiles);
     renderPanes();
@@ -4794,9 +4845,24 @@ function toggleFolderCollapse(module, folderName) {
   renderWorkspaceFiles(state.moduleFiles);
 }
 
+function loadSectionCollapsed(module) {
+  try { return JSON.parse(localStorage.getItem(`studyAgent.sectionCollapsed.${module}`)) || []; } catch { return []; }
+}
+function saveSectionCollapsed(module, arr) {
+  try { localStorage.setItem(`studyAgent.sectionCollapsed.${module}`, JSON.stringify(arr)); } catch {}
+}
+function toggleSectionCollapse(module, sectionKey) {
+  const col = loadSectionCollapsed(module);
+  const idx = col.indexOf(sectionKey);
+  if (idx !== -1) col.splice(idx, 1); else col.push(sectionKey);
+  saveSectionCollapsed(module, col);
+  renderWorkspaceFiles(state.moduleFiles);
+}
+
 function renderWorkspaceFiles(files) {
   filesPanel.innerHTML = '';
   const summaries = state.summariesByModule[state.moduleName] || [];
+  const collapsedSections = loadSectionCollapsed(state.moduleName);
 
   if (!files.length && !summaries.length) {
     filesPanel.innerHTML = `<div class="file-row" style="cursor:default;"><div class="file-meta"><div class="file-name">${t('no-materials')}</div><div class="file-sub">${t('no-materials-sub')}</div></div></div>`;
@@ -4840,7 +4906,7 @@ function renderWorkspaceFiles(files) {
         const actionBtn = e.target.closest('.file-action-btn');
         if (actionBtn) {
           e.stopPropagation();
-          if (actionBtn.dataset.action === 'menu') filePopup.open(file, row, actionBtn);
+          if (actionBtn.dataset.action === 'menu') { genFilePopup.close(); filePopup.open(file, row, actionBtn); }
           return;
         }
         openFile(file);
@@ -4930,12 +4996,14 @@ function renderWorkspaceFiles(files) {
 
   // Summaries section
   if (summaries.length) {
+    const sumCollapsed = collapsedSections.includes('summaries');
     const sumHeader = document.createElement('div');
-    sumHeader.className = 'files-section-header';
-    sumHeader.textContent = t('summaries-header');
+    sumHeader.className = 'files-section-header' + (sumCollapsed ? ' collapsed' : '');
+    sumHeader.innerHTML = `<span>${t('summaries-header')}</span><span class="section-chevron">▼</span>`;
+    sumHeader.addEventListener('click', () => toggleSectionCollapse(state.moduleName, 'summaries'));
     filesPanel.appendChild(sumHeader);
 
-    summaries.forEach(s => {
+    if (!sumCollapsed) summaries.forEach(s => {
       const row = document.createElement('div');
       row.className = 'file-row is-summary';
       row.dataset.path = `summary:${s.path}`;
@@ -4946,20 +5014,36 @@ function renderWorkspaceFiles(files) {
           <div class="file-name" title="${escHtml(s.titel || '')}">${escHtml(s.titel || 'Zusammenfassung')}</div>
           <div class="file-sub">${escHtml(s.date || 'MD')} · Zusammenfassung</div>
         </div>
+        <div class="file-actions">
+          <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
+        </div>
       `;
-      row.addEventListener('click', () => openSummary(s));
+      row.addEventListener('click', e => {
+        const actionBtn = e.target.closest('.file-action-btn');
+        if (actionBtn) {
+          e.stopPropagation();
+          genFilePopup.open([
+            { label: '✎ Umbenennen', fn: () => renameSummary(s, row) },
+            { label: '🗑 Löschen', danger: true, fn: () => deleteSummary(s) },
+          ], actionBtn);
+          return;
+        }
+        openSummary(s);
+      });
       filesPanel.appendChild(row);
     });
   }
 
   // Probeklausuren section
   if (state.probeklausuren && state.probeklausuren.length) {
+    const pkCollapsed = collapsedSections.includes('probeklausuren');
     const pkHeader = document.createElement('div');
-    pkHeader.className = 'files-section-header';
-    pkHeader.textContent = t('mock-exams-header');
+    pkHeader.className = 'files-section-header' + (pkCollapsed ? ' collapsed' : '');
+    pkHeader.innerHTML = `<span>${t('mock-exams-header')}</span><span class="section-chevron">▼</span>`;
+    pkHeader.addEventListener('click', () => toggleSectionCollapse(state.moduleName, 'probeklausuren'));
     filesPanel.appendChild(pkHeader);
 
-    state.probeklausuren.forEach(exam => {
+    if (!pkCollapsed) state.probeklausuren.forEach(exam => {
       const row = document.createElement('div');
       row.className = 'file-row is-probeklausur';
       row.dataset.path = `probeklausur:${exam.n}`;
@@ -4969,20 +5053,35 @@ function renderWorkspaceFiles(files) {
           <div class="file-name">Probeklausur ${exam.n}</div>
           <div class="file-sub">${exam.num_tasks} Aufg. · ${exam.total_points} Pkt. · ${escHtml(exam.generated || '—')}</div>
         </div>
+        <div class="file-actions">
+          <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
+        </div>
       `;
-      row.addEventListener('click', () => openProbeklausurTab(exam));
+      row.addEventListener('click', e => {
+        const actionBtn = e.target.closest('.file-action-btn');
+        if (actionBtn) {
+          e.stopPropagation();
+          genFilePopup.open([
+            { label: '🗑 Löschen', danger: true, fn: () => deleteProbeklausur(exam) },
+          ], actionBtn);
+          return;
+        }
+        openProbeklausurTab(exam);
+      });
       filesPanel.appendChild(row);
     });
   }
 
   // Lösungen section
   if (state.solvedSheets.length) {
+    const solCollapsed = collapsedSections.includes('loesungen');
     const solHeader = document.createElement('div');
-    solHeader.className = 'files-section-header';
-    solHeader.textContent = 'Lösungen';
+    solHeader.className = 'files-section-header' + (solCollapsed ? ' collapsed' : '');
+    solHeader.innerHTML = `<span>Lösungen</span><span class="section-chevron">▼</span>`;
+    solHeader.addEventListener('click', () => toggleSectionCollapse(state.moduleName, 'loesungen'));
     filesPanel.appendChild(solHeader);
 
-    state.solvedSheets.forEach(sol => {
+    if (!solCollapsed) state.solvedSheets.forEach(sol => {
       const row = document.createElement('div');
       row.className = 'file-row is-solution';
       row.dataset.path = sol.path;
@@ -4994,13 +5093,95 @@ function renderWorkspaceFiles(files) {
           <div class="file-name" title="${escHtml(sol.name)}">${escHtml(sol.name)}</div>
           <div class="file-sub">${n} Aufgabe${n !== 1 ? 'n' : ''} · ${tok} Tokens</div>
         </div>
+        <div class="file-actions">
+          <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
+        </div>
       `;
-      row.addEventListener('click', () => openSolution(sol));
+      row.addEventListener('click', e => {
+        const actionBtn = e.target.closest('.file-action-btn');
+        if (actionBtn) {
+          e.stopPropagation();
+          genFilePopup.open([
+            { label: '✎ Umbenennen', fn: () => renameSolution(sol, row) },
+            { label: '🗑 Löschen', danger: true, fn: () => deleteSolution(sol) },
+          ], actionBtn);
+          return;
+        }
+        openSolution(sol);
+      });
+      filesPanel.appendChild(row);
+    });
+  }
+
+  // Quizzes section
+  if (state.topicQuizzes.length) {
+    const qzCollapsed = collapsedSections.includes('quizzes');
+    const qzHeader = document.createElement('div');
+    qzHeader.className = 'files-section-header' + (qzCollapsed ? ' collapsed' : '');
+    qzHeader.innerHTML = `<span>Quizzes</span><span class="section-chevron">▼</span>`;
+    qzHeader.addEventListener('click', () => toggleSectionCollapse(state.moduleName, 'quizzes'));
+    filesPanel.appendChild(qzHeader);
+
+    if (!qzCollapsed) state.topicQuizzes.forEach(quiz => {
+      const row = document.createElement('div');
+      row.className = 'file-row is-quiz';
+      row.dataset.path = `quiz:${quiz.topic_id}`;
+      row.innerHTML = `
+        <span class="file-icon">🎯</span>
+        <div class="file-meta">
+          <div class="file-name" title="${escHtml(quiz.topic_name)}">${escHtml(quiz.topic_name)}</div>
+          <div class="file-sub">${quiz.num_questions} Fragen · ${escHtml(quiz.generated_at || '—')}</div>
+        </div>
+        <div class="file-actions">
+          <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
+        </div>
+      `;
+      row.addEventListener('click', async e => {
+        const actionBtn = e.target.closest('.file-action-btn');
+        if (actionBtn) {
+          e.stopPropagation();
+          genFilePopup.open([
+            { label: '🗑 Löschen', danger: true, fn: () => deleteTopicQuiz(quiz) },
+          ], actionBtn);
+          return;
+        }
+        try {
+          const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(quiz.topic_id)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          openTopicQuizTab(quiz.topic_id, quiz.topic_name, data);
+        } catch {}
+      });
       filesPanel.appendChild(row);
     });
   }
 
   highlightActiveFileRow();
+}
+
+async function loadTopicQuizzes(moduleName) {
+  if (!moduleName) { state.topicQuizzes = []; return []; }
+  try {
+    const res = await fetch(`/quiz/topic/${encodeURIComponent(moduleName)}`);
+    if (!res.ok) { state.topicQuizzes = []; return []; }
+    const data = await res.json();
+    state.topicQuizzes = data.quizzes || [];
+    return state.topicQuizzes;
+  } catch {
+    state.topicQuizzes = [];
+    return [];
+  }
+}
+
+async function deleteTopicQuiz(quiz) {
+  if (!state.moduleName) return;
+  try {
+    const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(quiz.topic_id)}`, { method: 'DELETE' });
+    if (res.ok) {
+      state.topicQuizzes = state.topicQuizzes.filter(q => q.topic_id !== quiz.topic_id);
+      renderWorkspaceFiles(state.moduleFiles);
+    }
+  } catch {}
 }
 
 function highlightActiveFileRow() {
@@ -5449,7 +5630,7 @@ function _renderDailyTopbar(container) {
     .filter(t => !t.id.endsWith('_review'))
     .flatMap(t => t.tasks || []);
   const allDone = mainTasks.length > 0 && mainTasks.every(t => t.done);
-  const canGenerate = !plan || allDone;
+  const canGenerate = !plan || allDone || mainTasks.length === 0;
   const done = mainTasks.filter(t => t.done).length;
   const total = mainTasks.length;
   const pct = total ? (done / total * 100).toFixed(1) : 0;
@@ -5667,6 +5848,7 @@ async function toggleDailyTask(topicId, taskIndex, done) {
       body: JSON.stringify({ topic_id: topicId, task_index: taskIndex, done }),
     });
     if (!res.ok) { console.warn('[daily] toggle failed'); return; }
+    const toggleData = await res.json().catch(() => ({}));
     if (state.dailyPlan) {
       const t = (state.dailyPlan.topics || []).find(t => t.id === topicId);
       if (t && t.tasks[taskIndex] !== undefined) t.tasks[taskIndex].done = done;
@@ -5695,8 +5877,195 @@ async function toggleDailyTask(topicId, taskIndex, done) {
       if (panel) _renderDailyReview(panel);
     }
     refreshDailyView();
+
+    // Pool exhausted → congratulate and offer the completion quiz.
+    if (toggleData.card_completed) {
+      showCardCompletionPrompt(toggleData.topic_id || topicId, toggleData.topic_name || '');
+    }
   } catch (err) {
     console.warn('[daily] toggle error:', err);
+  }
+}
+
+// ── Topic completion quiz flow ──────────────────────────────────────────────
+
+function showCardCompletionPrompt(topicId, topicName) {
+  // Open the chat panel if it is collapsed.
+  const grid = document.getElementById('ws-grid');
+  if (grid && grid.classList.contains('right-collapsed')) toggleRightPanel(false);
+
+  document.getElementById('empty')?.remove();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg agent';
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = t('chat-label-agent');
+
+  const card = document.createElement('div');
+  card.className = 'chat-proposal';
+  const summary = document.createElement('div');
+  summary.className = 'chat-proposal-summary';
+  summary.innerHTML = `🎉 <strong>${escHtml(topicName)}</strong> abgeschlossen! Du hast alle Aufgaben zu diesem Thema erledigt. Teste dein Wissen mit einem kurzen Quiz, um die Karte als gemeistert zu markieren.`;
+  card.appendChild(summary);
+
+  const actions = document.createElement('div');
+  actions.className = 'chat-proposal-actions';
+  const quizBtn = document.createElement('button');
+  quizBtn.className = 'chat-proposal-btn primary';
+  quizBtn.textContent = 'Quiz erstellen';
+  const skipBtn = document.createElement('button');
+  skipBtn.className = 'chat-proposal-btn ghost';
+  skipBtn.textContent = 'Überspringen';
+  actions.append(quizBtn, skipBtn);
+  card.appendChild(actions);
+
+  const status = document.createElement('div');
+  status.className = 'chat-proposal-status';
+  card.appendChild(status);
+
+  quizBtn.addEventListener('click', () => createTopicQuiz(topicId, topicName, card));
+  skipBtn.addEventListener('click', () => {
+    actions.remove();
+    status.textContent = 'Übersprungen. Du kannst die Karte jederzeit manuell als erledigt markieren.';
+  });
+
+  wrap.append(label, card);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function createTopicQuiz(topicId, topicName, card) {
+  const actions = card.querySelector('.chat-proposal-actions');
+  const status = card.querySelector('.chat-proposal-status');
+  card.querySelectorAll('button').forEach(b => b.disabled = true);
+  if (status) status.innerHTML = '<span class="modal-spinner"></span> Quiz wird erstellt…';
+  try {
+    const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(topicId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Fehler');
+    if (actions) actions.remove();
+    if (status) status.textContent = '✓ Quiz erstellt.';
+    openTopicQuizTab(topicId, data.topic_name || topicName, data);
+    await loadTopicQuizzes(state.moduleName);
+    renderWorkspaceFiles(state.moduleFiles);
+  } catch (err) {
+    card.querySelectorAll('button').forEach(b => b.disabled = false);
+    if (status) status.textContent = `Fehler: ${err.message}`;
+  }
+}
+
+function openTopicQuizTab(topicId, topicName, quizData, paneIdx) {
+  if (paneIdx == null) paneIdx = state.focusedPane;
+  if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
+  const pane = state.panes[paneIdx];
+  const path = `quiz:${topicId}`;
+  let tab = pane.tabs.find(t => t.path === path);
+  if (!tab) {
+    tab = { path, kind: 'quiz', name: `Quiz: ${topicName}`, topicId, topicName, quizData, completed: false };
+    pane.tabs.push(tab);
+  } else {
+    tab.quizData = quizData;
+    tab.topicName = topicName;
+  }
+  pane.activeTab = path;
+  state.focusedPane = paneIdx;
+  renderPanes();
+  highlightActiveFileRow();
+}
+
+function renderTopicQuizView(vp, tab) {
+  const p = document.createElement('div');
+  p.className = 'view-pane view-probeklausur active';
+  vp.appendChild(p);
+
+  const quiz = tab.quizData || {};
+  const questions = quiz.questions || [];
+
+  const header = document.createElement('div');
+  header.className = 'pk-header';
+  header.innerHTML = `
+    <div>
+      <h2>Quiz — ${escHtml(tab.topicName || quiz.topic_name || '')}</h2>
+      <div class="pk-meta-bar">${questions.length} Fragen · Abschluss-Quiz · Erstellt: ${escHtml(quiz.generated_at || '—')}</div>
+    </div>
+  `;
+  p.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = 'pk-body';
+
+  if (!questions.length) {
+    body.innerHTML = `<div class="summary-cta"><strong>Quiz konnte nicht erstellt werden</strong><p>Bitte schließe den Tab und versuche es erneut.</p></div>`;
+    p.appendChild(body);
+    return;
+  }
+
+  questions.forEach((q, i) => {
+    const qEl = document.createElement('div');
+    qEl.className = 'tq-question';
+    qEl.style.cssText = 'margin-bottom:22px;';
+    let optionsHtml = '';
+    if (q.type === 'multiple_choice' && Array.isArray(q.options)) {
+      optionsHtml = '<div class="tq-options" style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' +
+        q.options.map((opt, oi) => `<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
+          <input type="radio" name="tq-q${i}" value="${oi}" style="margin-top:3px;flex:0 0 auto;">
+          <span>${escHtml(String(opt))}</span>
+        </label>`).join('') +
+      '</div>';
+    }
+    qEl.innerHTML = `
+      <div class="tq-question-text"><strong>${i + 1}.</strong> ${renderMarkdown(q.question || '')}</div>
+      ${optionsHtml}
+      <details class="pk-solution"><summary>Lösung anzeigen</summary>
+        <div class="pk-solution-body">${renderMarkdown(q.solution || '')}</div>
+      </details>
+    `;
+    body.appendChild(qEl);
+  });
+
+  const footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:20px;display:flex;gap:12px;align-items:center;';
+  const finishBtn = document.createElement('button');
+  finishBtn.className = 'chat-proposal-btn primary';
+  finishBtn.textContent = 'Quiz abschließen';
+  const finishStatus = document.createElement('span');
+  finishStatus.style.cssText = 'font-size:0.84rem;color:var(--muted);';
+  if (tab.completed) {
+    finishBtn.disabled = true;
+    finishBtn.textContent = '✓ Abgeschlossen';
+    finishStatus.textContent = 'Karte als gemeistert markiert.';
+  }
+  footer.append(finishBtn, finishStatus);
+  body.appendChild(footer);
+
+  finishBtn.addEventListener('click', () => completeTopicQuiz(tab, finishBtn, finishStatus));
+
+  p.appendChild(body);
+  requestAnimationFrame(() => renderMathIn(p));
+}
+
+async function completeTopicQuiz(tab, btn, statusEl) {
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.innerHTML = '<span class="modal-spinner" style="width:14px;height:14px;display:inline-block;"></span> Wird abgeschlossen…';
+  try {
+    const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(tab.topicId)}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Fehler');
+    tab.completed = true;
+    // Refresh the roadmap so the card turns green wherever it is shown.
+    state.roadmapLoadedFor = null;
+    await loadRoadmapForCurrentModule();
+    renderPanes();
+  } catch (err) {
+    if (btn) btn.disabled = false;
+    if (statusEl) statusEl.textContent = `Fehler: ${err.message}`;
   }
 }
 
@@ -5869,6 +6238,39 @@ function paintRoadmapDetail() {
   detail.querySelectorAll('.status-btn').forEach(btn => {
     btn.addEventListener('click', () => updateRoadmapTopicStatus(t.id, btn.dataset.status));
   });
+
+  // Quiz section at the bottom of the detail card
+  const topicInPlan = (state.dailyPlan?.topics || []).find(p => p.id === t.id);
+  const allTopicTasksDone = t.status === 'done' ||
+    (topicInPlan && topicInPlan.tasks.length > 0 && topicInPlan.tasks.every(tk => tk.done));
+
+  const quizSection = document.createElement('div');
+  quizSection.className = 'rm-quiz-section';
+
+  const quizActions = document.createElement('div');
+  quizActions.className = 'chat-proposal-actions';
+  const quizBtn = document.createElement('button');
+  quizBtn.className = 'rm-quiz-btn' + (allTopicTasksDone ? '' : ' locked');
+  quizBtn.disabled = !allTopicTasksDone;
+  quizBtn.textContent = allTopicTasksDone ? '✦ Quiz erstellen' : '🔒 Quiz erstellen';
+  quizActions.appendChild(quizBtn);
+
+  const quizStatusEl = document.createElement('div');
+  quizStatusEl.className = 'chat-proposal-status rm-quiz-status';
+
+  quizSection.appendChild(quizActions);
+  quizSection.appendChild(quizStatusEl);
+
+  if (!allTopicTasksDone) {
+    const lockMsg = document.createElement('div');
+    lockMsg.className = 'rm-quiz-lock-msg';
+    lockMsg.textContent = 'Erledige alle Aufgaben dieses Themas zum Freischalten';
+    quizSection.appendChild(lockMsg);
+  } else {
+    quizBtn.addEventListener('click', () => createTopicQuiz(t.id, t.name, quizSection));
+  }
+
+  detail.appendChild(quizSection);
 }
 
 function labelPrio(p) {
@@ -6085,6 +6487,37 @@ async function renameFileInline(file, row) {
   input.addEventListener('blur', commit);
 }
 
+// Generic inline rename for generated-file rows (summaries, solutions).
+// commitFn(newName) runs only for a non-empty, changed name; the caller is
+// responsible for re-rendering on success.
+function renameRowInline(row, currentName, commitFn) {
+  const nameEl = row && row.querySelector('.file-name');
+  if (!nameEl) return;
+  const oldName = currentName || '';
+  const input = document.createElement('input');
+  input.value = oldName;
+  input.style.cssText = 'width:100%;background:var(--bg);border:1px solid var(--accent-border);border-radius:4px;padding:1px 4px;font-size:0.8rem;color:var(--text);font-family:inherit;outline:none;min-width:0;';
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const restore = () => { if (input.parentNode) input.replaceWith(nameEl); };
+  const commit = async () => {
+    if (done) return;
+    done = true;
+    const newName = input.value.trim();
+    if (!newName || newName === oldName) { restore(); return; }
+    await commitFn(newName);
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { done = true; restore(); }
+  });
+  input.addEventListener('blur', commit);
+  // Don't let clicks inside the input bubble to the row (which would open the item).
+  input.addEventListener('click', e => e.stopPropagation());
+}
+
 // ── Add / delete files on an existing module ───────────────────────────────────
 async function refreshModuleFiles() {
   if (!state.moduleName) return;
@@ -6166,6 +6599,138 @@ async function deleteModuleFile(file) {
   }
 }
 
+// ── Actions for generated files (summary / probeklausur / solution) ────────────
+
+function renameSummary(s, row) {
+  renameRowInline(row, s.titel || 'Zusammenfassung', async (newName) => {
+    try {
+      const res = await fetch(`/lecture/summaries/${encodeURIComponent(state.moduleName)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: s.path, title: newName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Umbenennen fehlgeschlagen');
+      const tabPath = `summary:${s.path}`;
+      state.panes.forEach(pane => {
+        if (!pane) return;
+        pane.tabs.forEach(t => { if (t.path === tabPath) t.name = newName; });
+      });
+      await loadSummaries(state.moduleName, true);
+      renderWorkspaceFiles(state.moduleFiles);
+      renderPanes();
+      persistWorkspace();
+    } catch (err) {
+      addMsg('agent', `❌ ${err.message}`);
+      await loadSummaries(state.moduleName, true);
+      renderWorkspaceFiles(state.moduleFiles);
+    }
+  });
+}
+
+async function deleteSummary(s) {
+  if (!await showConfirm('Zusammenfassung löschen', `„${s.titel || 'Zusammenfassung'}" wird unwiderruflich entfernt.`)) return;
+  try {
+    const res = await fetch(`/lecture/summaries/${encodeURIComponent(state.moduleName)}?path=${encodeURIComponent(s.path)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Löschen fehlgeschlagen');
+    const tabPath = `summary:${s.path}`;
+    state.panes.forEach((pane, i) => {
+      if (!pane) return;
+      pane.tabs = pane.tabs.filter(t => t.path !== tabPath);
+      if (pane.activeTab === tabPath) pane.activeTab = pane.tabs[0]?.path || '';
+      if (i === 1 && pane.tabs.length === 0) { state.panes[1] = null; state.focusedPane = 0; }
+    });
+    await loadSummaries(state.moduleName, true);
+    renderWorkspaceFiles(state.moduleFiles);
+    renderPanes();
+    persistWorkspace();
+  } catch (err) {
+    addMsg('agent', `❌ ${err.message}`);
+  }
+}
+
+async function deleteProbeklausur(exam) {
+  if (!await showConfirm('Probeklausur löschen', `„Probeklausur ${exam.n}" wird unwiderruflich entfernt.`)) return;
+  try {
+    const res = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${exam.n}`, { method: 'DELETE' });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Löschen fehlgeschlagen'); }
+    const tabPath = `probeklausur:${exam.n}`;
+    state.panes.forEach((pane, i) => {
+      if (!pane) return;
+      pane.tabs = pane.tabs.filter(t => t.path !== tabPath);
+      if (pane.activeTab === tabPath) pane.activeTab = pane.tabs[0]?.path || '';
+      if (i === 1 && pane.tabs.length === 0) { state.panes[1] = null; state.focusedPane = 0; }
+    });
+    await loadProbeklausuren(state.moduleName);
+    renderWorkspaceFiles(state.moduleFiles);
+    renderPanes();
+    persistWorkspace();
+  } catch (err) {
+    addMsg('agent', `❌ ${err.message}`);
+  }
+}
+
+function renameSolution(sol, row) {
+  renameRowInline(row, sol.name, async (newName) => {
+    sol.name = newName;
+    state.panes.forEach(pane => {
+      if (!pane) return;
+      pane.tabs.forEach(t => { if (t.path === sol.path) t.name = newName; });
+    });
+    // Sync solutionsByModule
+    const modSols = state.solutionsByModule[state.moduleName] || [];
+    const ms = modSols.find(s => s.storage_path === sol.storage_path);
+    if (ms) ms.name = newName;
+    // Server persist (best-effort)
+    if (sol.storage_path) {
+      try {
+        await fetch(`/lecture/solutions/${encodeURIComponent(state.moduleName)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: sol.storage_path, new_name: newName }),
+        });
+      } catch {}
+    }
+    try { localStorage.setItem(`studyAgent.solutions.${state.moduleName}`, JSON.stringify(state.solvedSheets)); } catch {}
+    renderWorkspaceFiles(state.moduleFiles);
+    renderPanes();
+    persistWorkspace();
+  });
+}
+
+async function deleteSolution(sol) {
+  if (!await showConfirm('Lösung löschen', `„${sol.name}" wird unwiderruflich entfernt.`)) return;
+  // Server delete (best-effort)
+  if (sol.storage_path) {
+    try {
+      const res = await fetch(`/lecture/solutions/${encodeURIComponent(state.moduleName)}?path=${encodeURIComponent(sol.storage_path)}`, { method: 'DELETE' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Löschen fehlgeschlagen'); }
+    } catch (err) {
+      addMsg('agent', `❌ ${err.message}`);
+      return;
+    }
+  }
+  const idx = state.solvedSheets.findIndex(x => x.path === sol.path);
+  if (idx !== -1) state.solvedSheets.splice(idx, 1);
+  // Sync solutionsByModule
+  const modSols = state.solutionsByModule[state.moduleName];
+  if (modSols) {
+    const mi = modSols.findIndex(s => s.storage_path === sol.storage_path);
+    if (mi !== -1) modSols.splice(mi, 1);
+  }
+  state.panes.forEach((pane, i) => {
+    if (!pane) return;
+    pane.tabs = pane.tabs.filter(t => t.path !== sol.path);
+    if (pane.activeTab === sol.path) pane.activeTab = pane.tabs[0]?.path || '';
+    if (i === 1 && pane.tabs.length === 0) { state.panes[1] = null; state.focusedPane = 0; }
+  });
+  try { localStorage.setItem(`studyAgent.solutions.${state.moduleName}`, JSON.stringify(state.solvedSheets)); } catch {}
+  renderWorkspaceFiles(state.moduleFiles);
+  renderPanes();
+  persistWorkspace();
+}
+
 // ── Summaries (cached per module — used by Summary tab) ────────────────────────
 async function loadSummaries(moduleName, force = false) {
   if (!force && state.summariesByModule[moduleName]) return state.summariesByModule[moduleName];
@@ -6177,6 +6742,19 @@ async function loadSummaries(moduleName, force = false) {
     state.summariesByModule[moduleName] = [];
   }
   return state.summariesByModule[moduleName];
+}
+
+// ── Solutions (server-side source of truth) ─────────────────────────────────
+async function loadSolutions(moduleName, force = false) {
+  if (!force && state.solutionsByModule[moduleName]) return state.solutionsByModule[moduleName];
+  try {
+    const res = await fetch(`/lecture/solutions/${encodeURIComponent(moduleName)}`);
+    const data = await res.json();
+    state.solutionsByModule[moduleName] = data.solutions || [];
+  } catch {
+    state.solutionsByModule[moduleName] = [];
+  }
+  return state.solutionsByModule[moduleName];
 }
 
 function findSummaryForFile(filename, summaries) {
@@ -6357,11 +6935,21 @@ function restoreWorkspace(moduleName) {
   state.panes = [{ tabs: [], activeTab: '' }, null];
   state.focusedPane = 0;
 
-  // Always restore solved sheets, even if no tab workspace was saved
-  try {
-    const solRaw = localStorage.getItem(`studyAgent.solutions.${moduleName}`);
-    if (solRaw) state.solvedSheets = JSON.parse(solRaw);
-  } catch {}
+  // Restore solved sheets: server is source of truth, localStorage is fallback
+  const serverSols = state.solutionsByModule[moduleName] || [];
+  if (serverSols.length) {
+    state.solvedSheets = serverSols.map(s => ({
+      path:         `solution:${s.sheet_path}`,
+      name:         s.name,
+      solveData:    s.solve_data,
+      storage_path: s.storage_path,
+    }));
+  } else {
+    try {
+      const solRaw = localStorage.getItem(`studyAgent.solutions.${moduleName}`);
+      if (solRaw) state.solvedSheets = JSON.parse(solRaw);
+    } catch {}
+  }
 
   try {
     const raw = localStorage.getItem(`studyAgent.ws.${moduleName}`);
@@ -6370,12 +6958,13 @@ function restoreWorkspace(moduleName) {
     const validPaths = new Set((state.moduleFiles || []).map(f => f.relative_path || f.name));
     const validSummaryPaths = new Set((state.summariesByModule[moduleName] || []).map(s => `summary:${s.path}`));
     const validProbeklausurPaths = new Set((state.probeklausuren || []).map(e => `probeklausur:${e.n}`));
+    const validSolutionPaths = new Set((state.solutionsByModule[moduleName] || []).map(s => `solution:${s.sheet_path}`));
     function isValid(t) {
       if (!t || !t.path) return false;
       if (t.kind === 'roadmap' || t.kind === 'daily') return false;
       if (t.kind === 'summary') return validSummaryPaths.has(t.path);
       if (t.kind === 'probeklausur') return validProbeklausurPaths.has(t.path);
-      if (t.kind === 'solution') return validPaths.has(t.path.slice('solution:'.length));
+      if (t.kind === 'solution') return validSolutionPaths.size ? validSolutionPaths.has(t.path) : validPaths.has(t.path.slice('solution:'.length));
       return validPaths.has(t.path);
     }
     const restored = [null, null];
@@ -6574,6 +7163,8 @@ function buildViewport(pane, paneIdx) {
     renderDailyView(vp, tab);
   } else if (tab.kind === 'probeklausur') {
     renderProbeklausurView(vp, tab);
+  } else if (tab.kind === 'quiz') {
+    renderTopicQuizView(vp, tab);
   } else if (tab.kind === 'summary') {
     renderSummaryFileView(vp, tab);
   } else if (tab.kind === 'solution') {
@@ -7164,8 +7755,14 @@ function renderMiniCard(moduleName, roadmap) {
   starBtn.addEventListener('click', e => {
     e.stopPropagation();
     const current = localStorage.getItem('studyAgent.favorite');
-    if (current === moduleName) localStorage.removeItem('studyAgent.favorite');
-    else localStorage.setItem('studyAgent.favorite', moduleName);
+    const next = current === moduleName ? '' : moduleName;
+    if (next) localStorage.setItem('studyAgent.favorite', next);
+    else localStorage.removeItem('studyAgent.favorite');
+    fetch('/settings/favorite-module', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({module: next}),
+    }).catch(() => {});
     loadModules();
   });
 
@@ -7197,7 +7794,17 @@ async function loadModules() {
       return;
     }
 
-    const favorite = localStorage.getItem('studyAgent.favorite');
+    let favorite = localStorage.getItem('studyAgent.favorite');
+    try {
+      const fRes = await fetch('/settings/favorite-module');
+      if (fRes.ok) {
+        const fData = await fRes.json();
+        if (fData.module) {
+          favorite = fData.module;
+          localStorage.setItem('studyAgent.favorite', favorite);
+        }
+      }
+    } catch {}
     let favIdx = modules.indexOf(favorite);
     if (favIdx === -1) favIdx = 0;
 
@@ -7459,6 +8066,52 @@ function setupTagsInput(inputId, key) {
   });
 }
 
+// ── Fuzzy file finder ─────────────────────────────────────────────────────────
+function fuzzyFindFile(files, query) {
+  if (!query || !files?.length) return null;
+
+  // 1. Exact match
+  let f = files.find(f => f.name === query || (f.relative_path || '') === query);
+  if (f) return f;
+
+  function norm(s) {
+    return (s || '').toLowerCase()
+      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      .replace(/\.[^.]+$/, '')          // strip extension
+      .replace(/[\s\-_.]+/g, '')        // remove separators
+      .replace(/\d+/g, n => String(parseInt(n, 10))); // 02 → 2
+  }
+
+  const qNorm = norm(query);
+
+  // 2. Normalised match (handles Blatt02 ↔ blatt 2, Uebung ↔ übung, etc.)
+  f = files.find(f => norm(f.name) === qNorm);
+  if (f) return f;
+
+  // 3. All query words present in filename
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  f = files.find(f => {
+    const fname = f.name.toLowerCase();
+    return words.every(w => fname.includes(w));
+  });
+  if (f) return f;
+
+  // 4. Number-aware: same number + keyword prefix match
+  const numMatch = query.match(/\d+/);
+  if (numMatch) {
+    const num = parseInt(numMatch[0], 10);
+    const kw = query.replace(/\d+/, '').trim().toLowerCase().replace(/\s+/g, '').slice(0, 4);
+    f = files.find(f => {
+      const fname = f.name.toLowerCase();
+      const nums = [...fname.matchAll(/\d+/g)].map(m => parseInt(m[0], 10));
+      return nums.includes(num) && (!kw || fname.includes(kw));
+    });
+    if (f) return f;
+  }
+
+  return null;
+}
+
 // ── Chat ───────────────────────────────────────────────────────────────────────
 function addMsg(role, content, sources) {
   document.getElementById('empty')?.remove();
@@ -7624,9 +8277,7 @@ async function sendQuestion() {
         if (!line.startsWith('data: ')) continue;
         let msg; try { msg = JSON.parse(line.slice(6)); } catch { continue; }
         if (msg.type === 'token') {
-          ensureAgent();
           rawText += msg.content;
-          scheduleRender();
         } else if (msg.type === 'proposal') {
           ensureAgent();
           renderProposalCard(extras, msg.action, msg.params || {}, msg.summary || '');
@@ -7647,17 +8298,13 @@ async function sendQuestion() {
       }
     }
     pendingRender = false;
+    if (rawText.trim()) ensureAgent();
     if (agentWrap && textEl) {
       if (rawText.trim()) {
         textEl.innerHTML = renderMarkdown(rawText);
         renderMathIn(textEl);
       } else {
         textEl.remove();
-      }
-      if (sources.length) {
-        const srcWrap = document.createElement('div'); srcWrap.className = 'sources';
-        sources.forEach(s => { const tag = document.createElement('span'); tag.className = 'source-tag'; tag.textContent = (s.source || s).split(/[\\/]/).pop(); srcWrap.appendChild(tag); });
-        agentWrap.appendChild(srcWrap);
       }
       chat.scrollTop = chat.scrollHeight;
     } else if (!clientActions.length) {
@@ -7705,6 +8352,9 @@ const PROPOSAL_FIELDS = {
   ],
   erstelle_tagesplan: [
     { key: 'taegliche_stunden', label: 'Stunden pro Tag', type: 'number', min: 0.5, max: 12, step: 0.5 },
+  ],
+  erstelle_quiz: [
+    { key: 'thema', label: 'Thema (aus der Roadmap)', type: 'text' },
   ],
 };
 
@@ -7785,17 +8435,25 @@ function renderProposalCard(extras, action, params, summary) {
 async function executeProposal(action, params, card) {
   const status = card.querySelector('.chat-proposal-status');
   card.querySelectorAll('button').forEach(b => b.disabled = true);
-  status.innerHTML = '<span class="modal-spinner"></span> Wird erstellt…';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'proposal-loading-overlay';
+  overlay.innerHTML = '<div class="modal-spinner"></div><div class="proposal-loading-hint">Das kann einen Moment dauern</div>';
+  card.appendChild(overlay);
+
   try {
     let res;
-    if (action === 'erstelle_klausur')            res = await execExamProposal(params);
-    else if (action === 'erstelle_roadmap')       res = await execRoadmapProposal(params);
+    if (action === 'erstelle_klausur')              res = await execExamProposal(params);
+    else if (action === 'erstelle_roadmap')         res = await execRoadmapProposal(params);
     else if (action === 'erstelle_zusammenfassung') res = await execSummaryProposal(params);
-    else if (action === 'erstelle_loesungsblatt')  res = await execSolveProposal(params);
-    else if (action === 'erstelle_tagesplan')      res = await execDailyProposal(params);
+    else if (action === 'erstelle_loesungsblatt')   res = await execSolveProposal(params);
+    else if (action === 'erstelle_tagesplan')        res = await execDailyProposal(params);
+    else if (action === 'erstelle_quiz')             res = await execQuizProposal(params);
     else throw new Error('Unbekannte Aktion');
+    overlay.remove();
     renderProposalDone(card, res);
   } catch (err) {
+    overlay.remove();
     status.innerHTML = '';
     const e = document.createElement('div');
     e.style.color = 'var(--danger)'; e.style.fontSize = '0.84rem';
@@ -7861,9 +8519,11 @@ async function execRoadmapProposal(params) {
 }
 
 async function execSummaryProposal(params) {
+  const resolvedFile = fuzzyFindFile(state.moduleFiles, params.datei);
+  const filename = resolvedFile ? resolvedFile.name : params.datei;
   const r = await fetch('/lecture/summarize', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename: params.datei, module_name: params.modul }),
+    body: JSON.stringify({ filename, module_name: params.modul }),
   });
   const d = await r.json();
   if (!r.ok) throw new Error(d.detail || 'Fehler bei der Zusammenfassung.');
@@ -7885,7 +8545,7 @@ async function execSummaryProposal(params) {
 async function execSolveProposal(params) {
   const quelle = params.quelle || '';
   const inActive = params.modul === state.moduleName;
-  const file = (state.moduleFiles || []).find(f => f.name === quelle || (f.relative_path || '') === quelle);
+  const file = fuzzyFindFile(state.moduleFiles, quelle);
   if (file && inActive) {
     await solveSheet(file);            // fetches text, solves, opens the solution tab itself
     return { already: true, inActive: true };
@@ -7916,6 +8576,38 @@ async function execDailyProposal(params) {
   const inActive = params.modul === state.moduleName;
   if (inActive) { state.dailyPlan = d.exists === false ? null : d; refreshDailyView(); }
   return { inActive, label: 'Tagesplan öffnen', open: () => openDailyTab() };
+}
+
+async function execQuizProposal(params) {
+  const topicName = (params.thema || '').trim();
+  if (!topicName) throw new Error('Kein Thema angegeben.');
+  const inActive = params.modul === state.moduleName;
+
+  // Fuzzy-match the topic name against the current roadmap
+  let topicId = null, resolvedName = topicName;
+  for (const phase of (state.roadmap?.phases || [])) {
+    for (const t of (phase.topics || [])) {
+      const a = t.name.toLowerCase(), b = topicName.toLowerCase();
+      if (a === b || a.includes(b) || b.includes(a)) {
+        topicId = t.id; resolvedName = t.name; break;
+      }
+    }
+    if (topicId) break;
+  }
+  if (!topicId) throw new Error(`Thema „${topicName}" nicht in der Roadmap gefunden. Bitte einen Themen-Namen aus der Roadmap verwenden.`);
+
+  const res = await fetch(`/quiz/topic/${encodeURIComponent(params.modul)}/${encodeURIComponent(topicId)}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Quiz-Generierung fehlgeschlagen.');
+
+  if (inActive) {
+    openTopicQuizTab(topicId, data.topic_name || resolvedName, data);
+    await loadTopicQuizzes(state.moduleName);
+    renderWorkspaceFiles(state.moduleFiles);
+  }
+  return { inActive, label: `Quiz „${resolvedName}" öffnen`, open: () => openTopicQuizTab(topicId, resolvedName, data) };
 }
 
 function renderDataList(extras, kind, items) {
@@ -7970,7 +8662,7 @@ function handleClientAction(action, args) {
   } else if (action === 'oeffne_roadmap') {
     openRoadmapTab();
   } else if (action === 'oeffne_datei') {
-    const f = (state.moduleFiles || []).find(x => x.name === args.datei || (x.relative_path || '') === args.datei);
+    const f = fuzzyFindFile(state.moduleFiles, args.datei);
     if (f) openFile(f);
     else addMsg('agent', `Datei „${args.datei}" wurde nicht gefunden.`);
   }
@@ -8718,6 +9410,50 @@ const filePopup = (function () {
     open(file, row, triggerBtn) {
       _file = file; _row = row;
       renderMain(file, triggerBtn);
+      position(triggerBtn);
+    },
+    close,
+  };
+})();
+
+/* ── Generic action menu for generated files (summaries, exams, solutions).
+   Takes a plain actions list [{label, danger?, fn}] — no file-type logic. ── */
+const genFilePopup = (function () {
+  const el = document.createElement('div');
+  el.className = 'file-popup';
+  el.style.display = 'none';
+  document.body.appendChild(el);
+
+  function close() { el.style.display = 'none'; }
+
+  function position(triggerBtn) {
+    const rect = triggerBtn.getBoundingClientRect();
+    el.style.left = '0'; el.style.top = '0'; el.style.display = 'flex';
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let left = rect.right + 6;
+    let top  = rect.top;
+    if (left + w > window.innerWidth - 8)  left = rect.left - w - 6;
+    if (top  + h > window.innerHeight - 8) top  = window.innerHeight - h - 8;
+    el.style.left = left + 'px';
+    el.style.top  = top + 'px';
+  }
+
+  document.addEventListener('click', e => {
+    if (el.style.display !== 'none' && !el.contains(e.target)) close();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  return {
+    open(actions, triggerBtn) {
+      filePopup.close();          // never show both popups at once
+      el.innerHTML = '';
+      actions.forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = 'fap-action-btn' + (a.danger ? ' danger' : '');
+        btn.textContent = a.label;
+        btn.addEventListener('click', e => { e.stopPropagation(); close(); a.fn(); });
+        el.appendChild(btn);
+      });
       position(triggerBtn);
     },
     close,

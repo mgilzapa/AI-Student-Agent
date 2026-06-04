@@ -20,7 +20,7 @@
 | Vorlesungs-Zusammenfassung | Sonnet 4.6 | 3.000 / 1.000 | ~$0,024 |
 | Roadmap generieren | Sonnet 4.6 | ~3.000 / 7.000 | ~$0,11 (~11 ct) ✓ gemessen |
 | Klausur generieren | Sonnet 4.6 | ~3.000 / 7.000 | ~$0,11 (~11 ct) ✓ gemessen |
-| Lösungsblatt generieren | Sonnet 4.6 | ~3.000 / 3.000 | ~$0,05 (~5 ct) ✓ gemessen |
+| Lösungsblatt generieren | Haiku 4.5 | ~3.000 / 3.000 | ~$0,05 (~5 ct) ✓ gemessen |
 | Embedding (ChromaDB, lokal) | — | — | ~$0,000 |
 
 > Messung: 1 Klausur + 1 Lösungsblatt + 1 Roadmap = 12k Input / 21k Output = **~$0,27 gesamt**. Q&A und Summaries noch nicht gemessen — Werte oben sind Schätzungen.

@@ -4,12 +4,12 @@ Zwei-Stufen-Generierung: erst Konzept-Extraktion, dann tiefe Zusammenfassung.
 """
 
 import json
-from openai import OpenAI
+import anthropic
 
 from . import module_profile as mp
 
-client = OpenAI()
-MODEL = "gpt-4o-mini"
+client = anthropic.Anthropic()
+MODEL = "claude-haiku-4-5-20251001"
 
 # ── Stufe 1: Konzept-Extraktion ───────────────────────────────────────────────
 
@@ -41,96 +41,48 @@ Antworte NUR mit einem JSON-Objekt:
   "verbindung_vorherige": "Wie hängt das mit letzter VL zusammen (1 Satz)"
 }}
 
-Maximal 7 Konzepte. Sortiere nach Lernreihenfolge (nicht nach Relevanz).
+Die Konzepte sollten die wichtigsten Themen und Ideen der Vorlesung sein, besonders im Hinblick auf die Prüfungsrelevanz.
 """
 
 # ── Stufe 2: Tiefe Zusammenfassung ────────────────────────────────────────────
 
-STAGE2_PROMPT = """Erstelle eine Vorlesungszusammenfassung für Modul "{modul}".
+STAGE2_PROMPT = """Du bist ein Dozent für das Modul {modul} und willst eine tiefe Zusammenfassung der Vorlesung erstellen. 
+Die Zusammenfassung soll den Studierenden wirklich helfen, die Konzepte zu verstehen und sich auf die Prüfung vorzubereiten.
 
-KONZEPT-STRUKTUR (aus Analyse):
+Du bekommst folgende Informationen:
+<konzepte_json>
 {konzepte_json}
+</konzepte_json>
 
-MODUL-STIL: {stil}
+<modul_profile>
+{stil}
 {prompt_hint}
+</modul_profile>
 
-PRÜFUNGSPROFIL:
+<exam_profile>
 {exam_profile}
+</exam_profile>
 
-VORLESUNGSINHALT:
+<vorlesungsinhalt>
 {inhalt}
+</vorlesungsinhalt>
 
-Erstelle die Zusammenfassung nach diesem exakten Template:
+Hier sind wichtige Regeln für die Zusammenfassung:
+- Bleib immer in deiner Rolle als Dozent, der wirklich erklären will.
+- Erkläre die Konzepte so, dass sie für Studierende verständlich sind, die das Thema zum ersten Mal lernen.
+- Nutze die Informationen aus dem Vorlesungsinhalt, aber auch dein "Dozentenwissen", um die Konzepte zu erklären.
+- Verknüpfe die Konzepte untereinander und mit dem Vorlesungsinhalt, damit die Studierenden den roten Faden erkennen.
+- Berücksichtige die Prüfungsrelevanz der Konzepte, aber erkläre auch die weniger relevanten, damit das Gesamtverständnis stimmt.   
+- Nutze die Informationen aus dem Prüfungsprofil, um die Zusammenfassung auf die Prüfung vorzubereiten.
+- Erklare alle Große Themen, die in der Vorlesung behandelt wurden, auch wenn sie nicht explizit als Konzepte extrahiert wurden.
+- Nutze Beispiele, Analogien und einfache Erklärungen, um die Konzepte verständlich zu machen.
+- Mathematische Formeln immer korrekt in LaTeX setzen, damit sie klar und professionell aussehen.
+- Vermeide es, einfach nur den Vorlesungsinhalt umzustrukturieren. Füge echtes "Dozentenwissen" hinzu, um die Konzepte zu erklären und zu verknüpfen.
+- Fachbegriffe beim ersten Auftreten **fett** markieren, damit die Studierenden sie leicht erkennen können.
 
-# {titel}
-**Modul:** {modul} | **Niveau:** [erkenne aus Inhalt]
+Antworte mit einer ausführlichen, gut strukturierten Zusammenfassung im Markdown-Format, die die Konzepte erklärt, Beispiele gibt und die Verbindungen 
+zwischen den Themen herstellt. Die Zusammenfassung soll den Studierenden wirklich helfen, die Vorlesung zu verstehen und sich auf die Prüfung vorzubereiten.
 
----
-
-## Lernziele
-[3-5 konkrete Lernziele aus dem Inhalt ableiten]
-
----
-
-## Überblick
-[2-3 Sätze roter Faden + Verbindung zur letzten Vorlesung: {verbindung_vorherige}]
-
----
-
-## Hauptinhalt
-
-[Für jedes Konzept aus der Struktur:]
-
-### [Konzeptname]
-[Tiefe abhängig von Prüfungsrelevanz:]
-
-WENN hoch:
-- Intuition (2-3 Sätze, Analogie/Alltagsbeispiel)
-- Formale Definition / Algorithmus (mit Schritten)
-- Typische Prüfungsaufgabe aus dem Prüfungsprofil ableiten + Musterlösung
-- > ⚠️ Häufiger Fehler: [was Studenten oft falsch machen]
-
-WENN mittel:
-- Erklärung (3-4 Sätze)
-- Konkretes Beispiel
-- > Merke: [Kernaussage]
-
-WENN niedrig:
-- 2-3 Sätze Überblick
-
----
-
-## Konzeptübersicht
-[ASCII-Diagramm oder Tabelle mit Zusammenhängen zwischen den Konzepten]
-
----
-
-## Verständnisfragen
-[3 Fragen die Verständnis testen, nicht Auswendiglernen.
-Bei hoher Prüfungsrelevanz: prüfungsnahe Formulierung nutzen]
-
----
-
-## Schlüsselbegriffe
-| Begriff | Bedeutung |
-|--------|-----------|
-[Alle Konzepte + wichtige Fachbegriffe]
-
----
-
-## TL;DR
-[3-5 Sätze: das Wesentliche. Jemand der nur das liest soll den Kern verstehen.]
-
-STILREGELN:
-- Erklärender Fließtext, nicht reine Bullet-Listen
-- Fachbegriffe beim ersten Auftreten **fett**
-- Explizite Übergänge zwischen Abschnitten ("Aufbauend darauf...", "Das führt uns zu...")
-- Ton: wie ein guter Dozent der wirklich erklären will
-- Mathematische Formeln IMMER in LaTeX-Syntax setzen:
-  * `$...$` für inline (z.B. "die Wahrscheinlichkeit $P(X=k)$")
-  * `$$...$$` für eigenständige Formelzeilen / Gleichungen
-  * Niemals Pseudo-ASCII wie `sum_i^n` oder `f'(x) = lim h->0 ...` schreiben — immer korrektes LaTeX (`\\sum_{{i=1}}^{{n}}`, `\\lim_{{h \\to 0}}`, `\\frac{{a}}{{b}}`, `\\sqrt{{x}}`, griechische Buchstaben mit `\\alpha`, `\\beta`, `\\sigma` usw.).
-  * Auch Inequalities, Indizes, Exponenten, Mengen und Vektoren in LaTeX, nicht in Plain-Text.
 """
 
 
@@ -193,13 +145,13 @@ def _run_stage1(inhalt: str, profile: dict, history: str) -> dict:
         history=history[-1500:] if history else "Erste Vorlesung dieses Moduls.",
     )
 
-    response = client.chat.completions.create(
+    response = client.messages.create(
         model=MODEL,
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
 
-    raw = response.choices[0].message.content.strip()
+    raw = response.content[0].text.strip()
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
@@ -227,13 +179,13 @@ def _run_stage2(
         verbindung_vorherige=verbindung_vorherige or "Erste Vorlesung / kein Bezug.",
     )
 
-    response = client.chat.completions.create(
+    response = client.messages.create(
         model=MODEL,
-        max_tokens=4000,
+        max_tokens=8192,
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return response.choices[0].message.content.strip()
+    return response.content[0].text.strip()
 
 
 def _save_summary(profile: dict, titel: str, summary: str) -> str:
