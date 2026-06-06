@@ -51,7 +51,29 @@ def get_next_tasks(module_name: str, topic_id: str, n: int) -> List[Dict[str, An
     if not pool:
         return []
     open_tasks = [t for t in (pool.get("tasks") or []) if not t.get("done")]
-    return [{"text": t["text"], "done": False} for t in open_tasks[:n]]
+    return [{"text": t["text"], "done": False, "minutes": t.get("minutes", 45)} for t in open_tasks[:n]]
+
+
+def get_tasks_for_hours(module_name: str, topic_id: str, hours: float) -> List[Dict[str, Any]]:
+    """Return open tasks from the pool until the time budget (in hours) is used up.
+
+    Always returns at least one task. Stops before adding a task that would
+    exceed the budget, unless the result would otherwise be empty.
+    """
+    pool = load_pool(module_name, topic_id)
+    if not pool:
+        return []
+    budget_min = hours * 60
+    open_tasks = [t for t in (pool.get("tasks") or []) if not t.get("done")]
+    result: List[Dict[str, Any]] = []
+    used = 0
+    for t in open_tasks:
+        task_min = t.get("minutes", 45)
+        if result and used + task_min > budget_min:
+            break
+        result.append({"text": t["text"], "done": False, "minutes": task_min})
+        used += task_min
+    return result
 
 
 def mark_task_done(module_name: str, topic_id: str, task_text: str) -> None:
@@ -93,3 +115,25 @@ def pool_progress(module_name: str, topic_id: str) -> Dict[str, int]:
     tasks = (pool.get("tasks") if pool else None) or []
     done = sum(1 for t in tasks if t.get("done"))
     return {"done": done, "total": len(tasks)}
+
+
+def delete_all_pools(module_name: str) -> int:
+    """Delete all topic pools for a module. Returns count of deleted pools."""
+    from app.storage import storage_backend as sb
+    from app.storage.supabase_client import get_client, get_user_id
+    slug = _slug_for(module_name)
+    uid = get_user_id()
+    # list() returns immediate children of the slug folder, not the user root
+    folder = f"{uid}/{slug}"
+    deleted = 0
+    try:
+        items = get_client().storage.from_(sb.BUCKET).list(folder)
+        for item in (items or []):
+            name = item.get("name", "")
+            if name.startswith("topic_pool_") and name.endswith(".json"):
+                if sb.delete(f"{slug}/{name}"):
+                    deleted += 1
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("delete_all_pools list failed for %s: %s", slug, exc)
+    return deleted

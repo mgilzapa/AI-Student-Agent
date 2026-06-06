@@ -332,6 +332,14 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
 
 # ─────────────────────────── Archive ────────────────────────────────────────
 
+def delete_plan_and_history(module_name: str) -> None:
+    """Delete the current daily plan and task history (called when roadmap is regenerated)."""
+    from app.storage import storage_backend as sb
+    slug = _slug_for(module_name)
+    sb.delete(f"{slug}/daily_plan.md")
+    sb.delete(f"{slug}/task_history.json")
+
+
 def archive_current_plan(module_name: str) -> Optional[str]:
     """Copy daily_plan.md to YYYY-MM-DD.md in storage. Returns archive path or None."""
     from app.storage import storage_backend as sb
@@ -515,7 +523,7 @@ def _task_count_for_hours(hours: float) -> int:
 
 def _pool_size(hours: float, n_files: int, n_subtopics: int) -> int:
     """Total number of tasks the pool should hold for a topic. Clamped to [4, 20]."""
-    return max(4, min(20, round(hours * 2 + n_files * 1.5 + n_subtopics * 0.5)))
+    return max(4, min(12, round(hours * 1.5 + n_files * 1.0 + n_subtopics * 0.5)))
 
 
 _POOL_PROMPT = """\
@@ -530,27 +538,45 @@ Verstehe zuerst, um was für ein Modul es sich handelt:
 
 THEMA: {topic_name}
 SUBTOPICS: {subtopics}
-VERFÜGBARE DATEIEN: {files}
-ÜBUNGSBLÄTTER: {exercises}
-{rag_section}
+DATEIEN (aus Roadmap-Zuweisung): {files}
+ÜBUNGSBLÄTTER (aus Roadmap-Zuweisung): {exercises}
+{rag_files_section}{rag_section}
 ANZAHL AUFGABEN: genau {n}
 
 Richtlinien:
 - Decke das gesamte Thema und alle Subtopics ab — vom Verstehen der Grundlagen
   bis zum prüfungsnahen Anwenden.
-- Priorisiere Aufgaben, die direkt mit den verfügbaren Dateien und Übungen verbunden sind.
+- Datei-Referenzen: Bevorzuge Dateien aus "INHALTLICH VERIFIZIERTE DATEIEN" — diese enthalten
+  nachweislich Inhalt zu diesem Thema. Nutze Dateien aus "DATEIEN (aus Roadmap-Zuweisung)" nur
+  wenn sie inhaltlich zum Thema passen (Dateiname ist ein Hinweis, kein Beweis).
+  Referenziere KEINE Datei, wenn du nicht sicher bist, dass sie zu diesem Thema gehört.
+- INHALT AUS DEM LERNMATERIAL dient nur zum Verstehen des Themas. Kopiere KEINEN Text daraus
+  in die Aufgaben — referenziere ausschließlich Dateinamen, nie Chunk-Inhalte oder Auszüge.
+- Aufgaben-Nummern: Erfinde KEINE Aufgaben-Nummern. Nutze eine Nummer (z.B. "Aufgabe 3")
+  NUR wenn du sie explizit im INHALT AUS DEM LERNMATERIAL gelesen hast.
+  Wenn du keine genaue Nummer siehst, beschreibe den Inhalt stattdessen
+  (z.B. "Löse die Normalisierungsaufgabe aus Blatt3" statt "Löse Aufgabe 5 aus Blatt3").
 - Schreibe keine Aufgabenstellungen, sondern kurze, konkrete Referenzen, die anleiten,
-  was genau zu tun ist (z.B. "Löse Aufgabe 3 aus Blatt3" oder "Fasse Kapitel 4 der VL5 zusammen").
+  was genau zu tun ist.
 - Vermeide vage Formulierungen wie "Lerne Thema X". Sei konkret und handlungsorientiert.
 - Steigere die Schwierigkeit über den Pool hinweg leicht (erst Verständnis, dann Anwendung).
 - Keine Dopplungen.
 
 Beispiele für gute Aufgaben:
-- "Löse Aufgabe 3 aus Blatt3 vollständig und kontrolliere deine Lösungen."
+- "Löse Aufgabe 3 aus Blatt3 vollständig und kontrolliere deine Lösungen." (Nummer aus Kontext bekannt)
+- "Bearbeite die ER-Modellierungs-Aufgabe aus Blatt2." (Nummer nicht sichtbar → Inhalt beschreiben)
 - "Lese Kapitel 4 der VL5 und fasse die 3 wichtigsten Konzepte in eigenen Worten zusammen."
 - "Erkläre die Normalformen (1NF, 2NF, 3NF) anhand eigener Beispiele."
 
-Antworte NUR als JSON-Array mit genau {n} Strings."""
+Antworte NUR als JSON-Array mit genau {n} Objekten:
+[{{"text": "Aufgabenbeschreibung", "minutes": 30}}, ...]
+
+Schätze "minutes" realistisch nach Aufgabentyp:
+- Einen Abschnitt / eine Seite lesen oder durcharbeiten: 15–25 min
+- Konzept erklären, zusammenfassen oder Mindmap erstellen: 20–35 min
+- Einfache Übungsaufgabe (1 Teilaufgabe): 30–50 min
+- Komplexe Übungsaufgabe (mehrere Teilaufgaben / ganzes Blatt): 60–120 min
+- Eigene Beispiele entwickeln oder Prüfungsfragen beantworten: 20–40 min"""
 
 
 def _fallback_pool_tasks(
@@ -561,34 +587,35 @@ def _fallback_pool_tasks(
     for ex in exercises:
         if len(tasks) >= n:
             break
-        tasks.append({"text": ex, "done": False})
+        tasks.append({"text": ex, "done": False, "minutes": 60})
     for f in files:
         if len(tasks) >= n:
             break
         label = f"{f} – {subtopics[0]}" if subtopics else f"{f} – {name}"
-        tasks.append({"text": label, "done": False})
+        tasks.append({"text": label, "done": False, "minutes": 25})
     _PAD_TEMPLATES = [
-        "Lies deine Notizen zu '{}' und markiere unverstandene Stellen.",
-        "Fasse '{}' in 5 Sätzen zusammen.",
-        "Erkläre '{}' so, als würdest du es einem Kommilitonen erklären.",
-        "Notiere 3 mögliche Prüfungsfragen zu '{}' und beantworte sie.",
-        "Erstelle eine Mindmap zu '{}'.",
-        "Überprüfe dein Verständnis von '{}' mit einer Selbstabfrage.",
+        ("Lies deine Notizen zu '{}' und markiere unverstandene Stellen.", 20),
+        ("Fasse '{}' in 5 Sätzen zusammen.", 30),
+        ("Erkläre '{}' so, als würdest du es einem Kommilitonen erklären.", 35),
+        ("Notiere 3 mögliche Prüfungsfragen zu '{}' und beantworte sie.", 40),
+        ("Erstelle eine Mindmap zu '{}'.", 30),
+        ("Überprüfe dein Verständnis von '{}' mit einer Selbstabfrage.", 25),
     ]
     i = 0
     while len(tasks) < n and subtopics:
         sub = subtopics[i % len(subtopics)]
         text = f"Erkläre '{sub}' aus {name} in eigenen Worten mit einem Beispiel."
         if not any(t["text"] == text for t in tasks):
-            tasks.append({"text": text, "done": False})
+            tasks.append({"text": text, "done": False, "minutes": 35})
         i += 1
         if i > n * 3:
             break
     pad_idx = 0
     while len(tasks) < n:
-        text = _PAD_TEMPLATES[pad_idx % len(_PAD_TEMPLATES)].format(name)
+        text, mins = _PAD_TEMPLATES[pad_idx % len(_PAD_TEMPLATES)]
+        text = text.format(name)
         if not any(t["text"] == text for t in tasks):
-            tasks.append({"text": text, "done": False})
+            tasks.append({"text": text, "done": False, "minutes": mins})
         pad_idx += 1
         if pad_idx > n * len(_PAD_TEMPLATES):
             break
@@ -627,13 +654,42 @@ def _generate_pool(
 
     rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
     rag_content = rag_fn(rag_query, module_name, 8) if rag_fn else ""
-    rag_section = f"INHALT AUS DEM LERNMATERIAL:\n{rag_content[:3500]}\n\n" if rag_content else ""
+
+    # Second pass: retrieve exercise-specific chunks so the LLM can read actual
+    # exercise numbers instead of guessing them.
+    if rag_fn and exercises:
+        ex_query = f"Aufgabe Übung {name}"
+        ex_content = rag_fn(ex_query, module_name, 6)
+        if ex_content:
+            existing_chunks = set(rag_content.split("\n\n"))
+            new_chunks = [c for c in ex_content.split("\n\n") if c not in existing_chunks]
+            if new_chunks:
+                rag_content = rag_content + "\n\n" + "\n\n".join(new_chunks) if rag_content else ex_content
+
+    # Extract source filenames from RAG hits — these files provably contain
+    # content relevant to this topic, unlike roadmap assignments which are
+    # based only on filenames and can be wrong.
+    rag_verified_files: List[str] = []
+    if rag_content:
+        _raw_matches = re.findall(r"\[([^\[\]\n]+\.\w+)\]", rag_content)
+        rag_verified_files = list(dict.fromkeys(
+            m.split(":", 1)[-1].strip() if ":" in m else m
+            for m in _raw_matches
+        ))
+
+    rag_section = f"INHALT AUS DEM LERNMATERIAL:\n{rag_content[:4500]}\n\n" if rag_content else ""
+    rag_files_section = (
+        f"INHALTLICH VERIFIZIERTE DATEIEN (enthalten nachweislich Inhalt zu diesem Thema): "
+        f"{', '.join(rag_verified_files)}\n"
+        if rag_verified_files else ""
+    )
 
     prompt = _POOL_PROMPT.format(
         topic_name=name,
         subtopics=", ".join(subtopics) if subtopics else "—",
         files=", ".join(files) if files else "—",
         exercises=", ".join(exercises) if exercises else "—",
+        rag_files_section=rag_files_section,
         rag_section=rag_section,
         n=n,
     )
@@ -661,10 +717,18 @@ def _generate_pool(
             raise ValueError("Expected list")
         seen: set = set()
         for t in task_texts:
-            text = str(t).strip()
+            if isinstance(t, dict):
+                text = str(t.get("text", "")).strip()
+                try:
+                    minutes = max(5, int(t.get("minutes", 45)))
+                except (TypeError, ValueError):
+                    minutes = 45
+            else:
+                text = str(t).strip()
+                minutes = 45
             if text and text not in seen:
                 seen.add(text)
-                tasks.append({"text": text, "done": False})
+                tasks.append({"text": text, "done": False, "minutes": minutes})
             if len(tasks) >= n:
                 break
     except Exception as exc:
@@ -722,12 +786,14 @@ def generate(
         tid = str(topic.get("id") or "")
         if tid in carry_ids:
             continue
-        if not tp.load_pool(module_name, tid):
+        pool = tp.load_pool(module_name, tid)
+        pool_has_open = pool and any(not t.get("done") for t in (pool.get("tasks") or []))
+        if not pool_has_open:
+            # No pool yet, or pool is exhausted (stale from old roadmap) — regenerate
             _generate_pool(topic, module_name, rag_fn)
-        n = _task_count_for_hours(alloc_hours)
-        tasks = tp.get_next_tasks(module_name, tid, n)
+        tasks = tp.get_tasks_for_hours(module_name, tid, alloc_hours)
         if not tasks:
-            continue  # pool exhausted — nothing left to schedule for this card
+            continue
         new_topics.append({
             "id": tid,
             "name": str(topic.get("name", "")),

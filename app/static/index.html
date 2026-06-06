@@ -1577,7 +1577,31 @@
   .daily-board {
     flex: 1; overflow-y: auto; padding: 20px 20px 32px;
     display: flex; flex-direction: column; flex-wrap: nowrap; gap: 14px;
-    width: 100%;
+    width: 100%; position: relative;
+  }
+  .daily-board-loading {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    border-radius: 4px;
+  }
+  .daily-board-loading-spinner {
+    width: 38px; height: 38px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: dailySpinRot 0.75s linear infinite;
+  }
+  @keyframes dailySpinRot { to { transform: rotate(360deg); } }
+  .daily-board-loading-text {
+    font-size: 0.85rem; color: var(--muted);
+    text-align: center; line-height: 1.7;
+  }
+  .daily-board-loading-text strong {
+    display: block; color: var(--text); font-weight: 500; font-size: 0.9rem;
   }
   .daily-review-divider {
     text-align: center; color: var(--muted);
@@ -5749,6 +5773,21 @@ async function generateDailyPlan() {
   const genBtn = document.getElementById('tp-generate');
   if (genBtn) { genBtn.disabled = true; genBtn.textContent = t('daily-generating'); }
 
+  // Show loading overlay on the board
+  const board = document.getElementById('daily-board');
+  if (board) {
+    const overlay = document.createElement('div');
+    overlay.className = 'daily-board-loading';
+    overlay.id = 'daily-board-loading';
+    overlay.innerHTML = `
+      <div class="daily-board-loading-spinner"></div>
+      <div class="daily-board-loading-text">
+        <strong>Tagesplan wird generiert…</strong>
+        Das kann einen Moment dauern.
+      </div>`;
+    board.appendChild(overlay);
+  }
+
   try {
     const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/generate`, {
       method: 'POST',
@@ -5767,7 +5806,8 @@ async function generateDailyPlan() {
     addMsg('agent', `${t('daily-net-error')} ${err.message}`);
   } finally {
     const btn = document.getElementById('tp-generate');
-    if (btn) { btn.textContent = t('daily-generate-btn'); }
+    if (btn) { btn.disabled = false; btn.textContent = t('daily-generate-btn'); }
+    document.getElementById('daily-board-loading')?.remove();
   }
 }
 
@@ -7203,7 +7243,8 @@ function renderPdfView(vp, tab) {
       .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
       .then(blob => {
         if (!state.pdfFrames[tab.path]) { return; }  // tab closed while loading
-        const objUrl = URL.createObjectURL(blob);
+        const named = new File([blob], tab.name, { type: 'application/pdf' });
+        const objUrl = URL.createObjectURL(named);
         iframe.dataset.objUrl = objUrl;
         iframe.src = `${objUrl}#toolbar=1&navpanes=0&view=FitH`;
       })

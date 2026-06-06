@@ -1406,10 +1406,13 @@ async def roadmap_generate_stream(request: Request, body: RoadmapGenerateRequest
 
 @app.post("/roadmap/{module_name}/accept")
 def roadmap_accept(module_name: str):
+    from app.lecture import topic_pool as tp
     pending = _PENDING_ROADMAPS.pop(module_name, None)
     if not pending:
         raise HTTPException(status_code=404, detail="Keine ausstehende Generation gefunden.")
     rm.save_roadmap_md(module_name, pending)
+    dt.delete_plan_and_history(module_name)
+    tp.delete_all_pools(module_name)
     return {"success": True}
 
 
