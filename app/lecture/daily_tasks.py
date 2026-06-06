@@ -166,6 +166,7 @@ _HEADER_RE = re.compile(
 _PROGRESS_RE = re.compile(r"^\*\*Fortschritt:\*\*\s+(?P<done>\d+)/(?P<total>\d+)")
 _TOPIC_RE = re.compile(r"^## (?P<name>.+?) <!-- topic_id:(?P<id>\S+) -->")
 _TASK_RE = re.compile(r"^- \[(?P<check>[ xX])\] (?P<text>.+)")
+_MIN_RE = re.compile(r"\s*<!-- min:(?P<m>\d+) -->\s*$")
 
 
 def parse_plan(md: str) -> Dict[str, Any]:
@@ -207,9 +208,12 @@ def parse_plan(md: str) -> Dict[str, Any]:
         if current_topic is not None:
             tk = _TASK_RE.match(line)
             if tk:
+                raw_text = tk.group("text")
+                m = _MIN_RE.search(raw_text)
                 current_topic["tasks"].append({
-                    "text": tk.group("text").strip(),
+                    "text": _MIN_RE.sub("", raw_text).strip(),
                     "done": tk.group("check").lower() == "x",
+                    "minutes": int(m.group("m")) if m else 45,
                 })
 
     return result
@@ -246,7 +250,8 @@ def _render_md(module_name: str, daily_hours: float, topics: List[Dict]) -> str:
         lines.append(f"## {topic['name']} <!-- topic_id:{topic['id']} -->")
         for task in topic["tasks"]:
             mark = "x" if task["done"] else " "
-            lines.append(f"- [{mark}] {task['text']}")
+            mins = task.get("minutes", 45)
+            lines.append(f"- [{mark}] {task['text']} <!-- min:{mins} -->")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
@@ -299,7 +304,7 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
                 if task_count == task_index:
                     mark = "x" if done else " "
                     lines[i] = f"- [{mark}] {tk.group('text')}"
-                    task_text = tk.group("text").strip()
+                    task_text = _MIN_RE.sub("", tk.group("text")).strip()
                     if done:
                         record_completed_task(module_name, topic_id, current_topic_name, task_text)
                     else:

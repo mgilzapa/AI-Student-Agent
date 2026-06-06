@@ -2217,6 +2217,67 @@ def exam_delete(module_name: str, n: int):
 
 # ─────────────────────── Daily tasks endpoints ────────────────────────────────
 
+@app.get("/daily/dashboard")
+def daily_dashboard():
+    """Aggregated dashboard: active plans per module + last 4 completed tasks across all modules."""
+    modules = _all_module_names()
+    today_plans = []
+    all_completed = []
+    total_hours = 0.0
+
+    for module_name in modules:
+        clean = sanitize_module_name(module_name)
+        md = dt.load_plan(clean)
+        if md:
+            parsed = dt.parse_plan(md)
+            today_plans.append({
+                "module": module_name,
+                "daily_hours": parsed.get("daily_hours", 0.0),
+                "progress": parsed.get("progress", {"done": 0, "total": 0}),
+                "topics": parsed.get("topics", []),
+                "has_plan": True,
+            })
+            total_hours += parsed.get("daily_hours", 0.0)
+        else:
+            today_plans.append({
+                "module": module_name,
+                "daily_hours": 0.0,
+                "progress": {"done": 0, "total": 0},
+                "topics": [],
+                "has_plan": False,
+            })
+        for entry in dt.load_task_history(clean):
+            all_completed.append({
+                "module": module_name,
+                "task_text": entry.get("task_text", ""),
+                "topic_name": entry.get("topic_name", ""),
+                "completed_date": entry.get("completed_date", ""),
+            })
+
+    remaining_minutes = sum(
+        task.get("minutes", 45)
+        for plan in today_plans
+        if plan["has_plan"]
+        for topic in plan["topics"]
+        if not topic["id"].endswith("_review")
+        for task in topic["tasks"]
+        if not task["done"]
+    )
+
+    from datetime import date as _date, timedelta as _td
+    _today = _date.today()
+    _recent = {_today.isoformat(), (_today - _td(days=1)).isoformat()}
+    completed_today = sum(1 for e in all_completed if e.get("completed_date") in _recent)
+
+    all_completed.sort(key=lambda x: x.get("completed_date", ""), reverse=True)
+    return {
+        "today_plans": today_plans,
+        "remaining_minutes": remaining_minutes,
+        "completed_today": completed_today,
+        "recent_completed": all_completed[:4],
+    }
+
+
 @app.get("/daily/{module_name}")
 def daily_get(module_name: str):
     """Load active daily plan. Returns {exists: false} if none."""
