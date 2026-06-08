@@ -136,6 +136,9 @@
       color: var(--text); letter-spacing: -0.02em;
     }
     .price-period { font-size: 0.875rem; color: var(--muted); margin-left: 0.2rem; }
+    .price-tagline { font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; }
+    .price-per-day { font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 0.25rem; }
+    .price-yearly-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
     .price-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.75rem; }
     .price-list li { display: flex; align-items: center; gap: 0.625rem; font-size: 0.875rem; color: var(--text); }
     .chk {
@@ -232,13 +235,13 @@
     <div class="head">
       <span class="section-label">Tarif upgraden</span>
       <h1 class="section-title">Wähle den Tarif, der zu dir passt</h1>
-      <p class="section-sub">Mehr Module, mehr KI-Fragen und unbegrenzte Probeklausuren. Alle Abos sind monatlich kündbar.</p>
+      <p class="section-sub">Dein KI-Tutor kennt deine Vorlesungen — ChatGPT nicht. Alle Abos monatlich kündbar.</p>
     </div>
 
     <div class="billing-switch-wrap">
       <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum">
         <button class="bs-opt is-active" type="button" data-cycle="monthly" aria-pressed="true">Monatlich</button>
-        <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false">Jährlich <span class="bs-save">−33%</span></button>
+        <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false">Jährlich <span class="bs-save">−36%</span></button>
       </div>
     </div>
 
@@ -278,47 +281,54 @@
 
   <script>
   (function () {
-    // ── Tarif-Daten (Quelle: landing.html) ─────────────────────────────
+    // ── Tarif-Daten ────────────────────────────────────────────────────
     const PLANS = [
       {
         id: 'free', name: 'Free',
+        tagline: null,
         monthly: { amount: '0€', period: '/ Monat' },
         yearly:  { amount: '0€', period: '/ Jahr' },
         featured: false,
         features: [
           '1 Modul',
-          '50 KI-Fragen / Monat',
-          '2 Zusammenfassungen / Monat',
+          '5 Chat-Fragen / Monat',
           '1 Roadmap / Monat',
-          '3 Datei-Uploads',
+          '1 Task-Erstellung / Monat',
         ],
       },
       {
         id: 'student', name: 'Student',
-        monthly: { amount: '4,99€', period: '/ Monat' },
-        yearly:  { amount: '39,99€', period: '/ Jahr' },
+        tagline: 'Die meisten Studenten kommen damit durchs Semester.',
+        monthly: { amount: '12,99€', period: '/ Monat' },
+        yearly:  { amount: '99€',    period: '/ Jahr',  sub: '= 8,25€ / Monat · spar 57€' },
         featured: true, badge: 'Beliebteste Wahl',
         features: [
-          '5 Module',
-          '300 KI-Fragen / Monat (Haiku + Sonnet)',
-          '15 Zusammenfassungen / Monat',
-          '5 Roadmaps / Monat (editierbar)',
-          '5 Probeklausuren / Monat',
-          '25 Uploads · E-Mail-Support',
+          'Chat-Zugang alle 5h neu (täglich lernbereit)',
+          'Task-Erstellung unlimitiert',
+          '3 Roadmaps / Monat',
+          '10 Vorlesungs-Zusammenfassungen / Monat',
+          '5 Quizzes / Monat',
+          '2 Probeklausuren / Monat',
+          '12 Lösungsblätter / Monat',
+          'max. 5 Module · 25 Uploads',
         ],
       },
       {
         id: 'pro', name: 'Pro',
-        monthly: { amount: '9,99€', period: '/ Monat' },
-        yearly:  { amount: '79,99€', period: '/ Jahr' },
+        tagline: 'Für intensive Prüfungsphasen mit 3+ Fächern gleichzeitig.',
+        monthly: { amount: '24,99€', period: '/ Monat' },
+        yearly:  { amount: '199€',   period: '/ Jahr', sub: '= 16,58€ / Monat · spar 101€' },
         featured: false,
         features: [
-          'Unbegrenzte Module & KI-Fragen',
-          'Unbegrenzte Zusammenfassungen',
-          'Unbegrenzte Roadmaps + Export (PDF/Notion)',
-          'Unbegrenzte Klausuren + Lösungsanalyse',
-          'Daily Tasks: automatischer Lernplan',
-          'Uploads bis 500 MB · Prioritäts-Support (< 24h)',
+          '3× mehr Chat als Student (alle 5h neu)',
+          'Task-Erstellung unlimitiert',
+          '5 Roadmaps / Monat',
+          'Unlimitierte Zusammenfassungen',
+          'Unlimitierte Quizzes',
+          '10 Probeklausuren / Monat',
+          'Unlimitierte Lösungsblätter',
+          'Unlimitierte Module · bis 500 MB',
+          'Prioritäts-Support < 24h',
         ],
       },
     ];
@@ -347,9 +357,23 @@
         } else if (p.badge) {
           html += '<div class="price-badge">' + p.badge + '</div>';
         }
+
         html += '<div class="price-plan">' + p.name + '</div>';
-        html += '<div class="price-amount-wrap"><span class="price-amount">' + price.amount +
-                '</span><span class="price-period">' + price.period + '</span></div>';
+        if (p.tagline) {
+          html += '<div class="price-tagline">' + p.tagline + '</div>';
+        }
+
+        html += '<div class="price-amount-wrap">';
+        html += '<span class="price-amount">' + price.amount + '</span>';
+        html += '<span class="price-period">' + price.period + '</span>';
+        if (price.perDay) {
+          html += '<div class="price-per-day">' + price.perDay + '</div>';
+        }
+        if (price.sub) {
+          html += '<div class="price-yearly-sub">' + price.sub + '</div>';
+        }
+        html += '</div>';
+
         html += '<ul class="price-list">' +
           p.features.map(f => '<li><span class="chk">' + checkSvg + '</span> <span>' + f + '</span></li>').join('') +
           '</ul>';

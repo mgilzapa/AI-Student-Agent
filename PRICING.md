@@ -1,6 +1,6 @@
 # AI Student Agent — Pricing Modell
 
-> Stand: Mai 2026 | Erstellt auf Basis der tatsächlichen API-Kosten und Featureset
+> Stand: Juni 2026 | Basierend auf gemessenen API-Kosten und realer Nutzeranalyse
 
 ---
 
@@ -12,220 +12,227 @@
 | Claude Haiku 4.5 | ~$1,00 / MTok | ~$5,00 / MTok |
 | Claude Sonnet 4.6 | ~$3,00 / MTok | ~$15,00 / MTok |
 
-### Kosten pro Aktion (gemessen Mai 2026)
-| Feature | Modell | Tokens (In/Out, geschätzt) | Kosten/Aktion |
-|---------|--------|---------------------------|---------------|
-| Q&A simple (Haiku-Route) | Haiku 4.5 | 500 / 200 | ~$0,0015 |
-| Q&A komplex (Sonnet-Route) | Sonnet 4.6 | 1.000 / 500 | ~$0,011 |
-| Vorlesungs-Zusammenfassung | Sonnet 4.6 | 3.000 / 1.000 | ~$0,024 |
-| Roadmap generieren | Sonnet 4.6 | ~3.000 / 7.000 | ~$0,11 (~11 ct) ✓ gemessen |
-| Klausur generieren | Sonnet 4.6 | ~3.000 / 7.000 | ~$0,11 (~11 ct) ✓ gemessen |
-| Lösungsblatt generieren | Haiku 4.5 | ~3.000 / 3.000 | ~$0,05 (~5 ct) ✓ gemessen |
-| Embedding (ChromaDB, lokal) | — | — | ~$0,000 |
+### Kosten pro Aktion (gemessen)
+| Feature | Modell | Kosten/Aktion |
+|---------|--------|---------------|
+| Chat-Frage (einfach) | Haiku 4.5 | ~€0,015 |
+| Chat-Frage (komplex) | Sonnet 4.6 | ~€0,011 |
+| Roadmap generieren | Sonnet 4.6 | ~€0,11 ✓ gemessen |
+| Vorlesungs-Zusammenfassung | Sonnet 4.6 | ~€0,10 ✓ gemessen |
+| Probeklausur generieren | Sonnet 4.6 | ~€0,115 ✓ gemessen |
+| Lösungsblatt generieren | Haiku 4.5 | ~€0,029 ✓ gemessen |
+| Task-Erstellung | Haiku 4.5 | ~€0,03 |
+| Quiz-Erstellung | Sonnet 4.6 | ~€0,10 |
 
-> Messung: 1 Klausur + 1 Lösungsblatt + 1 Roadmap = 12k Input / 21k Output = **~$0,27 gesamt**. Q&A und Summaries noch nicht gemessen — Werte oben sind Schätzungen.
+> **Gemessene Session-Kosten:** Ein normaler Nutzer verbraucht pro 5h-Session ~20 ct (Chat, Tasks, Lösungen) + optional ~10 ct für 1 Zusammenfassung.  
+> **Definition:** 1 Session = 5 Stunden = 1 Chat-Reset-Fenster
 
-### Monatliche API-Kosten pro Nutzertyp
-| Nutzertyp | Aktivität/Monat | API-Kosten |
-|-----------|----------------|------------|
-| **Light** (Gelegenheitsnutzer) | 160 simple Q&A, 40 komplex, 2 Summaries, 1 Roadmap | ~$1,00 / ~€0,92 |
-| **Normal** (aktiver Student) | 350 simple Q&A, 150 komplex, 5 Summaries, 2 Roadmaps | ~$2,50 / ~€2,30 |
-| **Heavy** (Power-User) | 600 simple Q&A, 400 komplex, 10 Summaries, 3 Roadmaps, 5 Klausuren | ~$6,40 / ~€5,90 |
+### Kosten pro Nutzertyp (50 Sessions/Monat = Heavy, 1 Session = 5h)
 
-> **Infra-Overhead** (Server, ChromaDB, Storage): +€0,20–€0,50 pro Nutzer/Monat je nach Volumen.
+| Tier | Typ | Sessions/Monat | Feature-Nutzung | API | Infra | **Gesamt** |
+|------|-----|----------------|-----------------|-----|-------|------------|
+| Free | — | — | Hardcap | €0,16 | — | **€0,16** |
+| Student | Light | 15 | 30% der Limits | €3,20 | €0,30 | **€3,50** |
+| Student | Mid | 30 | 60% der Limits | €6,41 | €0,30 | **€6,71** |
+| Student | Heavy | 50 | 100% der Limits | €10,68 | €0,30 | **€10,98** |
+| Pro | Light | 15 | 30% der Limits | €8,08 | €0,50 | **€8,58** |
+| Pro | Mid | 30 | 60% der Limits | €16,16 | €0,50 | **€16,66** |
+| Pro | Heavy | 50 | 100% der Limits | €26,93 | €0,50 | **€27,43** |
+
+**Ø-Kosten (Verteilung: 50% Light / 35% Mid / 15% Heavy):**
+- Student: **€5,75/Monat**
+- Pro: **€14,23/Monat**
 
 ---
 
 ## 2. Abo-Modell
 
+> Reihenfolge auf der Preisseite: **Pro → Student → Free** (Anchoring — Nutzer sieht zuerst €24,99, dann fühlt sich €12,99 wie ein Deal an)
+
+---
+
 ### Free — kostenlos
-Ziel: Nutzer reinbringen, Produkt erleben lassen.
+Ziel: Erster Wow-Moment, dann frustrieren und upgraden lassen. Free darf nicht komfortabel sein.
 
-| Limits |  |
-|--------|---|
-| Q&A | 50 Fragen/Monat (nur Haiku-Route) |
-| Zusammenfassungen | 2/Monat |
-| Roadmaps | 1/Monat, nicht editierbar |
-| Klausur-Generator | ✗ |
+| Feature | Limit |
+|---------|-------|
+| Roadmaps | 1/Monat |
+| Task-Erstellung | 1x |
+| Chat-Fragen | 5/Monat (kein Chat-Agent) |
+| Zusammenfassungen | ✗ |
+| Quizzes | ✗ |
+| Probeklausuren | ✗ |
+| Lösungsblätter | ✗ |
 | Module | max. 1 |
-| Dateien | max. 3 Uploads |
 
-**Kosten für uns:** ~€0,10/Monat/User  
+**Kosten für uns:** ~€0,16/Monat/User  
 **Einnahmen:** €0
 
 ---
 
-### Student — €4,99/Monat *(oder €39,99/Jahr → ~33% Rabatt)*
-Ziel: Haupt-Tier für Studenten — Preis unter einer Mensa-Mahlzeit.
+### Student — €12,99/Monat ⭐ Most Popular
+*(oder €99/Jahr → €8,25/Monat — "Spar €57 im Jahr")*  
+*(< €0,43 pro Tag)*
 
-| Features |  |
-|----------|---|
-| Q&A | 300 Fragen/Monat (Haiku + Sonnet-Routing) |
-| Zusammenfassungen | 15/Monat |
-| Roadmaps | 5/Monat, editierbar |
-| Klausur-Generator | 5 Klausuren/Monat |
+Ziel: Deckt 90% der realen Nutzung ab. Hier sollen die meisten Nutzer landen.
+
+| Feature | Limit |
+|---------|-------|
+| Roadmaps | 3/Monat (wird meist nur 1× genutzt bei Modul-Einrichtung) |
+| Chat | 15 ct Budget / 5h (reset automatisch) |
+| Chat-Agent | ✓ |
+| Task-Erstellung | Unlimitiert |
+| Zusammenfassungen | 10/Monat |
+| Quizzes | 5/Monat |
+| Probeklausuren | 2/Monat |
+| Lösungsblätter | 12/Monat |
 | Module | max. 5 |
 | Dateien | max. 25 Uploads (PDF, PPTX) |
 | Support | Standard (E-Mail) |
 
-**Kosten für uns:** ~€2,10/Monat/User (API + Infra)  
-**Marge:** ~€2,89/Monat → **~58%**
+**Kosten für uns (Ø):** €5,75/Monat  
+**Marge (Ø):** €7,24 → **~56%**  
+**Worst-Case (Heavy):** €10,98 → Marge €2,01 → 15%
 
 ---
 
-### Pro — €9,99/Monat *(oder €79,99/Jahr → ~33% Rabatt)*
-Ziel: Prüfungsphase, intensive Nutzer, Master-/Doktoranden.
+### Pro — €24,99/Monat
+*(oder €199/Jahr → €16,58/Monat)*
 
-| Features |  |
-|----------|---|
-| Q&A | Unlimitiert (Haiku + Sonnet-Routing) |
+Ziel: Für intensive Prüfungsphasen und Power-User. Die meisten Studenten kommen mit Student durch das Semester — Pro ist für wer 3+ Fächer gleichzeitig intensiv lernt.
+
+| Feature | Limit |
+|---------|-------|
+| Roadmaps | 5/Monat |
+| Chat | 45 ct Budget / 5h (3× Student) |
+| Chat-Agent | ✓ |
+| Task-Erstellung | Unlimitiert |
 | Zusammenfassungen | Unlimitiert |
-| Roadmaps | Unlimitiert + Export (PDF/Notion) |
-| Klausur-Generator | Unlimitiert + Lösungsanalyse |
-| Daily Tasks | Automatischer Lernplan |
+| Quizzes | Unlimitiert |
+| Probeklausuren | 10/Monat |
+| Lösungsblätter | Unlimitiert (~20 realistisch → €0,70) |
 | Module | Unlimitiert |
 | Dateien | Unlimitiert (bis 500 MB) |
-| Priorität | Schnellere Antwortzeiten |
 | Support | Priorität (< 24h) |
 
-**Kosten für uns:** ~€6,40/Monat/User (Heavy-User-Annahme)  
-**Marge:** ~€3,59/Monat → **~36%**
+**Kosten für uns (Ø):** €14,23/Monat  
+**Marge (Ø):** €10,76 → **~43%**  
+**Worst-Case (Heavy):** €27,43 → Marge −€2,44 → −10% (nur bei 50 Sessions + 100% Limit-Ausschöpfung, extremer Outlier)
 
----
-
-### Team / Uni — €24,99/Monat *(bis 5 Nutzer = €5,00/Seat)*
-Ziel: Lerngruppen, Tutoren, Seminare.
-
-| Features |  |
-|----------|---|
-| Alles aus Pro | ✓ |
-| Sitze | 5 Nutzer inklusive |
-| Module teilen | Gemeinsame Modul-Bibliothek |
-| Admin-Dashboard | Nutzungsübersicht |
-| Billing | Zentrales Management |
-| Support | Dedicated (< 12h) |
-
-**Kosten für uns:** ~€33/Monat (5× Heavy-User-Annahme + Infra)  
-**Marge:** **~−€8/Monat → Verlust-Tier** *(Seat-Preis müsste auf ~€8/Seat = €40/Team steigen, um kostendeckend zu sein)*
-
-> **Empfehlung:** Team-Tier erst ab ~200 zahlenden Einzelnutzern launchen.
+> **Idee: Monatlicher Prüfungs-Boost** — Student-Nutzer können einzelne Monate auf Pro upgraden (€14,99 einmalig). Für Prüfungsphasen (2× im Jahr) ohne dauerhaftes Pro-Abo.
 
 ---
 
 ## 3. Wettbewerbs-Benchmark
 
-| Produkt | Preis/Monat | Zielgruppe | Vergleich |
-|---------|-------------|------------|-----------|
-| ChatGPT Plus | €22 | Allgemein | Teuer, nicht Studenten-fokussiert |
-| Perplexity Pro | €22 | Recherche | Kein RAG auf eigene Dokumente |
-| Khanmigo | ~€4 | K-12 | Nur Schulniveau |
-| Notion AI | €10 | Produktivität | Kein Lern-Workflow |
-| **AI Student Agent Student** | **€4,99** | **Studenten** | Spezialisiert, günstiger |
-| **AI Student Agent Pro** | **€9,99** | **Studenten** | Hälfte von ChatGPT, voller Stack |
+| Produkt | Preis/Monat | Kennt deine Folien | Lernplan | Klausuren aus deinem Stoff | Fortschritt tracken |
+|---------|-------------|-------------------|----------|--------------------------|---------------------|
+| ChatGPT Plus | €22 | ✗ | ✗ | ✗ | ✗ |
+| Claude Pro | €22 | ✗ | ✗ | ✗ | ✗ |
+| Perplexity Pro | €22 | ✗ | ✗ | ✗ | ✗ |
+| Notion AI | €10 | ✗ | ✗ | ✗ | ✗ |
+| **AI Student Agent Student** | **€12,99** | **✓** | **✓** | **✓** | **✓** |
+| **AI Student Agent Pro** | **€24,99** | **✓** | **✓** | **✓** | **✓** |
 
-**Fazit:** €4,99 ist aggressiv positioniert. Günstigste Option im spezialisierten KI-Lernmarkt.
+**Kernbotschaft:** ChatGPT und Claude wissen nichts über deine Vorlesungen — jedes Gespräch beginnt bei null. Der AI Student Agent kennt dein Material, deinen Lernstand und deinen Prüfungstermin.
 
 ---
 
 ## 4. Szenarien — Bist du im Plus oder Minus?
 
-### Annahmen (Nutzerverteilung)
-| Tier | Szenario 1 (100 User) | Szenario 2 (1.000 User) | Szenario 3 (10.000 User) |
-|------|-----------------------|-------------------------|--------------------------|
-| Free | 40% = 40 User | 35% = 350 User | 30% = 3.000 User |
-| Student | 45% = 45 User | 45% = 450 User | 45% = 4.500 User |
-| Pro | 12% = 12 User | 15% = 150 User | 20% = 2.000 User |
-| Team | 3% = 3 Teams | 5% = 50 Teams | 5% = 500 Teams |
+### Annahmen
+| Tier | 100 User | 500 User |
+|------|----------|----------|
+| Free | 50 (50%) | 250 (50%) |
+| Student | 35 (35%) | 175 (35%) |
+| Pro | 15 (15%) | 75 (15%) |
 
-> Die Pro-Quote steigt mit Skalierung, weil Early Adopters loyaler sind und
-> Mundpropaganda eher Power-User anzieht.
+Innerhalb Student & Pro: 50% Light / 35% Mid / 15% Heavy
 
 ---
 
-### Szenario 1 — 100 Nutzer (Early Stage / Beta)
+### Szenario 1 — 100 Nutzer
 
-| Tier | Nutzer | Revenue/Monat | API+Infra-Kosten |
-|------|--------|---------------|-----------------|
-| Free | 40 | €0 | €4 |
-| Student | 45 | €224,55 | €95 |
-| Pro | 12 | €119,88 | €77 |
-| Team | 3 | €74,97 | €99 |
-| **Gesamt** | **100** | **€419,40** | **€275** |
+| Tier | Typ | Nutzer | Kosten/User | Kosten | Revenue |
+|------|-----|--------|-------------|--------|---------|
+| Free | — | 50 | €0,16 | €8,00 | €0 |
+| Student | Light | 18 | €3,50 | €63,00 | €233,82 |
+| Student | Mid | 12 | €6,71 | €80,52 | €155,88 |
+| Student | Heavy | 5 | €10,98 | €54,90 | €64,95 |
+| Pro | Light | 8 | €8,58 | €68,64 | €199,92 |
+| Pro | Mid | 5 | €16,66 | €83,30 | €124,95 |
+| Pro | Heavy | 2 | €27,43 | €54,86 | €49,98 |
+| **Gesamt** | | **100** | | **€413** | **€829** |
 
-**Fixkosten:** €30/Monat (kleiner VPS, Domain, E-Mail)  
-**Gesamtkosten:** €305/Monat  
-**Gewinn: +€114/Monat ✓**
-
-> Noch im Plus, aber knapper als ursprünglich kalkuliert.
-> Break-even für Vollzeit (€2.500 netto) liegt bei ~750 zahlenden Nutzern.
-
----
-
-### Szenario 2 — 1.000 Nutzer (Growth Stage)
-
-| Tier | Nutzer | Revenue/Monat | API+Infra-Kosten |
-|------|--------|---------------|-----------------|
-| Free | 350 | €0 | €35 |
-| Student | 450 | €2.245,50 | €945 |
-| Pro | 150 | €1.498,50 | €960 |
-| Team | 50 | €1.249,50 | €1.650 |
-| **Gesamt** | **1.000** | **€4.993,50** | **€3.590** |
-
-**Fixkosten:** €150/Monat (besserer Server, Monitoring, Support-Tools)  
-**Gesamtkosten:** €3.740/Monat  
-**Gewinn: +€1.253/Monat ✓**
-
-> Profitabel, aber Team-Tier frisst Marge — ggf. Preis anpassen.
-> Marge: ~25%
+**Fixkosten:** €30/Monat  
+**Gesamtkosten:** €443  
+**Gewinn: +€386/Monat → 47% Marge ✓**
 
 ---
 
-### Szenario 3 — 10.000 Nutzer (Scale)
+### Szenario 2 — 500 Nutzer
 
-| Tier | Nutzer | Revenue/Monat | API+Infra-Kosten |
-|------|--------|---------------|-----------------|
-| Free | 3.000 | €0 | €300 |
-| Student | 4.500 | €22.455 | €9.450 |
-| Pro | 2.000 | €19.980 | €12.800 |
-| Team | 500 | €12.495 | €16.500 |
-| **Gesamt** | **10.000** | **€54.930** | **€39.050** |
+| Tier | Typ | Nutzer | Kosten/User | Kosten | Revenue |
+|------|-----|--------|-------------|--------|---------|
+| Free | — | 250 | €0,16 | €40,00 | €0 |
+| Student | Light | 88 | €3,50 | €308,00 | €1.143,12 |
+| Student | Mid | 61 | €6,71 | €409,31 | €792,39 |
+| Student | Heavy | 26 | €10,98 | €285,48 | €337,74 |
+| Pro | Light | 38 | €8,58 | €326,04 | €949,62 |
+| Pro | Mid | 26 | €16,66 | €433,16 | €649,74 |
+| Pro | Heavy | 11 | €27,43 | €301,73 | €274,89 |
+| **Gesamt** | | **500** | | **€2.104** | **€4.147** |
 
-**Fixkosten:** €800/Monat (Infra-Stack, 1 Teilzeit-Support, Tools)  
-**Gesamtkosten:** €39.850/Monat  
-**Gewinn: +€15.080/Monat (~€181k/Jahr) ✓**
+**Fixkosten:** €100/Monat  
+**Gesamtkosten:** €2.204  
+**Gewinn: +€1.943/Monat → 47% Marge ✓**
 
-> Echtes Business, aber Team-Tier-Preise müssen nachgezogen werden.
-> Marge: ~27% — Haiku-Routing hilft, aber Roadmap/Klausur-Output-Tokens dominieren die Kosten.
+> Break-even für Vollzeit (€2.500 netto) liegt bei ~650 zahlenden Nutzern (Student + Pro).
 
 ---
 
-## 5. Risiken & Optimierungen
+## 5. Preispsychologie
 
-### Was dich in die Miesen treiben könnte
+### Warum Nutzer Student wählen sollen
+Student ist das Ziel-Tier — höchste Marge, deckt 90% der realen Nutzung ab.
+
+| Taktik | Umsetzung |
+|--------|-----------|
+| Anchoring | Preisseite: Pro → Student → Free (rechts nach links) |
+| Social Proof | "Most Popular" Badge auf Student |
+| Tagespreisanzeige | "Weniger als €0,43 pro Tag" unter dem Preis |
+| Jahrespreis prominent | "€99/Jahr — spar €57" als erste Option zeigen |
+| Pro richtig framen | "Für intensive Prüfungsphasen — die meisten kommen mit Student durch" |
+| Free bewusst begrenzen | 5 Chat-Fragen reichen für Wow-Moment, nicht für echtes Arbeiten |
+| Prüfungs-Boost | Student-User können einzelne Monate auf Pro upgraden (€14,99 einmalig) |
+
+---
+
+## 6. Risiken & Optimierungen
+
 | Risiko | Auswirkung | Gegenmaßnahme |
 |--------|------------|---------------|
-| API-Preiserhöhung Anthropic | Margen schrumpfen | Rate-Limits, Caching (Prompt-Cache) einbauen |
-| Free-Nutzer übernutzen | Kosten ohne Revenue | Harte Limits + Upgrade-Prompts |
-| Heavy-User im Student-Tier | Pro-User zahlt Haiku-Preis | Soft-Limits oder Auto-Upgrade-Trigger |
-| Team-Tier zu günstig | Verlust pro Team | Seat-Preis erhöhen oder erst später launchen |
+| Pro Heavy-User (50 Sessions, 100% Limits) | −€2,44/User | Extremer Outlier (~2% der Pro-User); Soft-Alert bei 80% Budget |
+| API-Preiserhöhung Anthropic | Margen schrumpfen | Prompt-Caching einbauen (bis 30% Ersparnis) |
+| Free-Nutzer übernutzen | Kosten ohne Revenue | Hardcaps sind bereits gesetzt |
+| Student-User upgraden nicht | Hohe Free-Quote | Onboarding-Funnel optimieren, Wow-Moment in ersten 5 Minuten |
 
 ### Quick Wins für bessere Margen
-1. **Prompt Caching** (Anthropic-Feature): Wiederkehrende System-Prompts ~90% günstiger → bis zu 30% Kostenreduktion
-2. **Haiku-Anteil maximieren**: Guten Router beibehalten — jede simple Query auf Haiku spart 85% vs. Sonnet
-3. **Yearly-Billing promoten**: Jähreszahlung = gesicherter Cash-Flow, weniger Churn
-4. **Free→Student-Conversion**: Ziel 15–20% — das ist der kritische Hebel
+1. **Prompt Caching** — Wiederkehrende System-Prompts ~90% günstiger → bis zu 30% Kostenreduktion
+2. **Haiku-Anteil maximieren** — Guten Router beibehalten, jede einfache Query auf Haiku spart 85% vs. Sonnet
+3. **Jahresbilling promoten** — Gesicherter Cash-Flow, weniger Churn, sofort bessere Liquidität
+4. **Exam-Readiness-Score** — Zeigt Lernfortschritt, erhöht Retention und Upgrade-Motivation
 
 ---
 
-## 6. Empfehlung
+## 7. Empfehlung
 
-**Starte mit:** Free + Student (€4,99) als einzige zwei Tiers.  
-**Pro nach:** 200+ zahlenden Studenten launchen wenn du siehst dass Power-User entstehen.  
-**Team/Uni:** Erst wenn 3–5 organische Anfragen von Lerngruppen kommen.
-
-**Preise nie zu früh senken** — €4,99 ist schon sehr günstig. Lieber Features einschränken als Preis runter.
+**Launch mit:** Free + Student (€12,99) als einzige zwei Tiers.  
+**Pro nach:** 150–200 zahlenden Studenten, wenn Power-User sichtbar werden.  
+**Prüfungs-Boost:** Direkt bei Launch als Einmal-Upgrade für Student-User anbieten.  
+**Preise nie senken** — €12,99 ist schon sehr günstig. Lieber Features einschränken.
 
 ---
 
-*Alle Preise in Euro, alle Kosten Schätzwerte basierend auf aktuellen Anthropic API-Preisen (Mai 2026).*
-*API-Kosten können variieren je nach tatsächlichem Token-Volumen der Nutzer.*
+*Alle Preise in Euro. API-Kosten basieren auf gemessenen Werten (Juni 2026).*  
+*Ø-Kosten gehen von Nutzerverteilung 50% Light / 35% Mid / 15% Heavy aus.*

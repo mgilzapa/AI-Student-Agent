@@ -576,12 +576,12 @@ Beispiele für gute Aufgaben:
 Antworte NUR als JSON-Array mit genau {n} Objekten:
 [{{"text": "Aufgabenbeschreibung", "minutes": 30}}, ...]
 
-Schätze "minutes" realistisch nach Aufgabentyp:
-- Einen Abschnitt / eine Seite lesen oder durcharbeiten: 15–25 min
-- Konzept erklären, zusammenfassen oder Mindmap erstellen: 20–35 min
-- Einfache Übungsaufgabe (1 Teilaufgabe): 30–50 min
-- Komplexe Übungsaufgabe (mehrere Teilaufgaben / ganzes Blatt): 60–120 min
-- Eigene Beispiele entwickeln oder Prüfungsfragen beantworten: 20–40 min"""
+Schätze "minutes" konservativ — tendiere zur unteren Grenze, der Lernende kann immer länger arbeiten:
+- Einen Abschnitt / eine Seite lesen oder durcharbeiten: 10–20 min
+- Konzept erklären, zusammenfassen oder Mindmap erstellen: 15–25 min
+- Einfache Übungsaufgabe (1 Teilaufgabe): 20–35 min
+- Komplexe Übungsaufgabe (mehrere Teilaufgaben / ganzes Blatt): 45–90 min
+- Eigene Beispiele entwickeln oder Prüfungsfragen beantworten: 15–30 min"""
 
 
 def _fallback_pool_tasks(
@@ -741,6 +741,23 @@ def _generate_pool(
 
     if not tasks:
         tasks = _fallback_pool_tasks(files, exercises, subtopics, name, n)
+
+    # Remove near-duplicate tasks (similarity > 75%)
+    from difflib import SequenceMatcher
+    deduped: List[Dict[str, Any]] = []
+    for task in tasks:
+        txt = task["text"].lower()
+        if not any(SequenceMatcher(None, txt, k["text"].lower()).ratio() > 0.75 for k in deduped):
+            deduped.append(task)
+    tasks = deduped
+
+    # Cap total minutes at hours * 60
+    budget = hours * 60
+    total_min = sum(t["minutes"] for t in tasks)
+    if total_min > budget:
+        factor = budget / total_min
+        for t in tasks:
+            t["minutes"] = max(5, round(t["minutes"] * factor))
 
     pool = {
         "topic_id": topic_id,
