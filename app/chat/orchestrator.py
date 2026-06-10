@@ -45,7 +45,7 @@ def _blocks_to_params(content: List[Any]) -> List[dict]:
 def _build_messages(chat_history: List[dict], message: str,
                     pending_proposal: Optional[dict]) -> List[dict]:
     messages: List[dict] = []
-    for turn in (chat_history or []):
+    for turn in (chat_history or [])[-6:]:
         role = turn.get("role")
         content = turn.get("content")
         if role in ("user", "assistant") and content:

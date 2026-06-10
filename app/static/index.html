@@ -3676,25 +3676,47 @@
 
   let _authToken = null;
 
+  // Auth-ready gate: same-origin API calls must wait until the session has been
+  // resolved, otherwise an early fetch fires WITHOUT the Bearer token, 401s, and
+  // the data ends up loaded twice. _authReady resolves once getSession()/
+  // onAuthStateChange has settled the token (present or confirmed absent).
+  let _settleAuthReady;
+  let _authSettled = false;
+  const _authReady = new Promise(function(resolve) { _settleAuthReady = resolve; });
+  function _markAuthReady() {
+    if (_authSettled) return;
+    _authSettled = true;
+    _settleAuthReady();
+  }
+  // Safety net: never hang the app if Supabase never resolves.
+  setTimeout(_markAuthReady, 4000);
+
+  function _handle429(res) {
+    // Central 429 handling: show a clear "please wait N seconds" message instead of a
+    // generic error. Deferred (setTimeout 0) so it wins over any generic message a
+    // caller's own catch-block sets synchronously right after the request rejects.
+    if (res.status === 429) {
+      let wait = parseInt(res.headers.get('Retry-After') || '', 10);
+      if (!Number.isFinite(wait) || wait <= 0) wait = 60;
+      const msg = (typeof tf === 'function')
+        ? tf('rate-limit', { n: wait })
+        : ('Zu viele Anfragen – bitte warte ' + wait + ' Sekunden und versuche es erneut.');
+      setTimeout(function() { if (typeof setStatus === 'function') setStatus(msg, 'error'); }, 0);
+    }
+    return res;
+  }
+
   // Intercept all same-origin fetch calls to add Bearer token + handle rate limits (HTTP 429).
   const _origFetch = window.fetch.bind(window);
   window.fetch = function(url, options = {}) {
-    if (_authToken && typeof url === 'string' && !/^https?:\/\//.test(url)) {
-      options = { ...options, headers: { 'Authorization': 'Bearer ' + _authToken, ...(options.headers || {}) } };
-    }
-    return _origFetch(url, options).then(function(res) {
-      // Central 429 handling: show a clear "please wait N seconds" message instead of a
-      // generic error. Deferred (setTimeout 0) so it wins over any generic message a
-      // caller's own catch-block sets synchronously right after the request rejects.
-      if (res.status === 429) {
-        let wait = parseInt(res.headers.get('Retry-After') || '', 10);
-        if (!Number.isFinite(wait) || wait <= 0) wait = 60;
-        const msg = (typeof tf === 'function')
-          ? tf('rate-limit', { n: wait })
-          : ('Zu viele Anfragen – bitte warte ' + wait + ' Sekunden und versuche es erneut.');
-        setTimeout(function() { if (typeof setStatus === 'function') setStatus(msg, 'error'); }, 0);
-      }
-      return res;
+    const sameOrigin = typeof url === 'string' && !/^https?:\/\//.test(url);
+    if (!sameOrigin) return _origFetch(url, options).then(_handle429);
+    // Defer until auth has settled so we never send an API request without the token.
+    return _authReady.then(function() {
+      const opts = _authToken
+        ? { ...options, headers: { 'Authorization': 'Bearer ' + _authToken, ...(options.headers || {}) } }
+        : options;
+      return _origFetch(url, opts).then(_handle429);
     });
   };
 
@@ -3742,6 +3764,7 @@
   _sb.auth.onAuthStateChange((event, session) => {
     _authToken = session ? session.access_token : null;
     if (session) {
+      _markAuthReady();  // token is set → release any queued API calls
       _hideAuthScreen();
       _updateAvatar(session.user);
       // Profilbutton NUR auf dem Setup-Screen einblenden — im Workspace säße er
@@ -3760,6 +3783,7 @@
     const session = result.data && result.data.session;
     _authToken = session ? session.access_token : null;
     if (session) {
+      _markAuthReady();  // existing session restored → release queued API calls
       _hideAuthScreen();
       _updateAvatar(session.user);
       if (document.getElementById('setup-screen')?.classList.contains('active'))
@@ -3770,6 +3794,9 @@
       const _oauthParams = new URLSearchParams(window.location.search);
       const _isOAuthRedirect = _oauthParams.has('code') || window.location.hash.includes('access_token');
       if (!_isOAuthRedirect) {
+        // No session and not an OAuth redirect → we'll bounce to the landing page.
+        // Settle auth so any in-flight API calls resolve instead of hanging.
+        _markAuthReady();
         window.location.href = '/';
       }
       // If OAuth redirect: keep the loading spinner; onAuthStateChange handles the rest.
@@ -8101,7 +8128,19 @@ function renderDashTab(tab) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function loadModules() {
+// Coalesce overlapping loadModules() calls. On boot it is triggered from BOTH
+// the language init and the Supabase auth-state-change; without this guard that
+// double-loads the dashboard, /modules and every per-module /roadmap (the old
+// 401-before-token used to hide the second run). Concurrent callers share one
+// in-flight run; later, non-overlapping calls (after upload/delete) run fresh.
+let _loadModulesPromise = null;
+function loadModules() {
+  if (_loadModulesPromise) return _loadModulesPromise;
+  _loadModulesPromise = _loadModulesImpl().finally(function() { _loadModulesPromise = null; });
+  return _loadModulesPromise;
+}
+
+async function _loadModulesImpl() {
   if (typeof updateGreeting === 'function') updateGreeting();
   loadDashboardPanel();
   try {
@@ -8530,6 +8569,12 @@ function resetSteps(containerId) {
   });
 }
 
+function isActionRequest(text) {
+  return /\b(erstell\w*|generier\w*|öffne\w*|oeffne\w*|wechsel\w*|zeig\w*)\b/i.test(text)
+    || /\bmach\s+(mir\b|einen?\b|eine?\b|ein\b)/i.test(text)
+    || /\b(roadmap|tagesplan|lösungsblatt|loesungsblatt|probeklausur)\b/i.test(text);
+}
+
 async function sendQuestion() {
   const question = input.value.trim();
   if (!question || !state.moduleName) return;
@@ -8577,15 +8622,14 @@ async function sendQuestion() {
   }
 
   try {
-    const res = await fetch('/chat/stream', {
+    const useOrchestrator = !!pendingProposal || isActionRequest(question);
+    const res = await fetch(useOrchestrator ? '/chat/stream' : '/ask/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: question,
-        module_name: state.moduleName,
-        chat_history: state.chatHistory.slice(-12),
-        pending_proposal: pendingProposal || null,
-      }),
+      body: JSON.stringify(useOrchestrator
+        ? { message: question, module_name: state.moduleName, chat_history: state.chatHistory.slice(-12), pending_proposal: pendingProposal || null }
+        : { question: question, module_name: state.moduleName, chat_history: state.chatHistory.slice(-12) }
+      ),
     });
     if (!res.ok) throw new Error(res.statusText);
     const reader = res.body.getReader();

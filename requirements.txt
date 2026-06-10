@@ -14,10 +14,10 @@ python-multipart>=0.0.9
 uvicorn>=0.29.0
 slowapi>=0.1.9
 
-# AI and vector store
+# AI and vector store (pgvector via Supabase — no local chromadb needed)
 openai>=1.0.0
 anthropic>=0.40.0
-chromadb>=0.4.0
 
-# Testing
-pytest>=7.4.0
+# NOTE: dev/test deps (pytest, …) live in requirements-dev.txt and are NOT
+# installed in production. chromadb was removed — the live store is pgvector
+# (app/vectorstore/pgvector_store.py); the legacy chroma_db module is unused.

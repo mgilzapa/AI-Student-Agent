@@ -250,6 +250,12 @@ def ask_question(config: Dict[str, Any], question: str) -> None:
 
 
 if __name__ == "__main__":
+    # The CLI pipeline runs without an HTTP request context, so permit the data
+    # layer to use the env user-id + service-role client. (In the API server this
+    # stays OFF, so a lost request context fails closed instead of leaking.)
+    from app.storage.supabase_client import allow_fallback_user
+    allow_fallback_user(True)
+
     parser = argparse.ArgumentParser(description="AI Study Agent - Sprint 2 RAG Pipeline")
     parser.add_argument("--query", type=str, help="Ask a question against indexed study material")
     parser.add_argument("--index-only", action="store_true", help="Only index chunks, skip ingestion")

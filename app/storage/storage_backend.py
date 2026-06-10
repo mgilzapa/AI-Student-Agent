@@ -31,20 +31,30 @@ def read_text(path: str) -> Optional[str]:
 
 
 def write_text(path: str, content: str) -> None:
-    """Upload a text file to Supabase Storage (upsert)."""
+    """Upload a text file to Supabase Storage (overwriting any existing object).
+
+    Under the user-scoped (RLS-enforcing) client there is no storage UPDATE
+    policy — only insert/select/delete — so overwriting an existing object is
+    done as delete-then-insert, which stays within the existing policies.
+    """
     full = _full_path(path)
     data = content.encode("utf-8")
+    store = get_client().storage.from_(BUCKET)
     try:
-        get_client().storage.from_(BUCKET).upload(
-            full, data, {"content-type": "text/plain; charset=utf-8", "x-upsert": "true"}
-        )
+        store.upload(full, data, {"content-type": "text/plain; charset=utf-8", "x-upsert": "true"})
+        return
     except Exception:
-        # Some versions use update() for existing files
-        try:
-            get_client().storage.from_(BUCKET).update(full, data, {"content-type": "text/plain"})
-        except Exception as exc2:
-            logger.error("storage write_text failed for %s: %s", path, exc2)
-            raise
+        pass
+    # Overwrite path: drop the existing object (delete is allowed) then insert.
+    try:
+        store.remove([full])
+    except Exception:
+        pass
+    try:
+        store.upload(full, data, {"content-type": "text/plain; charset=utf-8"})
+    except Exception as exc:
+        logger.error("storage write_text failed for %s: %s", path, exc)
+        raise
 
 
 def delete(path: str) -> bool:

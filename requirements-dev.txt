@@ -1,0 +1,8 @@
+# Development / test dependencies — NOT installed in production.
+# Install locally with:  pip install -r requirements.txt -r requirements-dev.txt
+-r requirements.txt
+
+pytest>=7.4.0
+
+# Optional: re-enable the legacy ChromaDB vector store for experiments.
+# chromadb>=0.4.0

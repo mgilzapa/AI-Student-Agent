@@ -151,16 +151,30 @@ def _parse_quiz(raw_text: str) -> List[Dict[str, Any]]:
     text = re.sub(r"^```(?:json)?\s*\n?", "", text)
     text = re.sub(r"\n?```\s*$", "", text).strip()
 
+    # LaTeX inside JSON strings (e.g. \Omega, \mathcal) uses backslash sequences
+    # that are invalid JSON escapes. Replace them with double-backslash so
+    # json.loads decodes them as literal backslash + letter (e.g. \Omega → \\Omega).
+    text = re.sub(r'\\(?!["\\/bfnrtu]|u[0-9a-fA-F]{4})', r'\\\\', text)
+
+    data = None
+    parse_error: Optional[str] = None
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
-        # Model may have added trailing prose after the closing brace — extract just the object.
+    except json.JSONDecodeError as exc:
+        parse_error = f"json.loads failed at pos {exc.pos}: {exc.msg}"
         extracted = _extract_first_json_object(text)
         try:
             data = json.loads(extracted)
-        except Exception:
-            return []
-    except Exception:
+            parse_error = None
+        except Exception as exc2:
+            parse_error = f"{parse_error} | fallback failed: {exc2}"
+    except Exception as exc:
+        parse_error = str(exc)
+
+    if data is None:
+        import sys
+        print(f"[quiz] parse failure: {parse_error}", file=sys.stderr)
+        print(f"[quiz] raw text snippet: {text[:300]!r}", file=sys.stderr)
         return []
 
     if isinstance(data, dict):
@@ -275,6 +289,8 @@ def generate(
     questions = _parse_quiz(raw)
 
     if not questions:
+        import sys
+        print(f"[quiz] FULL RAW RESPONSE:\n{raw}", file=sys.stderr)
         raise ValueError(
             f"Quiz-Generierung lieferte keine auswertbaren Fragen für '{name}'. "
             f"Antwort-Anfang: {raw[:120]!r}"

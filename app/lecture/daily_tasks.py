@@ -85,6 +85,31 @@ def _save_task_history(module_name: str, history: List[Dict[str, Any]]) -> None:
     sb.write_text(f"{slug}/task_history.json", json.dumps(history, ensure_ascii=False, indent=2))
 
 
+def load_dashboard_bundle(module_name: str, slug: Optional[str] = None):
+    """Load everything the dashboard needs for one module in a single pass.
+
+    Resolves the slug ONCE (load_plan + load_task_history would otherwise each
+    call _slug_for → mp.load again), then reads the plan and history. Returns
+    ``(parsed_plan_or_None, history_list)``. Designed to be run per module in a
+    worker thread so the dashboard can fan the modules out concurrently.
+
+    ``slug`` may be supplied by the caller (resolved in bulk via
+    ``module_profile.all_slugs()``) to skip the per-module ``mp.load`` entirely.
+    """
+    from app.storage import storage_backend as sb
+    slug = slug or _slug_for(module_name)
+    md = sb.read_text(f"{slug}/daily_plan.md")
+    parsed = parse_plan(md) if md else None
+    raw = sb.read_text(f"{slug}/task_history.json")
+    history: List[Dict[str, Any]] = []
+    if raw:
+        try:
+            history = json.loads(raw)
+        except Exception:
+            history = []
+    return parsed, history
+
+
 def record_completed_task(
     module_name: str, topic_id: str, topic_name: str, task_text: str
 ) -> None:

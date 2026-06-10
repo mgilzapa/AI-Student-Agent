@@ -68,6 +68,35 @@ def load(modul_name: str) -> Optional[dict]:
     return None
 
 
+def all_slugs() -> dict:
+    """Return a {name/alias(lower) → slug} map for the current user in ONE query.
+
+    Lets batch callers (e.g. the dashboard) resolve many module slugs without
+    calling load() — which re-fetches the whole modules table — once per module.
+    """
+    uid = get_user_id()
+    try:
+        rows = (
+            get_client()
+            .table("modules")
+            .select("name, slug, aliases")
+            .eq("user_id", uid)
+            .execute()
+        ).data or []
+    except Exception:
+        return {}
+    out: dict = {}
+    for row in rows:
+        slug = row.get("slug", "")
+        name = row.get("name", "")
+        if name:
+            out[name] = slug
+            out[name.lower()] = slug
+        for alias in (row.get("aliases") or []):
+            out[alias.lower()] = slug
+    return out
+
+
 def save(profile: dict) -> None:
     """Upsert module profile to Supabase."""
     uid = get_user_id()

@@ -2,6 +2,7 @@
 Study Agent FastAPI backend.
 """
 import asyncio
+import contextvars
 import json
 import glob as _glob
 import hashlib
@@ -36,7 +37,11 @@ from app.rag.query_service import create_query_service
 from app.rag.advanced_rag import ask_advanced
 from app.utils.config import load_config
 from app.vectorstore.pgvector_store import PgVectorStore
-from app.storage.supabase_client import get_client as _supa_client, get_user_id as _supa_uid
+from app.storage.supabase_client import (
+    get_client as _supa_client,
+    get_user_id as _supa_uid,
+    allow_fallback_user as _allow_fallback_user,
+)
 from app.lecture import module_profile as mp
 from app.lecture import roadmap as rm
 from app.lecture import exam_analyzer as ea
@@ -119,54 +124,88 @@ config = load_config()
 RAW_DIR = config["raw_path"]
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
+# CORS origins are env-driven: set FRONTEND_ORIGIN to your deployed frontend URL
+# (comma-separated for several) in production. Defaults to "*" so local dev keeps
+# working out of the box. Credentials are intentionally NOT allowed — auth rides
+# in the Authorization header (Bearer token), never in cookies, so a wildcard
+# origin stays safe here.
+_cors_origins = [o.strip() for o in os.getenv("FRONTEND_ORIGIN", "*").split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ── Auth middleware ────────────────────────────────────────────────────────────
-# Auth is always enabled when Supabase is configured.
-# Token verification is delegated to Supabase's own API (GET /auth/v1/user)
-# so it works regardless of which JWT algorithm the project uses (HS256, ES256, …).
+# Auth is enforced whenever Supabase is configured. Token verification is
+# delegated to Supabase's own API (GET /auth/v1/user) so it works regardless of
+# which JWT algorithm the project uses (HS256, ES256, …).
+#
+# Auth is only disabled when EXPLICITLY opted in via DEV_NO_AUTH *and* Supabase
+# is genuinely absent. A deploy that simply forgot SUPABASE_* must fail closed
+# (503) — never silently fall through to a shared, unauthenticated fallback user.
 _SUPABASE_CONFIGURED = bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_KEY"))
-_AUTH_DISABLED = not _SUPABASE_CONFIGURED
+_DEV_NO_AUTH = os.getenv("DEV_NO_AUTH", "0").lower() in ("1", "true", "yes")
+_AUTH_DISABLED = _DEV_NO_AUTH and not _SUPABASE_CONFIGURED
+
+# In the explicit dev-no-auth mode there is no per-request JWT, so the data layer
+# must be allowed to fall back to the env user + admin client. In every other
+# mode the fallback stays OFF so a lost request context fails closed.
+if _AUTH_DISABLED:
+    _allow_fallback_user(True)
 
 
 @app.middleware("http")
 async def _auth_middleware(request: Request, call_next):
-    from app.storage.supabase_client import set_request_user_id, get_client
+    from app.storage.supabase_client import (
+        set_request_user_id,
+        set_request_token,
+        get_admin_client,
+        close_request_client,
+    )
 
     # Landing page, app shell, upgrade page and logo are always public (serve without a token)
     if request.url.path in ("/", "/app", "/upgrade", "/logo.png"):
         return await call_next(request)
 
-    # Dev mode: Supabase not configured — use fixed fallback user
-    if _AUTH_DISABLED:
-        set_request_user_id(os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001"))
-        return await call_next(request)
-
-    # Credentials are only accepted in the Authorization header — never in the URL
-    # query string, which would leak the token into access logs, browser history
-    # and Referer headers. Browser-native loads (PDF iframe etc.) fetch the bytes
-    # via the auth'd fetch() wrapper and render them from a blob: URL.
-    auth = request.headers.get("Authorization", "")
-    token = auth[7:] if auth.startswith("Bearer ") else ""
-    if not token:
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
     try:
-        # Ask Supabase to verify the token — works with any JWT algorithm.
-        # Uses the service key (already set) to call GET /auth/v1/user.
-        loop = asyncio.get_running_loop()
-        response = await loop.run_in_executor(None, lambda: get_client().auth.get_user(token))
-        if not (response and response.user):
-            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
-        set_request_user_id(response.user.id)
-    except Exception as exc:
-        return JSONResponse(status_code=401, content={"detail": f"Invalid token: {exc}"})
+        # Dev mode (explicit opt-in, Supabase absent): use the fixed fallback user.
+        if _AUTH_DISABLED:
+            set_request_user_id(os.getenv("SUPABASE_USER_ID", "00000000-0000-0000-0000-000000000001"))
+            return await call_next(request)
 
-    return await call_next(request)
+        # Misconfiguration (Supabase env missing, dev-no-auth NOT requested):
+        # fail closed instead of running unauthenticated.
+        if not _SUPABASE_CONFIGURED:
+            return JSONResponse(status_code=503, content={"detail": "Auth backend not configured"})
+
+        # Credentials are only accepted in the Authorization header — never in the URL
+        # query string, which would leak the token into access logs, browser history
+        # and Referer headers. Browser-native loads (PDF iframe etc.) fetch the bytes
+        # via the auth'd fetch() wrapper and render them from a blob: URL.
+        auth = request.headers.get("Authorization", "")
+        token = auth[7:] if auth.startswith("Bearer ") else ""
+        if not token:
+            return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+        try:
+            # Verify the token via Supabase using the service-role admin client
+            # (GET /auth/v1/user). Works with any JWT algorithm.
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(None, lambda: get_admin_client().auth.get_user(token))
+            if not (response and response.user):
+                return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+            # Scope every downstream query/storage call to this user. The token is
+            # stashed so get_client() builds an RLS-enforcing, user-scoped client.
+            set_request_user_id(response.user.id)
+            set_request_token(token)
+        except Exception:
+            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+
+        return await call_next(request)
+    finally:
+        # Release the per-request user client (and clear its context).
+        close_request_client()
 
 
 # ── Body-size guard ──────────────────────────────────────────────────────────
@@ -1540,7 +1579,10 @@ async def upload_module(
         storage_path = f"{uid}/{slug}/{rel_str}"
         file_type = save_rel.suffix.lower().lstrip(".")
 
-        # Upload to Supabase Storage raw-files bucket
+        # Upload to Supabase Storage raw-files bucket. Under the user-scoped
+        # (RLS-enforcing) client there is no storage UPDATE policy — only
+        # insert/select/delete — so overwriting an existing object is done as
+        # delete-then-insert, which stays within the existing policies.
         try:
             supa.storage.from_("raw-files").upload(
                 storage_path, content,
@@ -1548,7 +1590,11 @@ async def upload_module(
             )
         except Exception:
             try:
-                supa.storage.from_("raw-files").update(
+                try:
+                    supa.storage.from_("raw-files").remove([storage_path])
+                except Exception:
+                    pass
+                supa.storage.from_("raw-files").upload(
                     storage_path, content, {"content-type": "application/octet-stream"}
                 )
             except Exception as exc:
@@ -1584,8 +1630,14 @@ async def upload_module(
     if not saved_paths:
         raise HTTPException(status_code=400, detail="Keine unterstuetzten Dateien hochgeladen.")
 
+    # Each worker runs in its own copy of the current request context so any
+    # Supabase access inside process_document is scoped to this user (the
+    # ContextVars holding the user id / JWT are otherwise not visible to threads).
     with ThreadPoolExecutor(max_workers=min(len(saved_paths), 2)) as pool:
-        futures = {pool.submit(process_document, path, config["processed_path"], True, module_name=clean_module): path for path in saved_paths}
+        futures = {}
+        for path in saved_paths:
+            ctx = contextvars.copy_context()
+            futures[pool.submit(ctx.run, process_document, path, config["processed_path"], True, clean_module)] = path
         results = [f.result() for f in as_completed(futures)]
     index_chunks(config, module_name=clean_module)
 
@@ -2218,18 +2270,42 @@ def exam_delete(module_name: str, n: int):
 # ─────────────────────── Daily tasks endpoints ────────────────────────────────
 
 @app.get("/daily/dashboard")
-def daily_dashboard():
+async def daily_dashboard():
     """Aggregated dashboard: active plans per module + last 4 completed tasks across all modules."""
     modules = _all_module_names()
+
+    # Pre-build the per-request user client (and its sub-clients) so the parallel
+    # workers share one connection pool instead of each racing to build its own.
+    # Best-effort: a pre-warm failure must not break the endpoint.
+    if modules:
+        try:
+            _client = _supa_client()
+            _ = (_client.postgrest, _client.storage)
+        except Exception:
+            pass
+
+    # Resolve every module's slug in ONE query up front, instead of each
+    # per-module bundle calling mp.load (a full modules-table fetch) again.
+    slug_map = await asyncio.to_thread(mp.all_slugs) if modules else {}
+
+    # Fan the per-module storage reads out concurrently. supabase-py is sync, so
+    # each module's bundle runs in a worker thread (the request context — user id
+    # + JWT — is copied into each thread by asyncio.to_thread). This turns the old
+    # N sequential round-trips into ~1 wall-clock round-trip.
+    bundles = (
+        await asyncio.gather(*[
+            asyncio.to_thread(dt.load_dashboard_bundle, m, slug_map.get(m) or slug_map.get(m.lower()))
+            for m in modules
+        ])
+        if modules else []
+    )
+
     today_plans = []
     all_completed = []
     total_hours = 0.0
 
-    for module_name in modules:
-        clean = sanitize_module_name(module_name)
-        md = dt.load_plan(clean)
-        if md:
-            parsed = dt.parse_plan(md)
+    for module_name, (parsed, history) in zip(modules, bundles):
+        if parsed:
             today_plans.append({
                 "module": module_name,
                 "daily_hours": parsed.get("daily_hours", 0.0),
@@ -2246,7 +2322,7 @@ def daily_dashboard():
                 "topics": [],
                 "has_plan": False,
             })
-        for entry in dt.load_task_history(clean):
+        for entry in history:
             all_completed.append({
                 "module": module_name,
                 "task_text": entry.get("task_text", ""),
