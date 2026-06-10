@@ -118,6 +118,13 @@
     scroll-behavior: smooth;
     background: var(--bg);
   }
+  [data-theme="dark"] #setup-screen {
+    background:
+      radial-gradient(ellipse 70% 45% at 80% 5%,  rgba(249,115,22,0.10), transparent 65%),
+      radial-gradient(ellipse 50% 40% at 5%  70%,  rgba(249,115,22,0.07), transparent 60%),
+      radial-gradient(ellipse 35% 30% at 50% 100%, rgba(251,191,36,0.05), transparent 55%),
+      var(--bg);
+  }
   .setup-header-outer { width: 100%; max-width: 1440px; }
   #setup-screen::-webkit-scrollbar { width: 4px; }
   #setup-screen::-webkit-scrollbar-track { background: transparent; }

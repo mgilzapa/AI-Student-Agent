@@ -166,7 +166,7 @@ async def _auth_middleware(request: Request, call_next):
     )
 
     # Landing page, app shell, upgrade page and logo are always public (serve without a token)
-    if request.url.path in ("/", "/app", "/upgrade", "/logo.png"):
+    if request.url.path in ("/", "/app", "/upgrade", "/logo.png", "/logo_white.png"):
         return await call_next(request)
 
     try:
@@ -558,6 +558,11 @@ def serve_upgrade():
 @app.get("/logo.png")
 def serve_logo():
     return FileResponse(Path(__file__).parent / "static" / "logo.png", media_type="image/png")
+
+
+@app.get("/logo_white.png")
+def serve_logo_white():
+    return FileResponse(Path(__file__).parent / "static" / "logo_white.png", media_type="image/png")
 
 
 @app.post("/ask")
