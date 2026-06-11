@@ -3,14 +3,17 @@ Study Agent FastAPI backend.
 """
 import asyncio
 import contextvars
+import io
 import json
 import glob as _glob
 import hashlib
+import mimetypes
 import os
 import re
 import shutil
 import tempfile
 import traceback
+import zipfile
 from datetime import date as _date
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -20,6 +23,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from anthropic import Anthropic
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -53,9 +57,22 @@ from app.chat import orchestrator as chat_orchestrator
 from app.chat import tools as chat_tools
 
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = FastAPI(title="Study Agent")
+
+# Ensure woff2 gets the right MIME type — otherwise StaticFiles serves it as
+# text/plain, which the global "X-Content-Type-Options: nosniff" header makes the
+# browser reject ("not a supported font type"). Must be set before the mount.
+mimetypes.add_type("font/woff2", ".woff2")
+
+# Self-hosted fonts (woff2 + fonts.css) — served locally so the browser never
+# contacts Google's font servers (DSGVO: no user IP sent to the US on page load).
+app.mount(
+    "/fonts",
+    StaticFiles(directory=Path(__file__).parent / "static" / "fonts"),
+    name="fonts",
+)
 
 # ── Rate limiting (slowapi) ──────────────────────────────────────────────────
 # Keyed per authenticated user (the Supabase user-id the auth middleware stores
@@ -67,9 +84,9 @@ RL_HEAVY = os.getenv("RATELIMIT_HEAVY", "5/minute")            # heavy: generati
 RL_HEAVY_DAILY = os.getenv("RATELIMIT_HEAVY_DAILY", "50/day")  # shared per-user daily budget
 _RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", "no")
 
-# Chat orchestrator model: fast & cheap Haiku for routing + parameter extraction.
-# Bump to claude-sonnet-4-6 via env if tool-selection quality is insufficient.
-CHAT_MODEL = os.getenv("CHAT_MODEL", "claude-haiku-4-5")
+# Chat orchestrator model. Defaults to DeepSeek via Anthropic-compatible endpoint.
+# Override via env: CHAT_MODEL=claude-haiku-4-5 to fall back to Anthropic Haiku.
+CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-v4-flash")
 
 # ── Payload size limits ──────────────────────────────────────────────────────
 # Guards against memory-exhaustion DoS (huge uploads) and runaway LLM cost
@@ -165,8 +182,13 @@ async def _auth_middleware(request: Request, call_next):
         close_request_client,
     )
 
-    # Landing page, app shell, upgrade page and logo are always public (serve without a token)
-    if request.url.path in ("/", "/app", "/upgrade", "/logo.png", "/logo_white.png"):
+    # Landing page, app shell, upgrade page, legal pages and logo are always
+    # public (serve without a token — legal pages MUST be reachable pre-login).
+    # Self-hosted fonts under /fonts/ must load on the public/legal pages too.
+    if request.url.path in (
+        "/", "/app", "/upgrade", "/logo.png", "/logo_white.png",
+        "/impressum", "/datenschutz", "/agb",
+    ) or request.url.path.startswith("/fonts/"):
         return await call_next(request)
 
     try:
@@ -226,6 +248,60 @@ async def _limit_body_size(request: Request, call_next):
         except ValueError:
             return JSONResponse(status_code=400, content={"detail": "Ungültiger Content-Length-Header."})
     return await call_next(request)
+
+
+# ── Security headers ───────────────────────────────────────────────────────────
+# Defence-in-depth response headers on every response. Toggle off via
+# SECURITY_HEADERS_ENABLED=0; override the CSP wholesale via CONTENT_SECURITY_POLICY.
+_SECURITY_HEADERS_ENABLED = os.getenv("SECURITY_HEADERS_ENABLED", "1").lower() not in ("0", "false", "no")
+
+
+def _build_csp() -> str:
+    """Content-Security-Policy tuned to what the frontend actually loads:
+    self-hosted fonts, the jsDelivr-hosted Supabase JS SDK and KaTeX
+    (script + stylesheet + math webfonts), and the project's own Supabase
+    origin for client-side auth/realtime. 'unsafe-inline' is required
+    because the UI relies on many inline <script>/<style> blocks and onclick
+    handlers; the policy still restricts *external* origins."""
+    supa = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    supa_connect = ""
+    if supa.startswith("https://"):
+        host = supa[len("https://"):]
+        supa_connect = f" https://{host} wss://{host}"
+    return (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "font-src 'self' https://cdn.jsdelivr.net; "
+        "img-src 'self' data: blob:; "
+        f"connect-src 'self'{supa_connect}; "
+        "frame-src 'self' blob:; "
+        "frame-ancestors 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+
+
+_CSP = os.getenv("CONTENT_SECURITY_POLICY", "").strip() or _build_csp()
+
+
+@app.middleware("http")
+async def _security_headers(request: Request, call_next):
+    response = await call_next(request)
+    if not _SECURITY_HEADERS_ENABLED:
+        return response
+    h = response.headers
+    h.setdefault("X-Content-Type-Options", "nosniff")
+    h.setdefault("X-Frame-Options", "SAMEORIGIN")
+    h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    h.setdefault("Permissions-Policy", "camera=(), geolocation=(), microphone=(self), browsing-topics=()")
+    h.setdefault("Content-Security-Policy", _CSP)
+    # HSTS only over HTTPS (Railway terminates TLS and forwards X-Forwarded-Proto).
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    if proto == "https":
+        h.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+    return response
 
 
 async def _read_capped(upload: UploadFile, max_bytes: int = MAX_UPLOAD_FILE_BYTES) -> bytes:
@@ -555,6 +631,29 @@ def serve_upgrade():
     return _inject_supabase(html_path.read_text(encoding="utf-8"))
 
 
+def _serve_static_html(name: str) -> HTMLResponse:
+    html_path = Path(__file__).parent / "static" / name
+    return _inject_supabase(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/impressum", response_class=HTMLResponse)
+def serve_impressum():
+    """Impressum (§ 5 DDG) — public, no auth required."""
+    return _serve_static_html("impressum.html")
+
+
+@app.get("/datenschutz", response_class=HTMLResponse)
+def serve_datenschutz():
+    """Datenschutzerklärung (DSGVO Art. 13/14) — public, no auth required."""
+    return _serve_static_html("datenschutz.html")
+
+
+@app.get("/agb", response_class=HTMLResponse)
+def serve_agb():
+    """AGB / Nutzungsbedingungen — public, no auth required."""
+    return _serve_static_html("agb.html")
+
+
 @app.get("/logo.png")
 def serve_logo():
     return FileResponse(Path(__file__).parent / "static" / "logo.png", media_type="image/png")
@@ -585,8 +684,14 @@ async def ask(request: Request, body: Question):
 @limiter.limit(RL_CHAT)
 async def ask_stream(request: Request, body: Question):
     async def event_stream():
-        async for raw in ask_advanced(body.question, body.module_name, rag, body.chat_history):
-            yield f"data: {raw}\n\n"
+        try:
+            async for raw in ask_advanced(body.question, body.module_name, rag, body.chat_history):
+                yield f"data: {raw}\n\n"
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).exception("ask/stream failed")
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -660,7 +765,13 @@ def _build_chat_system_prompt(active: str, all_modules: List[str], status: dict,
         "  will ('zeig mir alle Dateien', 'welche Dokumente gibt es'). Fragen wie 'wo finde ich "
         "  etwas zu Thema X' oder 'in welcher Datei steht Y' sind Wissensfragen → KEIN Tool.\n"
         "- Für normale Wissensfragen rufst du KEIN Tool auf; diese werden separat beantwortet.\n"
-        "- Antworte immer auf Deutsch."
+        "- Antworte immer auf Deutsch.\n"
+        "- Antworte standardmäßig kurz und präzise (2-4 Sätze). Nur wenn der Nutzer "
+        "explizit nach Details, einer ausführlichen Erklärung oder einem Überblick fragt, "
+        "antworte ausführlich.\n"
+        "- Strukturiere längere Antworten mit Markdown: ## Überschriften, "
+        "**Fettschrift** für Schlüsselbegriffe, Listen für Aufzählungen. "
+        "Mathematische Formeln inline mit $...$ oder abgesetzt mit $$...$$."
     )
 
 
@@ -1696,7 +1807,7 @@ Vorlesung:
 {text}"""
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="claude-haiku-4-5",
         messages=[{"role": "user", "content": prompt}]
     )
 
@@ -2531,3 +2642,126 @@ def topic_quiz_complete(module_name: str, topic_id: str):
         raise HTTPException(status_code=400, detail=str(exc))
     rm.save_roadmap_md(clean, md)
     return {"success": True}
+
+
+# ─────────────────────── Account: Datenexport & -löschung (DSGVO) ─────────────
+# Self-service for the data-subject rights every EU user has: Art. 15/20 (access
+# & portability → export) and Art. 17 (erasure → deletion). Both run strictly
+# scoped to the authenticated user — never an admin-wide operation.
+
+# Every per-user table carries a user_id column except `settings`, whose PK *is*
+# the user_id. The export filters all of them by user_id; deletion relies on the
+# ON DELETE CASCADE from auth.users (see SUPABASE.md) plus a manual storage purge.
+_EXPORT_TABLES = ["modules", "files", "documents", "chunks", "summaries", "exams", "settings"]
+
+
+@app.get("/account/export")
+def account_export(request: Request):
+    """DSGVO Art. 15 & 20: download all of the user's data as one ZIP.
+
+    Contains ``data.json`` (every DB row belonging to the user, across all
+    tables) plus ``files/<bucket>/…`` (the raw uploads and generated artifacts
+    from both storage buckets). Embedding vectors are stripped from ``chunks`` —
+    they're large and not human-meaningful, the chunk_text is included instead.
+    """
+    from app.storage import storage_backend as sb
+
+    uid = _supa_uid()
+    supa = _supa_client()
+
+    data: dict = {
+        "user_id": uid,
+        "exported_at": _date.today().isoformat(),
+        "tables": {},
+    }
+    for table in _EXPORT_TABLES:
+        try:
+            rows = supa.table(table).select("*").eq("user_id", uid).execute().data or []
+        except Exception as exc:
+            rows = [{"_error": str(exc)}]
+        if table == "chunks":
+            for r in rows:
+                r.pop("embedding", None)  # drop 1536-dim vectors from the export
+        data["tables"][table] = rows
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("data.json", json.dumps(data, ensure_ascii=False, indent=2, default=str))
+        zf.writestr(
+            "README.txt",
+            "Veexa Datenexport (DSGVO Art. 15/20)\n\n"
+            "data.json  — alle zu deinem Konto gespeicherten Datenbank-Eintraege.\n"
+            "files/      — deine hochgeladenen Originaldateien und generierten Inhalte.\n",
+        )
+        try:
+            objects = sb.list_all_user_objects()
+        except Exception:
+            objects = {}
+        for bucket, paths in objects.items():
+            for full in paths:
+                content = sb.download_object(bucket, full)
+                if content is None:
+                    continue
+                rel = full[len(uid) + 1:] if full.startswith(uid + "/") else full
+                zf.writestr(f"files/{bucket}/{rel}", content)
+
+    zip_bytes = buf.getvalue()
+    fname = f"veexa-export-{_date.today().isoformat()}.zip"
+    return StreamingResponse(
+        iter([zip_bytes]),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
+@app.delete("/account")
+def account_delete(request: Request):
+    """DSGVO Art. 17: permanently delete the account and ALL associated data.
+
+    Order matters: purge storage *first* (user-scoped client, so it can only
+    touch the caller's own ``{uid}/`` tree), then delete the Supabase auth user
+    via the admin client — its ON DELETE CASCADE on every table
+    (modules/files/documents/chunks/summaries/exams/settings) removes all
+    remaining DB rows. Irreversible; the frontend gates it behind a typed
+    confirmation and logs the user out afterwards.
+    """
+    from app.storage import storage_backend as sb
+    from app.storage.supabase_client import get_admin_client
+
+    uid = _supa_uid()
+
+    # 1) Storage: empty both buckets under {uid}/ (RLS-scoped to this user).
+    storage_removed = 0
+    try:
+        storage_removed = sb.purge_user_storage()
+    except Exception as exc:
+        print(f"[account_delete] storage purge failed: {exc}")
+
+    # 2) pgvector/chunks: explicit user-scoped clear (belt-and-suspenders — the
+    #    cascade below also covers it, but this guarantees vectors are gone even
+    #    if the auth delete later fails).
+    try:
+        vector_store.clear()
+    except Exception as exc:
+        print(f"[account_delete] pgvector clear failed: {exc}")
+
+    # 3) Auth user → cascade wipes every remaining DB row. Admin client required.
+    auth_deleted = False
+    try:
+        get_admin_client().auth.admin.delete_user(uid)
+        auth_deleted = True
+    except Exception as exc:
+        print(f"[account_delete] auth user delete failed: {exc}")
+        # Fallback: at least delete the DB rows explicitly so no data lingers,
+        # even though the login record could not be removed.
+        for table in ["chunks", "documents", "summaries", "exams", "files", "settings", "modules"]:
+            try:
+                _supa_client().table(table).delete().eq("user_id", uid).execute()
+            except Exception as inner:
+                print(f"[account_delete] fallback delete {table} failed: {inner}")
+
+    return {
+        "success": True,
+        "auth_user_deleted": auth_deleted,
+        "storage_objects_removed": storage_removed,
+    }

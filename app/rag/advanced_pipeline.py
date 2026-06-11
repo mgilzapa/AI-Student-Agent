@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -12,14 +13,31 @@ logger = logging.getLogger(__name__)
 
 _anthropic: AsyncAnthropic | None = None
 
-_SYNTH_SYSTEM_PROMPT = (
-    "Du bist ein Lernassistent. Dir werden Textausschnitte aus Studienunterlagen gegeben.\n"
-    "Beantworte die Frage des Studenten basierend auf diesen Ausschnitten.\n"
-    "Du darfst Zusammenhänge und Verbindungen zwischen Konzepten ableiten, wenn sie aus\n"
-    "dem Kontext logisch folgen. Erfinde keine Fakten. Wenn du etwas ableitest, mache das\n"
-    'transparent ("Aus dem Kontext lässt sich schließen, dass...").\n'
-    "Schreibe auf Deutsch. Mathematische Formeln in LaTeX."
-)
+_SYNTH_SYSTEM_PROMPT = """Du bist ein Lernassistent. Dir werden Textausschnitte aus Studienunterlagen gegeben.
+Beantworte die Frage des Studenten basierend auf diesen Ausschnitten.
+Du darfst Zusammenhänge ableiten, wenn sie logisch folgen. Erfinde keine Fakten.
+Schreibe auf Deutsch.
+
+LÄNGE: Standardmäßig kurz und präzise (2–4 Sätze oder eine kompakte Liste).
+Nur bei expliziter Anfrage nach Details/Überblick ausführlich antworten.
+
+FORMATIERUNG:
+- Trenne Abschnitte mit einer Leerzeile.
+- **Fettschrift** für Fachbegriffe beim ersten Auftreten.
+- Aufzählungslisten (- ...) für Merkmale, Schritte, Eigenschaften.
+- ## Überschriften nur bei mehreren Abschnitten.
+
+MATHEMATIK — strikte Regeln, keine Ausnahmen:
+- Jede Formel, jede Variable, jedes Symbol wird AUSSCHLIESSLICH in LaTeX geschrieben.
+- Inline: $x$, $\Omega$, $P(\{\\omega\})$
+- Abgesetzt (zentriert, eigene Zeile mit Leerzeile davor und danach):
+
+$$P(\{\omega\}) = \frac{1}{|\Omega|}$$
+
+- NIEMALS dieselbe Formel doppelt schreiben (nie LaTeX + Klartext-Kopie danach).
+- NIEMALS Unicode-Mathesymbole direkt schreiben: nicht Ω, ∈, ≠, ∣, ⋅ — immer $\Omega$, $\in$, $\neq$, $\mid$, $\cdot$.
+- Schreibe "für" nicht als "fu¨r" — nutze korrekte deutsche Umlaute (ä, ö, ü).
+- Jede Formel erscheint genau einmal, entweder inline $...$ oder abgesetzt $$...$$, nie beides."""
 
 _DISTANCE_THRESHOLD = 0.6
 _TOP_RERANK = 8
@@ -65,8 +83,8 @@ async def run_simple(
     messages = [*(chat_history or []), {"role": "user", "content": user_message}]
 
     async with _get_anthropic().messages.stream(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=512,
+        model=os.getenv("CHAT_MODEL", "deepseek-v4-flash"),
+        max_tokens=8192,
         system=_SYNTH_SYSTEM_PROMPT,
         messages=messages,
     ) as stream:
@@ -128,8 +146,8 @@ async def run(
     messages = [*(chat_history or []), {"role": "user", "content": user_message}]
 
     async with _get_anthropic().messages.stream(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
+        model=os.getenv("CHAT_MODEL", "deepseek-v4-flash"),
+        max_tokens=8192,
         system=_SYNTH_SYSTEM_PROMPT,
         messages=messages,
     ) as stream:

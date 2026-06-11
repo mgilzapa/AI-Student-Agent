@@ -21,7 +21,7 @@ from app.chat import tools as T
 logger = logging.getLogger(__name__)
 
 MAX_ITERS = 4          # agentic loop ceiling (read-tool round trips)
-ROUTING_MAX_TOKENS = 1024
+ROUTING_MAX_TOKENS = 1000
 
 
 def _blocks_to_params(content: List[Any]) -> List[dict]:
@@ -89,7 +89,7 @@ async def run_chat(
         for _ in range(max_iters):
             response = await asyncio.to_thread(
                 client.messages.create,
-                model=model,
+                model="deepseek-v4-flash",
                 max_tokens=ROUTING_MAX_TOKENS,
                 system=system_prompt,
                 tools=tool_defs,

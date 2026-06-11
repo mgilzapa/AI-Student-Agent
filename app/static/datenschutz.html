@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow" />
+  <title>Datenschutzerklärung — Veexa</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #F5F1EB; --panel: #EDE7DC; --border: #C4BAB0;
+      --text: #1A1614; --muted: #5C5450; --accent: #C2410C;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    .legal-nav {
+      position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem; background: rgba(245,241,235,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    }
+    .legal-nav a.brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+    .legal-nav a.brand span { color: var(--accent); }
+    .legal-nav a.back { font-size: 0.875rem; color: var(--muted); text-decoration: none; }
+    .legal-nav a.back:hover { color: var(--accent); }
+    main { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+    .legal-kicker { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+    h1 { font-family: 'Lora', serif; font-size: 2.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 600; margin: 2.5rem 0 0.75rem; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
+    p, li { font-size: 0.95rem; color: var(--text); margin-bottom: 0.6rem; }
+    .muted { color: var(--muted); }
+    ul { padding-left: 1.25rem; margin-bottom: 0.6rem; }
+    a { color: var(--accent); }
+    .updated { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted); margin-top: 0.5rem; }
+    .ph { background: rgba(194,65,12,0.13); color: var(--accent); padding: 0 5px; border-radius: 3px; font-weight: 600; }
+    .note { background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.9rem 1.1rem; margin: 1.5rem 0; font-size: 0.875rem; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.55rem 0.65rem; border: 1px solid var(--border); vertical-align: top; }
+    th { background: var(--panel); font-weight: 600; }
+    .toc { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+    .toc ol { padding-left: 1.25rem; }
+    .toc a { color: var(--text); text-decoration: none; font-size: 0.875rem; }
+    .toc a:hover { color: var(--accent); }
+    .legal-footer { border-top: 1px solid var(--border); margin-top: 3rem; padding: 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--muted); }
+    .legal-footer a { margin: 0 0.5rem; color: var(--muted); text-decoration: none; }
+    .legal-footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <nav class="legal-nav">
+    <a class="brand" href="/">Vee<span>xa</span></a>
+    <a class="back" href="/">← Zurück zur Startseite</a>
+  </nav>
+
+  <main>
+    <div class="legal-kicker">Rechtliches</div>
+    <h1>Datenschutzerklärung</h1>
+    <p class="muted">Informationen gemäß Art. 13 und 14 DSGVO</p>
+
+    <div class="note">
+      <strong>Hinweis:</strong> Dieser Entwurf ist auf die tatsächlichen Datenflüsse von Veexa
+      zugeschnitten (Supabase, OpenAI, Anthropic). Mit <span class="ph">[…]</span> markierte Felder
+      sind vor dem Live-Gang auszufüllen. Eine anwaltliche Endabnahme — insbesondere zur
+      Drittlandübermittlung in die USA — wird empfohlen.
+    </div>
+
+    <div class="toc">
+      <strong>Inhalt</strong>
+      <ol>
+        <li><a href="#verantwortlicher">Verantwortlicher</a></li>
+        <li><a href="#ueberblick">Überblick der Verarbeitungen</a></li>
+        <li><a href="#rechtsgrundlagen">Rechtsgrundlagen</a></li>
+        <li><a href="#hosting">Hosting &amp; Server-Logs</a></li>
+        <li><a href="#konto">Registrierung &amp; Konto</a></li>
+        <li><a href="#inhalte">Hochgeladene Materialien &amp; KI-Funktionen</a></li>
+        <li><a href="#dienste">Eingesetzte Dienste &amp; Drittland-Übermittlung</a></li>
+        <li><a href="#speicherdauer">Speicherdauer</a></li>
+        <li><a href="#rechte">Deine Rechte</a></li>
+        <li><a href="#cookies">Cookies &amp; lokale Speicherung</a></li>
+        <li><a href="#aenderungen">Änderungen</a></li>
+      </ol>
+    </div>
+
+    <h2 id="verantwortlicher">1. Verantwortlicher</h2>
+    <p>
+      Verantwortlicher im Sinne der DSGVO ist:<br />
+      <span class="ph">[NAME / FIRMA]</span><br />
+      <span class="ph">[STRASSE NR.]</span>, <span class="ph">[PLZ ORT]</span>, <span class="ph">[LAND]</span><br />
+      E-Mail: <span class="ph">[KONTAKT-E-MAIL]</span>
+    </p>
+    <p class="muted">
+      Einen Datenschutzbeauftragten haben wir <span class="ph">[bestellt: NAME/KONTAKT — falls zutreffend / nicht bestellt, da gesetzlich nicht erforderlich]</span>.
+    </p>
+
+    <h2 id="ueberblick">2. Überblick der Verarbeitungen</h2>
+    <p>Wir verarbeiten personenbezogene Daten, um dir den Lern-Assistenten Veexa bereitzustellen. Im Wesentlichen sind das:</p>
+    <ul>
+      <li><strong>Konto- und Anmeldedaten</strong> (E-Mail-Adresse, ggf. Name bei Google-Login, verschlüsseltes Passwort).</li>
+      <li><strong>Von dir hochgeladene Lernmaterialien</strong> (PDF-, PPTX-, TXT-, MD-Dateien) und daraus erzeugte Texte/Embeddings.</li>
+      <li><strong>Von der KI generierte Inhalte</strong> (Zusammenfassungen, Lernpläne, Übungsklausuren, Quizfragen).</li>
+      <li><strong>Nutzungs- und Einstellungsdaten</strong> (z. B. Lieblingsmodul, Ordnerstruktur, Lernfortschritt).</li>
+      <li><strong>Technische Daten</strong> (IP-Adresse, Zeitstempel, Browser-Informationen über Server-Logs des Hosters).</li>
+    </ul>
+
+    <h2 id="rechtsgrundlagen">3. Rechtsgrundlagen</h2>
+    <ul>
+      <li><strong>Art. 6 Abs. 1 lit. b DSGVO</strong> (Vertragserfüllung) — für Registrierung, Bereitstellung der Kernfunktionen und Verarbeitung deiner Materialien.</li>
+      <li><strong>Art. 6 Abs. 1 lit. f DSGVO</strong> (berechtigtes Interesse) — für technisch notwendige Logs, Sicherheit und Missbrauchsvermeidung (z. B. Rate-Limiting).</li>
+      <li><strong>Art. 6 Abs. 1 lit. c DSGVO</strong> (rechtliche Verpflichtung) — soweit wir gesetzlich zur Aufbewahrung verpflichtet sind.</li>
+      <li><strong>Art. 6 Abs. 1 lit. a DSGVO</strong> (Einwilligung) — soweit wir dich um eine gesonderte Einwilligung bitten; diese kannst du jederzeit mit Wirkung für die Zukunft widerrufen.</li>
+    </ul>
+
+    <h2 id="hosting">4. Hosting &amp; Server-Logs</h2>
+    <p>
+      Die Anwendung wird bei <span class="ph">[HOSTING-ANBIETER, z. B. Railway / Region]</span> betrieben.
+      Datenbank, Datei-Speicher und Authentifizierung laufen über <strong>Supabase</strong>
+      (Supabase, Inc.). Beim Aufruf der Anwendung verarbeitet der Server technisch notwendige
+      Zugriffsdaten (u. a. IP-Adresse, Datum/Uhrzeit, abgerufene Ressource, Browser-/Geräteangaben),
+      um den Dienst auszuliefern und abzusichern (Art. 6 Abs. 1 lit. f DSGVO).
+    </p>
+    <p class="muted">
+      Wir empfehlen, die Supabase-Region auf die EU (z. B. Frankfurt) zu setzen, damit Datenbank- und
+      Speicherdaten innerhalb der EU verbleiben. <span class="ph">[Aktuell gewählte Region eintragen.]</span>
+    </p>
+
+    <h2 id="konto">5. Registrierung &amp; Konto</h2>
+    <p>
+      Für die Nutzung legst du ein Konto an (E-Mail + Passwort oder Google-Login). Die Authentifizierung
+      erfolgt über Supabase Auth. Das Passwort wird ausschließlich als kryptografischer Hash gespeichert;
+      wir haben keinen Zugriff auf dein Klartext-Passwort. Bei Anmeldung über Google erhalten wir die zur
+      Kontoerstellung erforderlichen Profildaten (Name, E-Mail) von Google.
+    </p>
+    <p>Mit der Registrierung bestätigst du, dass du mindestens 16 Jahre alt bist (siehe Art. 8 DSGVO).</p>
+
+    <h2 id="inhalte">6. Hochgeladene Materialien &amp; KI-Funktionen</h2>
+    <p>
+      Die von dir hochgeladenen Dateien werden gespeichert, in Text umgewandelt, in Abschnitte („Chunks")
+      zerlegt und in Vektor-Repräsentationen (Embeddings) überführt, damit die KI deine Fragen anhand
+      deiner Materialien beantworten kann. Zur Erzeugung von Antworten, Zusammenfassungen, Lernplänen,
+      Übungsklausuren und Embeddings werden relevante Textausschnitte an die unten genannten
+      KI-Dienstleister übermittelt.
+    </p>
+    <div class="note">
+      Lade keine Materialien hoch, an denen du keine Nutzungsrechte hast, sowie keine besonderen
+      Kategorien personenbezogener Daten Dritter (Art. 9 DSGVO). KI-Ausgaben können fehlerhaft sein und
+      ersetzen keine offiziellen Studien- oder Prüfungsunterlagen.
+    </div>
+
+    <h2 id="dienste">7. Eingesetzte Dienste &amp; Drittland-Übermittlung</h2>
+    <p>
+      Zur Bereitstellung der Funktionen setzen wir folgende Auftragsverarbeiter ein. Mit ihnen besteht
+      bzw. wird ein Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO) geschlossen. Soweit Daten in die USA
+      übermittelt werden, stützen wir dies auf Standardvertragsklauseln (Art. 46 DSGVO) und/oder die
+      Zertifizierung der Anbieter unter dem EU-US Data Privacy Framework.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Dienst</th><th>Anbieter / Sitz</th><th>Zweck</th><th>Daten</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Supabase</td>
+          <td>Supabase, Inc., USA <span class="ph">[Region prüfen]</span></td>
+          <td>Authentifizierung, Datenbank, Datei-Speicher</td>
+          <td>Konto-, Inhalts-, Nutzungsdaten</td>
+        </tr>
+        <tr>
+          <td>OpenAI API</td>
+          <td>OpenAI, L.L.C., USA</td>
+          <td>Embeddings (<code>text-embedding-3-small</code>) &amp; Textgenerierung (<code>gpt-4o-mini</code>)</td>
+          <td>Textausschnitte deiner Materialien, Fragen</td>
+        </tr>
+        <tr>
+          <td>Anthropic API</td>
+          <td>Anthropic, PBC, USA</td>
+          <td>Textgenerierung / Chat-Steuerung (Claude-Modelle)</td>
+          <td>Textausschnitte deiner Materialien, Fragen</td>
+        </tr>
+        <tr>
+          <td>Hosting</td>
+          <td><span class="ph">[HOSTER, Sitz/Region]</span></td>
+          <td>Betrieb der Anwendung</td>
+          <td>Server-Logs, technische Zugriffsdaten</td>
+        </tr>
+        <tr>
+          <td>Google (optional)</td>
+          <td>Google Ireland Ltd. / Google LLC</td>
+          <td>Login per Google-Konto (nur wenn genutzt)</td>
+          <td>Name, E-Mail-Adresse</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="muted">
+      Hinweis der API-Anbieter: OpenAI und Anthropic geben an, über die API übermittelte Daten nicht zum
+      Training ihrer Modelle zu verwenden. Bitte prüfe die jeweils gültigen Vertrags- und
+      Datenschutzbedingungen und schließe die entsprechenden AVV/DPA ab.
+    </p>
+
+    <h2 id="speicherdauer">8. Speicherdauer</h2>
+    <ul>
+      <li><strong>Konto- und Inhaltsdaten:</strong> bis zur Löschung deines Kontos durch dich oder bis zum Wegfall des Zwecks.</li>
+      <li><strong>Server-Logs:</strong> für die zur Sicherheit erforderliche Dauer, danach Löschung bzw. Anonymisierung.</li>
+      <li><strong>Daten an KI-Dienstleister:</strong> gemäß deren Aufbewahrungsfristen (i. d. R. kurzfristige Speicherung zur Missbrauchskontrolle).</li>
+    </ul>
+    <p>
+      Bei Konto-Löschung über die Einstellungen werden deine Datenbank-Einträge und gespeicherten Dateien
+      unwiderruflich entfernt.
+    </p>
+
+    <h2 id="rechte">9. Deine Rechte</h2>
+    <p>Dir stehen gegenüber dem Verantwortlichen folgende Rechte zu:</p>
+    <ul>
+      <li><strong>Auskunft</strong> (Art. 15 DSGVO) — Veexa bietet hierfür einen Daten-Export in den Einstellungen.</li>
+      <li><strong>Berichtigung</strong> (Art. 16 DSGVO).</li>
+      <li><strong>Löschung</strong> (Art. 17 DSGVO) — direkt über „Konto löschen" in den Einstellungen.</li>
+      <li><strong>Einschränkung der Verarbeitung</strong> (Art. 18 DSGVO).</li>
+      <li><strong>Datenübertragbarkeit</strong> (Art. 20 DSGVO) — maschinenlesbarer ZIP-Export.</li>
+      <li><strong>Widerspruch</strong> (Art. 21 DSGVO) gegen Verarbeitungen auf Grundlage berechtigter Interessen.</li>
+      <li><strong>Widerruf</strong> erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO).</li>
+    </ul>
+    <p>
+      Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren
+      (Art. 77 DSGVO), insbesondere in dem Mitgliedstaat deines Aufenthaltsorts. Zuständige Behörde für
+      uns ist <span class="ph">[zuständige Aufsichtsbehörde des Verantwortlichen]</span>.
+    </p>
+
+    <h2 id="cookies">10. Cookies &amp; lokale Speicherung</h2>
+    <p>
+      Veexa setzt <strong>keine Tracking- oder Marketing-Cookies</strong> und bindet keine
+      Analyse-Dienste Dritter ein. Für den Betrieb verwenden wir ausschließlich technisch
+      notwendige lokale Speicherung im Browser (<code>localStorage</code>):
+    </p>
+    <ul>
+      <li><strong>Anmelde-Sitzung</strong> (Supabase Auth-Token) — damit du angemeldet bleibst.</li>
+      <li><strong>Oberflächen-Einstellungen</strong> — z. B. Sprache, Hell-/Dunkel-Design, Ordnerstruktur.</li>
+    </ul>
+    <p>
+      Auch die verwendeten Schriftarten werden von unserem eigenen Server geladen (kein Abruf von
+      Google-Servern), sodass beim Seitenaufruf keine IP-Adresse an Dritte übermittelt wird.
+    </p>
+    <p>
+      Diese lokale Speicherung ist für die von dir angeforderte Nutzung erforderlich
+      (§ 25 Abs. 2 TDDDG) und benötigt daher keine gesonderte Einwilligung. Es werden keine
+      personenbezogenen Nutzungsprofile gebildet. Du kannst die lokale Speicherung jederzeit über
+      die Einstellungen deines Browsers löschen; danach musst du dich erneut anmelden.
+    </p>
+
+    <h2 id="aenderungen">11. Änderungen dieser Erklärung</h2>
+    <p>
+      Wir passen diese Datenschutzerklärung an, sobald sich Funktionen oder Rechtslage ändern. Die jeweils
+      aktuelle Fassung ist auf dieser Seite abrufbar.
+    </p>
+
+    <p class="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/impressum">Impressum</a> ·
+    <a href="/datenschutz">Datenschutz</a> ·
+    <a href="/agb">AGB</a> ·
+    <a href="/">Startseite</a>
+    <div style="margin-top:0.5rem;">© 2026 Veexa</div>
+  </footer>
+</body>
+</html>
