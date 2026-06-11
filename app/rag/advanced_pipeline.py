@@ -7,6 +7,7 @@ from typing import AsyncIterator
 
 from anthropic import AsyncAnthropic
 
+from app.llm_clients import make_async_deepseek_client
 from app.rag.reranker import rerank
 
 logger = logging.getLogger(__name__)
@@ -44,9 +45,10 @@ _TOP_RERANK = 8
 
 
 def _get_anthropic() -> AsyncAnthropic:
+    # RAG synthesis runs on CHAT_MODEL (DeepSeek by default) → DeepSeek client.
     global _anthropic
     if _anthropic is None:
-        _anthropic = AsyncAnthropic()
+        _anthropic = make_async_deepseek_client()
     return _anthropic
 
 

@@ -89,7 +89,7 @@ async def run_chat(
         for _ in range(max_iters):
             response = await asyncio.to_thread(
                 client.messages.create,
-                model="deepseek-v4-flash",
+                model=model,
                 max_tokens=ROUTING_MAX_TOKENS,
                 system=system_prompt,
                 tools=tool_defs,

@@ -31,6 +31,7 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 
 from app.embeddings.embedder import Embedder
+from app.llm_clients import make_deepseek_client
 from app.ingestion.file_scanner import is_supported
 from app.main import (
     index_chunks,
@@ -135,7 +136,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 _heavy_daily = limiter.shared_limit(RL_HEAVY_DAILY, scope="llm_heavy_daily")
 
 client = OpenAI()
-anthropic_client = Anthropic()
+anthropic_client = Anthropic()                 # real Claude: file generation, router, solver
+deepseek_client = make_deepseek_client()       # DeepSeek (Anthropic-compatible): chat orchestrator
 config = load_config()
 # RAW_DIR kept for legacy compatibility; uploads now go to Supabase Storage
 RAW_DIR = config["raw_path"]
@@ -838,7 +840,7 @@ async def chat_stream(request: Request, body: ChatRequest):
             module_name=active,
             chat_history=body.chat_history,
             pending_proposal=body.pending_proposal,
-            client=anthropic_client,
+            client=deepseek_client,
             model=CHAT_MODEL,
             system_prompt=system_prompt,
             read_executor=_chat_read_executor,

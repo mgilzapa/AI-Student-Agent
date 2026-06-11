@@ -152,9 +152,17 @@ def _parse_quiz(raw_text: str) -> List[Dict[str, Any]]:
     text = re.sub(r"\n?```\s*$", "", text).strip()
 
     # LaTeX inside JSON strings (e.g. \Omega, \mathcal) uses backslash sequences
-    # that are invalid JSON escapes. Replace them with double-backslash so
-    # json.loads decodes them as literal backslash + letter (e.g. \Omega → \\Omega).
-    text = re.sub(r'\\(?!["\\/bfnrtu]|u[0-9a-fA-F]{4})', r'\\\\', text)
+    # that are invalid JSON escapes. Double *lone* backslashes so json.loads
+    # decodes them as a literal backslash + letter (e.g. \Omega → \\Omega).
+    # An alternation consumes valid escape sequences (\\, \", \n, \uXXXX, …) as a
+    # unit and leaves them untouched — otherwise a model that ALREADY emits valid
+    # JSON (Claude writes \\Omega) would have its second backslash double-escaped
+    # into \\\Omega, producing an "Invalid \escape" error.
+    text = re.sub(
+        r'\\(["\\/bfnrtu]|u[0-9a-fA-F]{4})|\\',
+        lambda m: m.group(0) if m.group(1) else r'\\',
+        text,
+    )
 
     data = None
     parse_error: Optional[str] = None
