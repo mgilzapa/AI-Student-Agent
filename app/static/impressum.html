@@ -12,11 +12,15 @@
       --bg: #F5F1EB; --panel: #EDE7DC; --border: #C4BAB0;
       --text: #1A1614; --muted: #5C5450; --accent: #C2410C;
     }
+    [data-theme="dark"] {
+      --bg: #161210; --panel: #1F1A16; --border: #3A3028;
+      --text: #F0EDE8; --muted: #A8A29E; --accent: #F97316;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; transition: background 0.25s ease, color 0.25s ease; }
     .legal-nav {
       position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 1.5rem; background: rgba(245,241,235,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
     }
     .legal-nav a.brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
     .legal-nav a.brand span { color: var(--accent); }
@@ -39,65 +43,68 @@
   </style>
 </head>
 <body>
+  <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='dark')document.body.setAttribute('data-theme','dark');})();
+  </script>
   <nav class="legal-nav">
     <a class="brand" href="/">Vee<span>xa</span></a>
-    <a class="back" href="/">← Zurück zur Startseite</a>
+    <a class="back" href="/" data-i18n="back-home">← Zurück zur Startseite</a>
   </nav>
 
   <main>
-    <div class="legal-kicker">Rechtliches</div>
-    <h1>Impressum</h1>
-    <p class="muted">Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG)</p>
+    <div class="legal-kicker" data-i18n="kicker">Rechtliches</div>
+    <h1 data-i18n="title">Impressum</h1>
+    <p class="muted" data-i18n="subtitle">Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG)</p>
 
-    <div class="note">
+    <div class="note" data-i18n-html="note">
       <strong>Hinweis:</strong> Die mit <span class="ph">[…]</span> markierten Felder müssen vor dem
       Live-Gang mit den echten Daten des Verantwortlichen ausgefüllt werden. Ein unvollständiges
       Impressum ist abmahnfähig.
     </div>
 
-    <h2>Diensteanbieter</h2>
-    <p>
+    <h2 data-i18n="h-provider">Diensteanbieter</h2>
+    <p data-i18n-html="provider-block">
       <span class="ph">[VOR- UND NACHNAME / FIRMENNAME]</span><br />
       <span class="ph">[STRASSE UND HAUSNUMMER]</span><br />
       <span class="ph">[PLZ UND ORT]</span><br />
       <span class="ph">[LAND]</span>
     </p>
-    <p class="muted">
+    <p class="muted" data-i18n-html="provider-legal">
       Bei juristischen Personen zusätzlich: Rechtsform, Vertretungsberechtigte(r),
       Registergericht und Registernummer (z. B. <span class="ph">[HRB 12345, Amtsgericht …]</span>).
     </p>
 
-    <h2>Kontakt</h2>
-    <p>
+    <h2 data-i18n="h-contact">Kontakt</h2>
+    <p data-i18n-html="contact-block">
       E-Mail: <span class="ph">[KONTAKT-E-MAIL]</span><br />
       Telefon: <span class="ph">[TELEFON — optional, aber empfohlen]</span>
     </p>
 
-    <h2>Umsatzsteuer-ID</h2>
-    <p>
+    <h2 data-i18n="h-vat">Umsatzsteuer-ID</h2>
+    <p data-i18n-html="vat-block">
       Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:
       <span class="ph">[USt-IdNr. — falls vorhanden, sonst diesen Abschnitt entfernen]</span>
     </p>
 
-    <h2>Verantwortlich für den Inhalt</h2>
-    <p>
+    <h2 data-i18n="h-responsible">Verantwortlich für den Inhalt</h2>
+    <p data-i18n-html="responsible-block">
       Verantwortlich i. S. d. § 18 Abs. 2 Medienstaatsvertrag (MStV):
       <span class="ph">[NAME, ANSCHRIFT — i. d. R. wie oben]</span>
     </p>
 
-    <h2>Streitschlichtung</h2>
-    <p>
+    <h2 data-i18n="h-dispute">Streitschlichtung</h2>
+    <p data-i18n-html="dispute-1">
       Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
       <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a>.
       Unsere E-Mail-Adresse findest du oben.
     </p>
-    <p>
+    <p data-i18n="dispute-2">
       Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer
       Verbraucherschlichtungsstelle teilzunehmen.
     </p>
 
-    <h2>Haftung für Inhalte</h2>
-    <p class="muted">
+    <h2 data-i18n="h-liability">Haftung für Inhalte</h2>
+    <p class="muted" data-i18n="liability-text">
       Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten nach den
       allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir als Diensteanbieter jedoch nicht
       verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen. Veexa generiert
@@ -105,15 +112,111 @@
       Studien- oder Prüfungsmaterialien.
     </p>
 
-    <p class="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
+    <p class="updated" data-i18n-html="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
   </main>
 
   <footer class="legal-footer">
-    <a href="/impressum">Impressum</a> ·
-    <a href="/datenschutz">Datenschutz</a> ·
-    <a href="/agb">AGB</a> ·
-    <a href="/">Startseite</a>
+    <a href="/impressum" data-i18n="f-impressum">Impressum</a> ·
+    <a href="/datenschutz" data-i18n="f-privacy">Datenschutz</a> ·
+    <a href="/agb" data-i18n="f-terms">AGB</a> ·
+    <a href="/" data-i18n="f-home">Startseite</a>
     <div style="margin-top:0.5rem;">© 2026 Veexa</div>
   </footer>
+
+  <script>
+  // Convenience translations — the German version prevails legally.
+  const TRANSLATIONS = {
+    en: {
+      'page-title':'Imprint — Veexa',
+      'back-home':'← Back to home',
+      'kicker':'Legal',
+      'title':'Imprint',
+      'subtitle':'Information pursuant to § 5 of the German Digital Services Act (DDG)',
+      'note':'<strong>Note:</strong> The fields marked with <span class="ph">[…]</span> must be filled in with the real details of the responsible party before going live. An incomplete imprint can lead to legal warnings. This English version is a convenience translation — the German version is legally binding.',
+      'h-provider':'Service provider',
+      'provider-block':'<span class="ph">[FIRST AND LAST NAME / COMPANY NAME]</span><br /><span class="ph">[STREET AND NUMBER]</span><br /><span class="ph">[POSTAL CODE AND CITY]</span><br /><span class="ph">[COUNTRY]</span>',
+      'provider-legal':'For legal entities additionally: legal form, authorised representative(s), register court and registration number (e.g. <span class="ph">[HRB 12345, local court …]</span>).',
+      'h-contact':'Contact',
+      'contact-block':'Email: <span class="ph">[CONTACT EMAIL]</span><br />Phone: <span class="ph">[PHONE — optional, but recommended]</span>',
+      'h-vat':'VAT ID',
+      'vat-block':'VAT identification number pursuant to § 27 a of the German VAT Act: <span class="ph">[VAT ID — if available, otherwise remove this section]</span>',
+      'h-responsible':'Responsible for content',
+      'responsible-block':'Responsible within the meaning of § 18 (2) of the German State Media Treaty (MStV): <span class="ph">[NAME, ADDRESS — usually as above]</span>',
+      'h-dispute':'Dispute resolution',
+      'dispute-1':'The European Commission provides a platform for online dispute resolution (ODR): <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a>. You can find our email address above.',
+      'dispute-2':'We are neither obliged nor willing to participate in dispute resolution proceedings before a consumer arbitration board.',
+      'h-liability':'Liability for content',
+      'liability-text':'As a service provider, we are responsible for our own content on these pages in accordance with general law pursuant to § 7 (1) DDG. However, pursuant to §§ 8 to 10 DDG, we are not obliged to monitor transmitted or stored third-party information. Veexa generates learning content using AI; this content may contain errors and does not replace official study or exam materials.',
+      'updated':'Last updated: <span class="ph">[INSERT DATE]</span>',
+      'f-impressum':'Imprint','f-privacy':'Privacy','f-terms':'Terms','f-home':'Home',
+    },
+    es: {
+      'page-title':'Aviso legal — Veexa',
+      'back-home':'← Volver al inicio',
+      'kicker':'Información legal',
+      'title':'Aviso legal',
+      'subtitle':'Información conforme al art. 5 de la ley alemana de servicios digitales (DDG)',
+      'note':'<strong>Nota:</strong> Los campos marcados con <span class="ph">[…]</span> deben completarse con los datos reales del responsable antes de la puesta en marcha. Un aviso legal incompleto puede dar lugar a requerimientos. Esta versión en español es una traducción de cortesía — la versión alemana es la jurídicamente vinculante.',
+      'h-provider':'Proveedor del servicio',
+      'provider-block':'<span class="ph">[NOMBRE Y APELLIDOS / NOMBRE DE LA EMPRESA]</span><br /><span class="ph">[CALLE Y NÚMERO]</span><br /><span class="ph">[CÓDIGO POSTAL Y CIUDAD]</span><br /><span class="ph">[PAÍS]</span>',
+      'provider-legal':'En el caso de personas jurídicas, además: forma jurídica, representante(s) autorizado(s), registro mercantil y número de registro (p. ej. <span class="ph">[HRB 12345, juzgado local …]</span>).',
+      'h-contact':'Contacto',
+      'contact-block':'Correo electrónico: <span class="ph">[CORREO DE CONTACTO]</span><br />Teléfono: <span class="ph">[TELÉFONO — opcional, pero recomendado]</span>',
+      'h-vat':'NIF-IVA',
+      'vat-block':'Número de identificación a efectos del IVA conforme al art. 27 a de la ley alemana del IVA: <span class="ph">[NIF-IVA — si existe; de lo contrario, eliminar esta sección]</span>',
+      'h-responsible':'Responsable del contenido',
+      'responsible-block':'Responsable en el sentido del art. 18, apdo. 2 del Tratado estatal alemán de medios (MStV): <span class="ph">[NOMBRE, DIRECCIÓN — normalmente como arriba]</span>',
+      'h-dispute':'Resolución de litigios',
+      'dispute-1':'La Comisión Europea ofrece una plataforma de resolución de litigios en línea (ODR): <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a>. Encontrarás nuestra dirección de correo electrónico más arriba.',
+      'dispute-2':'No estamos obligados ni dispuestos a participar en procedimientos de resolución de litigios ante una junta arbitral de consumo.',
+      'h-liability':'Responsabilidad por los contenidos',
+      'liability-text':'Como proveedor de servicios, somos responsables de nuestros propios contenidos en estas páginas conforme a la legislación general según el art. 7, apdo. 1 DDG. No obstante, según los arts. 8 a 10 DDG, no estamos obligados a supervisar la información de terceros transmitida o almacenada. Veexa genera contenidos de aprendizaje mediante IA; estos pueden contener errores y no sustituyen los materiales oficiales de estudio o examen.',
+      'updated':'Última actualización: <span class="ph">[INSERTAR FECHA]</span>',
+      'f-impressum':'Aviso legal','f-privacy':'Privacidad','f-terms':'Términos','f-home':'Inicio',
+    },
+    fr: {
+      'page-title':'Mentions légales — Veexa',
+      'back-home':'← Retour à l\'accueil',
+      'kicker':'Juridique',
+      'title':'Mentions légales',
+      'subtitle':'Informations conformément à l\'art. 5 de la loi allemande sur les services numériques (DDG)',
+      'note':'<strong>Remarque :</strong> Les champs marqués <span class="ph">[…]</span> doivent être remplis avec les véritables données du responsable avant la mise en ligne. Des mentions légales incomplètes peuvent donner lieu à des mises en demeure. Cette version française est une traduction de courtoisie — la version allemande fait foi.',
+      'h-provider':'Fournisseur du service',
+      'provider-block':'<span class="ph">[PRÉNOM ET NOM / RAISON SOCIALE]</span><br /><span class="ph">[RUE ET NUMÉRO]</span><br /><span class="ph">[CODE POSTAL ET VILLE]</span><br /><span class="ph">[PAYS]</span>',
+      'provider-legal':'Pour les personnes morales, en plus : forme juridique, représentant(s) habilité(s), tribunal d\'immatriculation et numéro d\'immatriculation (p. ex. <span class="ph">[HRB 12345, tribunal d\'instance …]</span>).',
+      'h-contact':'Contact',
+      'contact-block':'E-mail : <span class="ph">[E-MAIL DE CONTACT]</span><br />Téléphone : <span class="ph">[TÉLÉPHONE — facultatif mais recommandé]</span>',
+      'h-vat':'Numéro de TVA',
+      'vat-block':'Numéro d\'identification TVA conformément à l\'art. 27 a de la loi allemande sur la TVA : <span class="ph">[N° TVA — si disponible, sinon supprimer cette section]</span>',
+      'h-responsible':'Responsable du contenu',
+      'responsible-block':'Responsable au sens de l\'art. 18, al. 2 du traité d\'État allemand sur les médias (MStV) : <span class="ph">[NOM, ADRESSE — en général comme ci-dessus]</span>',
+      'h-dispute':'Règlement des litiges',
+      'dispute-1':'La Commission européenne met à disposition une plateforme de règlement en ligne des litiges (RLL) : <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a>. Tu trouveras notre adresse e-mail ci-dessus.',
+      'dispute-2':'Nous ne sommes ni tenus ni disposés à participer à des procédures de règlement des litiges devant un organisme de conciliation des consommateurs.',
+      'h-liability':'Responsabilité du contenu',
+      'liability-text':'En tant que fournisseur de services, nous sommes responsables de nos propres contenus sur ces pages conformément au droit général selon l\'art. 7, al. 1 DDG. Toutefois, selon les art. 8 à 10 DDG, nous ne sommes pas tenus de surveiller les informations de tiers transmises ou stockées. Veexa génère des contenus d\'apprentissage à l\'aide de l\'IA ; ceux-ci peuvent comporter des erreurs et ne remplacent pas les supports officiels d\'étude ou d\'examen.',
+      'updated':'Dernière mise à jour : <span class="ph">[INSÉRER LA DATE]</span>',
+      'f-impressum':'Mentions légales','f-privacy':'Confidentialité','f-terms':'CGU','f-home':'Accueil',
+    },
+  };
+
+  (function () {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const browser = (navigator.language || 'de').slice(0, 2).toLowerCase();
+    const lang = localStorage.getItem('app-lang') || (supported.includes(browser) ? browser : 'de');
+    document.documentElement.lang = lang;
+    if (lang === 'de') return;
+    const T = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    if (T['page-title']) document.title = T['page-title'];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const v = T[el.dataset.i18nHtml];
+      if (v !== undefined) el.innerHTML = v;
+    });
+  })();
+  </script>
 </body>
 </html>

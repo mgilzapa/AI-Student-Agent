@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import tempfile
+import time
 import traceback
 import zipfile
 from datetime import date as _date
@@ -22,6 +23,7 @@ from typing import List, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from anthropic import Anthropic
@@ -83,6 +85,7 @@ app.mount(
 RL_CHAT = os.getenv("RATELIMIT_CHAT", "15/minute")             # light: /ask, /ask/stream
 RL_HEAVY = os.getenv("RATELIMIT_HEAVY", "5/minute")            # heavy: generation endpoints
 RL_HEAVY_DAILY = os.getenv("RATELIMIT_HEAVY_DAILY", "50/day")  # shared per-user daily budget
+RL_UPLOAD = os.getenv("RATELIMIT_UPLOAD", "10/minute")         # uploads: parsing + paid embeddings
 _RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", "no")
 
 # Chat orchestrator model. Defaults to DeepSeek via Anthropic-compatible endpoint.
@@ -149,6 +152,11 @@ RAW_DIR.mkdir(parents=True, exist_ok=True)
 # in the Authorization header (Bearer token), never in cookies, so a wildcard
 # origin stays safe here.
 _cors_origins = [o.strip() for o in os.getenv("FRONTEND_ORIGIN", "*").split(",") if o.strip()] or ["*"]
+# Compress responses ≥1 KB when the client accepts gzip. The app shell
+# (index.html, ~512 KB) shrinks to a fraction of that; starlette's gzip
+# flushes per-chunk, so the SSE streaming endpoints keep working.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -173,6 +181,41 @@ _AUTH_DISABLED = _DEV_NO_AUTH and not _SUPABASE_CONFIGURED
 # mode the fallback stays OFF so a lost request context fails closed.
 if _AUTH_DISABLED:
     _allow_fallback_user(True)
+
+
+# Short-TTL token-verification cache: sha256(token) → (user_id, expires_at).
+# Verifying via Supabase (GET /auth/v1/user) costs a full network round-trip on
+# EVERY API call — with a UI that fires many requests per interaction this
+# dominates latency. Supabase access tokens live ~1 h anyway, so re-verifying
+# a token seen seconds ago adds no security; a revoked session is locked out
+# at most AUTH_CACHE_TTL seconds later. Set AUTH_CACHE_TTL=0 to disable.
+_AUTH_CACHE_TTL = float(os.getenv("AUTH_CACHE_TTL", "120"))
+_AUTH_CACHE_MAX = 1000
+_auth_cache: dict[str, tuple[str, float]] = {}
+
+
+def _auth_cache_get(token: str) -> str | None:
+    if _AUTH_CACHE_TTL <= 0:
+        return None
+    key = hashlib.sha256(token.encode()).hexdigest()
+    entry = _auth_cache.get(key)
+    if entry and entry[1] > time.monotonic():
+        return entry[0]
+    _auth_cache.pop(key, None)
+    return None
+
+
+def _auth_cache_put(token: str, user_id: str) -> None:
+    if _AUTH_CACHE_TTL <= 0:
+        return
+    if len(_auth_cache) >= _AUTH_CACHE_MAX:
+        now = time.monotonic()
+        for k in [k for k, v in _auth_cache.items() if v[1] <= now]:
+            _auth_cache.pop(k, None)
+        if len(_auth_cache) >= _AUTH_CACHE_MAX:
+            _auth_cache.clear()
+    key = hashlib.sha256(token.encode()).hexdigest()
+    _auth_cache[key] = (user_id, time.monotonic() + _AUTH_CACHE_TTL)
 
 
 @app.middleware("http")
@@ -212,19 +255,25 @@ async def _auth_middleware(request: Request, call_next):
         token = auth[7:] if auth.startswith("Bearer ") else ""
         if not token:
             return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
-        try:
-            # Verify the token via Supabase using the service-role admin client
-            # (GET /auth/v1/user). Works with any JWT algorithm.
-            loop = asyncio.get_running_loop()
-            response = await loop.run_in_executor(None, lambda: get_admin_client().auth.get_user(token))
-            if not (response and response.user):
-                return JSONResponse(status_code=401, content={"detail": "Invalid token"})
-            # Scope every downstream query/storage call to this user. The token is
-            # stashed so get_client() builds an RLS-enforcing, user-scoped client.
-            set_request_user_id(response.user.id)
+        cached_uid = _auth_cache_get(token)
+        if cached_uid:
+            set_request_user_id(cached_uid)
             set_request_token(token)
-        except Exception:
-            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        else:
+            try:
+                # Verify the token via Supabase using the service-role admin client
+                # (GET /auth/v1/user). Works with any JWT algorithm.
+                loop = asyncio.get_running_loop()
+                response = await loop.run_in_executor(None, lambda: get_admin_client().auth.get_user(token))
+                if not (response and response.user):
+                    return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+                # Scope every downstream query/storage call to this user. The token is
+                # stashed so get_client() builds an RLS-enforcing, user-scoped client.
+                set_request_user_id(response.user.id)
+                set_request_token(token)
+                _auth_cache_put(token, response.user.id)
+            except Exception:
+                return JSONResponse(status_code=401, content={"detail": "Invalid token"})
 
         return await call_next(request)
     finally:
@@ -299,6 +348,14 @@ async def _security_headers(request: Request, call_next):
     h.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     h.setdefault("Permissions-Policy", "camera=(), geolocation=(), microphone=(self), browsing-topics=()")
     h.setdefault("Content-Security-Policy", _CSP)
+    # Long-lived browser cache for immutable assets (fonts, logos) — without
+    # this every page load re-downloads ~600 KB of woff2 files.
+    path = request.url.path
+    if path.endswith(".woff2") or path in ("/logo.png", "/logo_white.png"):
+        h.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+    elif path == "/fonts/fonts.css":
+        # fonts.css may change (font additions/swaps) — cache, but revalidate daily.
+        h.setdefault("Cache-Control", "public, max-age=86400")
     # HSTS only over HTTPS (Railway terminates TLS and forwards X-Forwarded-Proto).
     proto = request.headers.get("x-forwarded-proto", request.url.scheme)
     if proto == "https":
@@ -615,27 +672,36 @@ def _inject_supabase(html: str) -> str:
     return html.replace("<!-- SUPABASE_INJECT -->", inject, 1)
 
 
-@app.get("/", response_class=HTMLResponse)
-def serve_landing():
-    html_path = Path(__file__).parent / "static" / "landing.html"
-    return _inject_supabase(html_path.read_text(encoding="utf-8"))
-
-
-@app.get("/app", response_class=HTMLResponse)
-def serve_ui():
-    html_path = Path(__file__).parent / "static" / "index.html"
-    return _inject_supabase(html_path.read_text(encoding="utf-8"))
-
-
-@app.get("/upgrade", response_class=HTMLResponse)
-def serve_upgrade():
-    html_path = Path(__file__).parent / "static" / "upgrade.html"
-    return _inject_supabase(html_path.read_text(encoding="utf-8"))
+# Injected HTML cached by (file, mtime): re-reading + string-replacing the
+# 512 KB app shell on every page hit is pure waste, but keying on mtime keeps
+# dev edits to the .html files visible without a restart.
+_html_cache: dict = {}
 
 
 def _serve_static_html(name: str) -> HTMLResponse:
     html_path = Path(__file__).parent / "static" / name
-    return _inject_supabase(html_path.read_text(encoding="utf-8"))
+    mtime = html_path.stat().st_mtime
+    cached = _html_cache.get(name)
+    if cached and cached[0] == mtime:
+        return HTMLResponse(cached[1])
+    html = _inject_supabase(html_path.read_text(encoding="utf-8"))
+    _html_cache[name] = (mtime, html)
+    return HTMLResponse(html)
+
+
+@app.get("/", response_class=HTMLResponse)
+def serve_landing():
+    return _serve_static_html("landing.html")
+
+
+@app.get("/app", response_class=HTMLResponse)
+def serve_ui():
+    return _serve_static_html("index.html")
+
+
+@app.get("/upgrade", response_class=HTMLResponse)
+def serve_upgrade():
+    return _serve_static_html("upgrade.html")
 
 
 @app.get("/impressum", response_class=HTMLResponse)
@@ -1642,7 +1708,9 @@ def get_module_text(module_name: str, path: str):
 
 
 @app.post("/modules/upload")
+@limiter.limit(RL_UPLOAD)
 async def upload_module(
+    request: Request,
     module_name: str = Form(...),
     files: List[UploadFile] = File(...),
     paths: Optional[str] = Form(None),
@@ -2484,7 +2552,9 @@ def daily_get(module_name: str):
 
 
 @app.post("/daily/{module_name}/generate")
-async def daily_generate(module_name: str, body: DailyGenerateRequest):
+@limiter.limit(RL_HEAVY)
+@_heavy_daily
+async def daily_generate(request: Request, module_name: str, body: DailyGenerateRequest):
     """Generate a new daily plan. Archives old plan and applies carryover."""
     try:
         clean = sanitize_module_name(module_name)

@@ -12,11 +12,15 @@
       --bg: #F5F1EB; --panel: #EDE7DC; --border: #C4BAB0;
       --text: #1A1614; --muted: #5C5450; --accent: #C2410C;
     }
+    [data-theme="dark"] {
+      --bg: #161210; --panel: #1F1A16; --border: #3A3028;
+      --text: #F0EDE8; --muted: #A8A29E; --accent: #F97316;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; transition: background 0.25s ease, color 0.25s ease; }
     .legal-nav {
       position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 1.5rem; background: rgba(245,241,235,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
     }
     .legal-nav a.brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
     .legal-nav a.brand span { color: var(--accent); }
@@ -39,45 +43,48 @@
   </style>
 </head>
 <body>
+  <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='dark')document.body.setAttribute('data-theme','dark');})();
+  </script>
   <nav class="legal-nav">
     <a class="brand" href="/">Vee<span>xa</span></a>
-    <a class="back" href="/">← Zurück zur Startseite</a>
+    <a class="back" href="/" data-i18n="back-home">← Zurück zur Startseite</a>
   </nav>
 
   <main>
-    <div class="legal-kicker">Rechtliches</div>
-    <h1>Allgemeine Geschäftsbedingungen</h1>
-    <p class="muted">Nutzungsbedingungen für den Dienst Veexa</p>
+    <div class="legal-kicker" data-i18n="kicker">Rechtliches</div>
+    <h1 data-i18n="title">Allgemeine Geschäftsbedingungen</h1>
+    <p class="muted" data-i18n="subtitle">Nutzungsbedingungen für den Dienst Veexa</p>
 
-    <div class="note">
+    <div class="note" data-i18n-html="note">
       <strong>Hinweis:</strong> Dieser Entwurf bildet das Geschäftsmodell von Veexa ab. Mit
       <span class="ph">[…]</span> markierte Stellen (z. B. Gerichtsstand, Tarife) sind anzupassen.
       Eine anwaltliche Prüfung wird empfohlen, insbesondere bei kostenpflichtigen Tarifen.
     </div>
 
-    <h2>§ 1 Geltungsbereich &amp; Anbieter</h2>
-    <p>
+    <h2 data-i18n="h-1">§ 1 Geltungsbereich &amp; Anbieter</h2>
+    <p data-i18n-html="p-1">
       Diese AGB gelten für die Nutzung des Online-Lern-Assistenten „Veexa" (nachfolgend „Dienst"),
       angeboten von <span class="ph">[NAME / FIRMA, ANSCHRIFT]</span> (nachfolgend „Anbieter"). Abweichende
       Bedingungen des Nutzers finden keine Anwendung, sofern der Anbieter ihnen nicht ausdrücklich zustimmt.
     </p>
 
-    <h2>§ 2 Leistungsbeschreibung</h2>
-    <p>
+    <h2 data-i18n="h-2">§ 2 Leistungsbeschreibung</h2>
+    <p data-i18n="p-2">
       Der Dienst ermöglicht es, eigene Lernunterlagen hochzuladen und daraus mithilfe von KI
       Zusammenfassungen, Lernpläne, Übungsklausuren, Quizfragen und Antworten auf Fragen zu erzeugen.
       Der Funktionsumfang kann sich weiterentwickeln. Es besteht kein Anspruch auf dauerhafte
       Verfügbarkeit einzelner Funktionen.
     </p>
 
-    <h2>§ 3 Registrierung &amp; Mindestalter</h2>
-    <p>
+    <h2 data-i18n="h-3">§ 3 Registrierung &amp; Mindestalter</h2>
+    <p data-i18n="p-3">
       Die Nutzung setzt ein Konto voraus. Der Nutzer sichert zu, dass seine Angaben zutreffend sind und
       dass er mindestens 16 Jahre alt ist. Die Zugangsdaten sind vertraulich zu behandeln.
     </p>
 
-    <h2>§ 4 Tarife &amp; Preise</h2>
-    <p>
+    <h2 data-i18n="h-4">§ 4 Tarife &amp; Preise</h2>
+    <p data-i18n-html="p-4">
       Der Dienst wird in einer kostenlosen Variante sowie in kostenpflichtigen Tarifen angeboten
       (<span class="ph">[Tarifdetails, Preise, Abrechnungszeitraum, Kündigung]</span>). Maßgeblich sind die
       zum Zeitpunkt der Bestellung angezeigten Konditionen. Für Verbraucher gilt das gesetzliche
@@ -85,31 +92,31 @@
       kostenpflichtigen Angeboten ergänzen]</span>.
     </p>
 
-    <h2>§ 5 Pflichten des Nutzers &amp; hochgeladene Inhalte</h2>
-    <ol>
+    <h2 data-i18n="h-5">§ 5 Pflichten des Nutzers &amp; hochgeladene Inhalte</h2>
+    <ol data-i18n-html="p-5">
       <li>Der Nutzer darf nur Inhalte hochladen, an denen er die erforderlichen Rechte besitzt oder deren Nutzung gesetzlich erlaubt ist.</li>
       <li>Der Nutzer ist allein verantwortlich für die von ihm hochgeladenen Inhalte und stellt den Anbieter von Ansprüchen Dritter frei, die aus einer rechtswidrigen Nutzung resultieren.</li>
       <li>Es dürfen keine rechtswidrigen, beleidigenden oder die Rechte Dritter verletzenden Inhalte sowie keine besonderen Kategorien personenbezogener Daten Dritter hochgeladen werden.</li>
       <li>Eine missbräuchliche oder automatisierte Nutzung, die den Betrieb beeinträchtigt, ist untersagt (technische Schutzmaßnahmen wie Rate-Limits dürfen nicht umgangen werden).</li>
     </ol>
 
-    <h2>§ 6 Rechte an Inhalten</h2>
-    <p>
+    <h2 data-i18n="h-6">§ 6 Rechte an Inhalten</h2>
+    <p data-i18n="p-6">
       Die Rechte an den hochgeladenen Inhalten verbleiben beim Nutzer. Der Nutzer räumt dem Anbieter das
       einfache, auf den Betrieb des Dienstes beschränkte Recht ein, diese Inhalte zu speichern, technisch
       zu verarbeiten und zur Erbringung der Funktionen an Auftragsverarbeiter (siehe Datenschutzerklärung)
       zu übermitteln. Von der KI generierte Ergebnisse darf der Nutzer für eigene Lernzwecke verwenden.
     </p>
 
-    <h2>§ 7 Notice-and-Takedown</h2>
-    <p>
+    <h2 data-i18n="h-7">§ 7 Notice-and-Takedown</h2>
+    <p data-i18n-html="p-7">
       Wer der Auffassung ist, dass über den Dienst gespeicherte Inhalte seine Rechte verletzen, kann dies
       unter <span class="ph">[KONTAKT-E-MAIL]</span> melden. Bei berechtigten Hinweisen entfernt oder
       sperrt der Anbieter die betroffenen Inhalte unverzüglich.
     </p>
 
-    <h2>§ 8 KI-generierte Inhalte &amp; Haftungsausschluss</h2>
-    <p>
+    <h2 data-i18n="h-8">§ 8 KI-generierte Inhalte &amp; Haftungsausschluss</h2>
+    <p data-i18n-html="p-8">
       Die Ergebnisse des Dienstes werden automatisiert mithilfe von KI erstellt und können <strong>fehlerhaft,
       unvollständig oder missverständlich</strong> sein. Sie stellen keine Rechts-, Studien- oder
       Prüfungsberatung dar und ersetzen keine offiziellen Materialien. Der Nutzer ist verpflichtet,
@@ -117,15 +124,15 @@
       Eignung der generierten Inhalte für einen bestimmten Zweck wird nicht übernommen.
     </p>
 
-    <h2>§ 9 Verfügbarkeit</h2>
-    <p>
+    <h2 data-i18n="h-9">§ 9 Verfügbarkeit</h2>
+    <p data-i18n="p-9">
       Der Anbieter bemüht sich um eine hohe Verfügbarkeit, schuldet jedoch keine ununterbrochene
       Erreichbarkeit. Wartungsarbeiten, Störungen bei Drittanbietern (z. B. KI- oder Hosting-Diensten)
       oder höhere Gewalt können zu Einschränkungen führen.
     </p>
 
-    <h2>§ 10 Haftung</h2>
-    <p>
+    <h2 data-i18n="h-10">§ 10 Haftung</h2>
+    <p data-i18n="p-10">
       Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie bei der Verletzung von
       Leben, Körper oder Gesundheit. Bei einfacher Fahrlässigkeit haftet der Anbieter nur bei Verletzung
       einer wesentlichen Vertragspflicht (Kardinalpflicht) und begrenzt auf den vertragstypischen,
@@ -133,36 +140,168 @@
       Haftung (z. B. nach dem Produkthaftungsgesetz) bleibt unberührt.
     </p>
 
-    <h2>§ 11 Kündigung &amp; Löschung</h2>
-    <p>
+    <h2 data-i18n="h-11">§ 11 Kündigung &amp; Löschung</h2>
+    <p data-i18n="p-11">
       Der Nutzer kann sein Konto jederzeit über die Einstellungen löschen; damit endet das
       Nutzungsverhältnis und die zugehörigen Daten werden entfernt. Der Anbieter kann das
       Nutzungsverhältnis bei Verstößen gegen diese AGB nach Abwägung sperren oder beenden.
     </p>
 
-    <h2>§ 12 Änderungen der AGB</h2>
-    <p>
+    <h2 data-i18n="h-12">§ 12 Änderungen der AGB</h2>
+    <p data-i18n="p-12">
       Der Anbieter kann diese AGB mit Wirkung für die Zukunft ändern, sofern dies aus sachlichem Grund
       erforderlich ist. Über wesentliche Änderungen wird der Nutzer in geeigneter Form informiert.
     </p>
 
-    <h2>§ 13 Schlussbestimmungen</h2>
-    <p>
+    <h2 data-i18n="h-13">§ 13 Schlussbestimmungen</h2>
+    <p data-i18n-html="p-13">
       Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts; zwingende
       Verbraucherschutzvorschriften des Aufenthaltsstaats des Nutzers bleiben unberührt. Gerichtsstand ist
       — soweit zulässig — <span class="ph">[GERICHTSSTAND]</span>. Sollte eine Bestimmung unwirksam sein,
       bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.
     </p>
 
-    <p class="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
+    <p class="updated" data-i18n-html="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
   </main>
 
   <footer class="legal-footer">
-    <a href="/impressum">Impressum</a> ·
-    <a href="/datenschutz">Datenschutz</a> ·
-    <a href="/agb">AGB</a> ·
-    <a href="/">Startseite</a>
+    <a href="/impressum" data-i18n="f-impressum">Impressum</a> ·
+    <a href="/datenschutz" data-i18n="f-privacy">Datenschutz</a> ·
+    <a href="/agb" data-i18n="f-terms">AGB</a> ·
+    <a href="/" data-i18n="f-home">Startseite</a>
     <div style="margin-top:0.5rem;">© 2026 Veexa</div>
   </footer>
+
+  <script>
+  // Convenience translations — the German version prevails legally.
+  const TRANSLATIONS = {
+    en: {
+      'page-title':'Terms of Service — Veexa',
+      'back-home':'← Back to home',
+      'kicker':'Legal',
+      'title':'Terms of Service',
+      'subtitle':'Terms of use for the Veexa service',
+      'note':'<strong>Note:</strong> This draft reflects the Veexa business model. Sections marked with <span class="ph">[…]</span> (e.g. place of jurisdiction, plans) must be adapted. A legal review is recommended, especially for paid plans. This English version is a convenience translation — the German version is legally binding.',
+      'h-1':'§ 1 Scope & provider',
+      'p-1':'These terms apply to the use of the online study assistant "Veexa" (hereinafter "Service"), offered by <span class="ph">[NAME / COMPANY, ADDRESS]</span> (hereinafter "Provider"). Deviating terms of the user do not apply unless the Provider expressly agrees to them.',
+      'h-2':'§ 2 Description of services',
+      'p-2':'The Service allows users to upload their own study materials and use AI to generate summaries, study plans, practice exams, quiz questions and answers to questions from them. The scope of features may evolve. There is no entitlement to the permanent availability of individual features.',
+      'h-3':'§ 3 Registration & minimum age',
+      'p-3':'Use requires an account. The user warrants that their details are accurate and that they are at least 16 years old. Login credentials must be kept confidential.',
+      'h-4':'§ 4 Plans & prices',
+      'p-4':'The Service is offered in a free version as well as in paid plans (<span class="ph">[plan details, prices, billing period, cancellation]</span>). The conditions displayed at the time of ordering apply. Consumers have the statutory right of withdrawal; details follow from the <span class="ph">[withdrawal notice — add for paid offers]</span>.',
+      'h-5':'§ 5 User obligations & uploaded content',
+      'p-5':'<li>The user may only upload content for which they hold the required rights or whose use is permitted by law.</li><li>The user is solely responsible for the content they upload and indemnifies the Provider against third-party claims resulting from unlawful use.</li><li>No unlawful, offensive content, content infringing third-party rights, or special categories of third-party personal data may be uploaded.</li><li>Abusive or automated use that impairs operation is prohibited (technical protection measures such as rate limits must not be circumvented).</li>',
+      'h-6':'§ 6 Rights to content',
+      'p-6':'The rights to uploaded content remain with the user. The user grants the Provider the simple right, limited to operating the Service, to store this content, process it technically and transmit it to processors (see privacy policy) to provide the features. The user may use AI-generated results for their own study purposes.',
+      'h-7':'§ 7 Notice-and-takedown',
+      'p-7':'Anyone who believes that content stored via the Service infringes their rights can report this at <span class="ph">[CONTACT EMAIL]</span>. In the case of justified reports, the Provider will remove or block the affected content without delay.',
+      'h-8':'§ 8 AI-generated content & disclaimer',
+      'p-8':'The results of the Service are created automatically using AI and may be <strong>incorrect, incomplete or misleading</strong>. They do not constitute legal, study or exam advice and do not replace official materials. The user is obliged to verify important content independently. No warranty is given for the accuracy, currency or suitability of the generated content for a particular purpose.',
+      'h-9':'§ 9 Availability',
+      'p-9':'The Provider strives for high availability but does not owe uninterrupted accessibility. Maintenance work, disruptions at third-party providers (e.g. AI or hosting services) or force majeure may lead to restrictions.',
+      'h-10':'§ 10 Liability',
+      'p-10':'The Provider is liable without limitation in cases of intent and gross negligence as well as for injury to life, body or health. In the case of simple negligence, the Provider is only liable for the breach of an essential contractual obligation (cardinal obligation) and limited to the foreseeable damage typical for the contract. Otherwise, liability is excluded. Mandatory statutory liability (e.g. under the Product Liability Act) remains unaffected.',
+      'h-11':'§ 11 Termination & deletion',
+      'p-11':'The user can delete their account at any time via the settings; this ends the usage relationship and the associated data is removed. The Provider may, after due consideration, suspend or terminate the usage relationship in the event of violations of these terms.',
+      'h-12':'§ 12 Changes to the terms',
+      'p-12':'The Provider may amend these terms with effect for the future if this is necessary for an objective reason. The user will be informed of significant changes in an appropriate form.',
+      'h-13':'§ 13 Final provisions',
+      'p-13':'The law of the Federal Republic of Germany applies, excluding the UN Convention on Contracts for the International Sale of Goods; mandatory consumer protection provisions of the user\'s country of residence remain unaffected. The place of jurisdiction is — to the extent permissible — <span class="ph">[PLACE OF JURISDICTION]</span>. Should a provision be invalid, the validity of the remaining provisions remains unaffected.',
+      'updated':'Last updated: <span class="ph">[INSERT DATE]</span>',
+      'f-impressum':'Imprint','f-privacy':'Privacy','f-terms':'Terms','f-home':'Home',
+    },
+    es: {
+      'page-title':'Términos y condiciones — Veexa',
+      'back-home':'← Volver al inicio',
+      'kicker':'Información legal',
+      'title':'Términos y condiciones',
+      'subtitle':'Condiciones de uso del servicio Veexa',
+      'note':'<strong>Nota:</strong> Este borrador refleja el modelo de negocio de Veexa. Las partes marcadas con <span class="ph">[…]</span> (p. ej. fuero, tarifas) deben adaptarse. Se recomienda una revisión legal, especialmente para los planes de pago. Esta versión en español es una traducción de cortesía — la versión alemana es la jurídicamente vinculante.',
+      'h-1':'§ 1 Ámbito de aplicación y proveedor',
+      'p-1':'Estas condiciones se aplican al uso del asistente de estudio en línea «Veexa» (en adelante, «Servicio»), ofrecido por <span class="ph">[NOMBRE / EMPRESA, DIRECCIÓN]</span> (en adelante, «Proveedor»). Las condiciones divergentes del usuario no se aplican salvo que el Proveedor las acepte expresamente.',
+      'h-2':'§ 2 Descripción del servicio',
+      'p-2':'El Servicio permite subir materiales de estudio propios y generar a partir de ellos, mediante IA, resúmenes, planes de estudio, exámenes de práctica, preguntas de quiz y respuestas a preguntas. El alcance de las funciones puede evolucionar. No existe derecho a la disponibilidad permanente de funciones individuales.',
+      'h-3':'§ 3 Registro y edad mínima',
+      'p-3':'El uso requiere una cuenta. El usuario garantiza que sus datos son correctos y que tiene al menos 16 años. Las credenciales de acceso deben tratarse de forma confidencial.',
+      'h-4':'§ 4 Planes y precios',
+      'p-4':'El Servicio se ofrece en una versión gratuita y en planes de pago (<span class="ph">[detalles de los planes, precios, período de facturación, cancelación]</span>). Son determinantes las condiciones mostradas en el momento del pedido. Los consumidores tienen el derecho legal de desistimiento; los detalles se derivan de la <span class="ph">[información sobre desistimiento — añadir para ofertas de pago]</span>.',
+      'h-5':'§ 5 Obligaciones del usuario y contenidos subidos',
+      'p-5':'<li>El usuario solo puede subir contenidos sobre los que posea los derechos necesarios o cuyo uso esté permitido por la ley.</li><li>El usuario es el único responsable de los contenidos que suba y exime al Proveedor de reclamaciones de terceros derivadas de un uso ilícito.</li><li>No se pueden subir contenidos ilícitos, ofensivos o que vulneren derechos de terceros, ni categorías especiales de datos personales de terceros.</li><li>Queda prohibido el uso abusivo o automatizado que perjudique el funcionamiento (no se pueden eludir las medidas técnicas de protección, como los límites de uso).</li>',
+      'h-6':'§ 6 Derechos sobre los contenidos',
+      'p-6':'Los derechos sobre los contenidos subidos permanecen con el usuario. El usuario concede al Proveedor el derecho simple, limitado al funcionamiento del Servicio, de almacenar estos contenidos, procesarlos técnicamente y transmitirlos a encargados del tratamiento (véase la política de privacidad) para prestar las funciones. El usuario puede utilizar los resultados generados por la IA para sus propios fines de estudio.',
+      'h-7':'§ 7 Notificación y retirada',
+      'p-7':'Quien considere que los contenidos almacenados a través del Servicio vulneran sus derechos puede comunicarlo a <span class="ph">[CORREO DE CONTACTO]</span>. En caso de avisos justificados, el Proveedor eliminará o bloqueará sin demora los contenidos afectados.',
+      'h-8':'§ 8 Contenidos generados por IA y exención de responsabilidad',
+      'p-8':'Los resultados del Servicio se crean automáticamente mediante IA y pueden ser <strong>erróneos, incompletos o equívocos</strong>. No constituyen asesoramiento jurídico, académico ni de exámenes y no sustituyen los materiales oficiales. El usuario está obligado a verificar por sí mismo los contenidos importantes. No se garantiza la exactitud, actualidad o idoneidad de los contenidos generados para un fin determinado.',
+      'h-9':'§ 9 Disponibilidad',
+      'p-9':'El Proveedor se esfuerza por mantener una alta disponibilidad, pero no debe una accesibilidad ininterrumpida. Los trabajos de mantenimiento, las interrupciones de proveedores externos (p. ej. servicios de IA o de alojamiento) o la fuerza mayor pueden provocar restricciones.',
+      'h-10':'§ 10 Responsabilidad',
+      'p-10':'El Proveedor responde de forma ilimitada en caso de dolo y negligencia grave, así como por daños a la vida, el cuerpo o la salud. En caso de negligencia leve, el Proveedor solo responde por el incumplimiento de una obligación contractual esencial (obligación cardinal) y limitado al daño previsible típico del contrato. Por lo demás, queda excluida la responsabilidad. La responsabilidad legal obligatoria (p. ej. según la ley de responsabilidad por productos) no se ve afectada.',
+      'h-11':'§ 11 Cancelación y eliminación',
+      'p-11':'El usuario puede eliminar su cuenta en cualquier momento a través de los ajustes; con ello finaliza la relación de uso y se eliminan los datos asociados. El Proveedor puede, tras la debida ponderación, suspender o finalizar la relación de uso en caso de infracciones de estas condiciones.',
+      'h-12':'§ 12 Modificaciones de las condiciones',
+      'p-12':'El Proveedor puede modificar estas condiciones con efecto para el futuro si es necesario por una razón objetiva. El usuario será informado de los cambios significativos de forma adecuada.',
+      'h-13':'§ 13 Disposiciones finales',
+      'p-13':'Se aplica el derecho de la República Federal de Alemania con exclusión de la Convención de las Naciones Unidas sobre los Contratos de Compraventa Internacional de Mercaderías; las disposiciones imperativas de protección del consumidor del país de residencia del usuario no se ven afectadas. El fuero es — en la medida en que sea admisible — <span class="ph">[FUERO]</span>. Si alguna disposición fuera inválida, la validez de las demás disposiciones no se verá afectada.',
+      'updated':'Última actualización: <span class="ph">[INSERTAR FECHA]</span>',
+      'f-impressum':'Aviso legal','f-privacy':'Privacidad','f-terms':'Términos','f-home':'Inicio',
+    },
+    fr: {
+      'page-title':'Conditions générales — Veexa',
+      'back-home':'← Retour à l\'accueil',
+      'kicker':'Juridique',
+      'title':'Conditions générales d\'utilisation',
+      'subtitle':'Conditions d\'utilisation du service Veexa',
+      'note':'<strong>Remarque :</strong> Ce projet reflète le modèle économique de Veexa. Les passages marqués <span class="ph">[…]</span> (p. ex. juridiction compétente, tarifs) doivent être adaptés. Une vérification juridique est recommandée, en particulier pour les offres payantes. Cette version française est une traduction de courtoisie — la version allemande fait foi.',
+      'h-1':'§ 1 Champ d\'application et fournisseur',
+      'p-1':'Les présentes CGU s\'appliquent à l\'utilisation de l\'assistant d\'étude en ligne « Veexa » (ci-après « Service »), proposé par <span class="ph">[NOM / SOCIÉTÉ, ADRESSE]</span> (ci-après « Fournisseur »). Les conditions divergentes de l\'utilisateur ne s\'appliquent pas, sauf accord exprès du Fournisseur.',
+      'h-2':'§ 2 Description des prestations',
+      'p-2':'Le Service permet de téléverser ses propres supports d\'étude et d\'en générer, à l\'aide de l\'IA, des résumés, des plans d\'étude, des examens d\'entraînement, des questions de quiz et des réponses à des questions. L\'étendue des fonctionnalités peut évoluer. Il n\'existe aucun droit à la disponibilité permanente de fonctionnalités individuelles.',
+      'h-3':'§ 3 Inscription et âge minimum',
+      'p-3':'L\'utilisation nécessite un compte. L\'utilisateur garantit que ses informations sont exactes et qu\'il a au moins 16 ans. Les identifiants doivent être traités de manière confidentielle.',
+      'h-4':'§ 4 Tarifs et prix',
+      'p-4':'Le Service est proposé dans une version gratuite ainsi que dans des offres payantes (<span class="ph">[détails des offres, prix, période de facturation, résiliation]</span>). Les conditions affichées au moment de la commande font foi. Les consommateurs bénéficient du droit de rétractation légal ; les détails figurent dans <span class="ph">[l\'information sur la rétractation — à compléter pour les offres payantes]</span>.',
+      'h-5':'§ 5 Obligations de l\'utilisateur et contenus téléversés',
+      'p-5':'<li>L\'utilisateur ne peut téléverser que des contenus pour lesquels il détient les droits nécessaires ou dont l\'utilisation est autorisée par la loi.</li><li>L\'utilisateur est seul responsable des contenus qu\'il téléverse et garantit le Fournisseur contre les réclamations de tiers résultant d\'une utilisation illicite.</li><li>Il est interdit de téléverser des contenus illicites, injurieux ou portant atteinte aux droits de tiers, ainsi que des catégories particulières de données personnelles de tiers.</li><li>Toute utilisation abusive ou automatisée portant atteinte au fonctionnement est interdite (les mesures techniques de protection telles que les limites de débit ne doivent pas être contournées).</li>',
+      'h-6':'§ 6 Droits sur les contenus',
+      'p-6':'Les droits sur les contenus téléversés restent la propriété de l\'utilisateur. L\'utilisateur accorde au Fournisseur le droit simple, limité à l\'exploitation du Service, de stocker ces contenus, de les traiter techniquement et de les transmettre à des sous-traitants (voir la politique de confidentialité) pour fournir les fonctionnalités. L\'utilisateur peut utiliser les résultats générés par l\'IA à ses propres fins d\'étude.',
+      'h-7':'§ 7 Notification et retrait',
+      'p-7':'Toute personne estimant que des contenus stockés via le Service portent atteinte à ses droits peut le signaler à <span class="ph">[E-MAIL DE CONTACT]</span>. En cas de signalement justifié, le Fournisseur supprime ou bloque sans délai les contenus concernés.',
+      'h-8':'§ 8 Contenus générés par l\'IA et clause de non-responsabilité',
+      'p-8':'Les résultats du Service sont créés automatiquement à l\'aide de l\'IA et peuvent être <strong>erronés, incomplets ou trompeurs</strong>. Ils ne constituent pas un conseil juridique, académique ou d\'examen et ne remplacent pas les supports officiels. L\'utilisateur est tenu de vérifier lui-même les contenus importants. Aucune garantie n\'est donnée quant à l\'exactitude, l\'actualité ou l\'adéquation des contenus générés à un usage particulier.',
+      'h-9':'§ 9 Disponibilité',
+      'p-9':'Le Fournisseur s\'efforce d\'assurer une haute disponibilité, mais ne doit pas une accessibilité ininterrompue. Des travaux de maintenance, des perturbations chez des prestataires tiers (p. ex. services d\'IA ou d\'hébergement) ou des cas de force majeure peuvent entraîner des restrictions.',
+      'h-10':'§ 10 Responsabilité',
+      'p-10':'Le Fournisseur est responsable sans limitation en cas de faute intentionnelle et de négligence grave, ainsi qu\'en cas d\'atteinte à la vie, au corps ou à la santé. En cas de négligence simple, le Fournisseur n\'est responsable qu\'en cas de violation d\'une obligation contractuelle essentielle (obligation cardinale) et dans la limite du dommage prévisible typique du contrat. Pour le reste, la responsabilité est exclue. La responsabilité légale impérative (p. ex. en vertu de la loi sur la responsabilité du fait des produits) reste inchangée.',
+      'h-11':'§ 11 Résiliation et suppression',
+      'p-11':'L\'utilisateur peut supprimer son compte à tout moment via les paramètres ; la relation d\'utilisation prend alors fin et les données associées sont supprimées. Le Fournisseur peut, après mise en balance, suspendre ou mettre fin à la relation d\'utilisation en cas de violation des présentes CGU.',
+      'h-12':'§ 12 Modifications des CGU',
+      'p-12':'Le Fournisseur peut modifier les présentes CGU avec effet pour l\'avenir si cela est nécessaire pour une raison objective. L\'utilisateur sera informé des modifications importantes sous une forme appropriée.',
+      'h-13':'§ 13 Dispositions finales',
+      'p-13':'Le droit de la République fédérale d\'Allemagne s\'applique, à l\'exclusion de la Convention des Nations unies sur les contrats de vente internationale de marchandises ; les dispositions impératives de protection des consommateurs de l\'État de résidence de l\'utilisateur restent inchangées. La juridiction compétente est — dans la mesure où cela est admissible — <span class="ph">[JURIDICTION COMPÉTENTE]</span>. Si une disposition est invalide, la validité des autres dispositions n\'en est pas affectée.',
+      'updated':'Dernière mise à jour : <span class="ph">[INSÉRER LA DATE]</span>',
+      'f-impressum':'Mentions légales','f-privacy':'Confidentialité','f-terms':'CGU','f-home':'Accueil',
+    },
+  };
+
+  (function () {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const browser = (navigator.language || 'de').slice(0, 2).toLowerCase();
+    const lang = localStorage.getItem('app-lang') || (supported.includes(browser) ? browser : 'de');
+    document.documentElement.lang = lang;
+    if (lang === 'de') return;
+    const T = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    if (T['page-title']) document.title = T['page-title'];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const v = T[el.dataset.i18nHtml];
+      if (v !== undefined) el.innerHTML = v;
+    });
+  })();
+  </script>
 </body>
 </html>

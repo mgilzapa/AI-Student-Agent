@@ -46,6 +46,23 @@ def load(modul_name: str) -> Optional[dict]:
     """Load module profile by name or slug. Returns None if not found."""
     uid = get_user_id()
     slug = _slugify(modul_name)
+    # Fast path: direct slug hit fetches exactly one row. The full-table scan
+    # below pulls every module incl. the large history_md/exam_profile_md
+    # columns — only needed when the name resolves via alias or odd casing.
+    try:
+        rows = (
+            get_client()
+            .table("modules")
+            .select("*")
+            .eq("user_id", uid)
+            .eq("slug", slug)
+            .limit(1)
+            .execute()
+        ).data or []
+        if rows:
+            return _row_to_profile(rows[0])
+    except Exception:
+        return None
     try:
         rows = (
             get_client()

@@ -24,6 +24,22 @@
       --shadow: 0 4px 24px rgba(26,22,20,0.10), 0 1px 4px rgba(26,22,20,0.07);
       --shadow-lg: 0 24px 80px rgba(26,22,20,0.14), 0 4px 16px rgba(26,22,20,0.09);
     }
+    [data-theme="dark"] {
+      --bg: #161210;
+      --panel: #1F1A16;
+      --panel-soft: #28211A;
+      --border: #3A3028;
+      --text: #F0EDE8;
+      --muted: #A8A29E;
+      --accent: #F97316;
+      --accent-h: #ea6c0e;
+      --accent-2: #FB923C;
+      --accent-soft: rgba(249,115,22,0.11);
+      --accent-glow: rgba(249,115,22,0.30);
+      --success: #4ADE80;
+      --shadow: 0 4px 24px rgba(0,0,0,0.40), 0 1px 4px rgba(0,0,0,0.30);
+      --shadow-lg: 0 24px 80px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.40);
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
@@ -33,6 +49,7 @@
       font-size: 1rem;
       line-height: 1.6;
       overflow-x: hidden;
+      transition: background 0.25s ease, color 0.25s ease;
     }
 
     /* ─── Navbar ─────────────────────────────────── */
@@ -41,7 +58,7 @@
       height: 64px;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 max(1.5rem, calc(50% - 620px));
-      background: rgba(245,241,235,0.88);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
@@ -52,6 +69,9 @@
     .nav-logo img {
       height: 30px; width: auto; display: block;
     }
+    .nav-logo .logo-dark { display: none; }
+    [data-theme="dark"] .nav-logo .logo-light { display: none; }
+    [data-theme="dark"] .nav-logo .logo-dark  { display: block; }
     .nav-links {
       display: flex; align-items: center; gap: 1.75rem; list-style: none;
     }
@@ -80,6 +100,12 @@
         radial-gradient(ellipse 80% 65% at 50% -10%, rgba(194,65,12,0.09), transparent 70%),
         radial-gradient(ellipse 35% 40% at 15% 90%, rgba(180,83,9,0.05), transparent 60%),
         radial-gradient(ellipse 35% 40% at 85% 90%, rgba(194,65,12,0.04), transparent 60%);
+    }
+    [data-theme="dark"] .hero::before {
+      background:
+        radial-gradient(ellipse 80% 65% at 50% -10%, rgba(249,115,22,0.11), transparent 70%),
+        radial-gradient(ellipse 35% 40% at 15% 90%, rgba(249,115,22,0.06), transparent 60%),
+        radial-gradient(ellipse 35% 40% at 85% 90%, rgba(249,115,22,0.05), transparent 60%);
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 0.375rem;
@@ -287,7 +313,7 @@
     .fc-arrow {
       position: absolute; top: 50%; transform: translateY(-50%);
       width: 48px; height: 48px; border-radius: 50%;
-      background: rgba(245,241,235,0.9);
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
       backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       border: 1.5px solid var(--border); color: var(--text);
       display: flex; align-items: center; justify-content: center;
@@ -470,6 +496,7 @@
       backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       padding: 1rem;
     }
+    [data-theme="dark"] #auth-modal { background: rgba(0,0,0,0.62); }
     #auth-modal.open { display: flex; animation: fade-in 0.18s ease; }
     @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
     .modal-card {
@@ -570,6 +597,17 @@
       background: var(--accent); color: #fff;
     }
 
+    /* ─── Theme Toggle ───────────────────────────── */
+    .theme-toggle {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      border: 1.5px solid var(--border); background: var(--panel);
+      color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-right: 0.75rem;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .theme-toggle:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
     /* ─── Navbar Scroll-State + Scroll-Spy ───────── */
     nav.scrolled {
       box-shadow: 0 2px 18px rgba(26,22,20,0.09);
@@ -599,35 +637,6 @@
       font-size: 0.8125rem; font-weight: 500; color: var(--muted);
     }
     .trust-item svg { color: var(--success); flex-shrink: 0; }
-
-    /* ─── Testimonials ───────────────────────────── */
-    #testimonials { background: var(--bg); }
-    .testi-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
-      max-width: 1040px; margin: 0 auto;
-    }
-    .testi-card {
-      background: var(--panel); border: 1.5px solid var(--border);
-      border-radius: 16px; padding: 1.75rem;
-      display: flex; flex-direction: column; gap: 1rem;
-      box-shadow: var(--shadow);
-      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    }
-    .testi-card:hover {
-      transform: translateY(-3px); box-shadow: var(--shadow-lg);
-      border-color: rgba(194,65,12,0.28);
-    }
-    .testi-stars { display: flex; gap: 0.15rem; color: var(--accent); }
-    .testi-quote { font-size: 0.95rem; line-height: 1.65; color: var(--text); flex: 1; }
-    .testi-author { display: flex; align-items: center; gap: 0.75rem; }
-    .testi-avatar {
-      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent-soft); border: 1.5px solid rgba(194,65,12,0.22);
-      color: var(--accent); font-family: 'Lora', serif; font-weight: 700; font-size: 0.95rem;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .testi-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
-    .testi-detail { font-size: 0.8125rem; color: var(--muted); margin-top: 0.1rem; }
 
     /* ─── FAQ ────────────────────────────────────── */
     #faq { background: var(--bg); }
@@ -707,29 +716,32 @@
       .demo-sidebar { display: none; }
       .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
       .fc-arrow { width: 40px; height: 40px; }
-      .testi-grid { grid-template-columns: 1fr; }
       .cta-band { padding: 2.5rem 1.5rem; }
-    }
-    @media (max-width: 960px) and (min-width: 721px) {
-      .testi-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
+<script>
+  (function(){var t=localStorage.getItem('theme');if(t==='dark')document.body.setAttribute('data-theme','dark');})();
+</script>
 
 <!-- ── Navbar ─────────────────────────────────────── -->
 <nav>
   <a class="nav-logo" href="#" aria-label="Veexa">
-    <img src="data:image/png;base64,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" alt="Veexa" />
+    <img src="/logo.png" class="logo-light" alt="Veexa" />
+    <img src="/logo_white.png" class="logo-dark" alt="Veexa" />
   </a>
   <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#how" data-i18n="nav_how">So funktionierts</a></li>
+    <li><a href="#features" data-i18n="nav_features">Features</a></li>
+    <li><a href="#how" data-i18n="nav_how">So funktioniert's</a></li>
     <li><a href="#pricing" data-i18n="nav_pricing">Preise</a></li>
   </ul>
-  <div class="lang-switcher" aria-label="Language">
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Design wechseln" data-i18n-aria="aria_theme">☾</button>
+  <div class="lang-switcher" aria-label="Language" data-i18n-aria="aria_lang">
     <button class="lang-opt" data-lang="de" type="button">DE</button>
     <button class="lang-opt" data-lang="en" type="button">EN</button>
+    <button class="lang-opt" data-lang="es" type="button">ES</button>
+    <button class="lang-opt" data-lang="fr" type="button">FR</button>
   </div>
   <button class="nav-cta" onclick="openAuth()" data-i18n="nav_cta">Kostenlos starten</button>
 </nav>
@@ -757,7 +769,7 @@
     </span>
     <span class="trust-item">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span data-i18n="trust_gdpr">DSGVO-orientiert</span>
+      <span data-i18n="trust_gdpr">Konto jederzeit löschbar</span>
     </span>
     <span class="trust-item">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -774,16 +786,16 @@
 <div class="stats-strip">
   <div class="stats-inner" data-stagger>
     <div class="reveal">
-      <div class="stat-value">8+</div>
-      <div class="stat-label" data-i18n="stat_ai_features">KI-Features</div>
+      <div class="stat-value" data-i18n="stat_speed_v">Sekunden</div>
+      <div class="stat-label" data-i18n="stat_speed_l">Vom Upload zur Zusammenfassung</div>
     </div>
     <div class="reveal">
       <div class="stat-value">PDF · PPTX · DOCX</div>
       <div class="stat-label" data-i18n="stat_formats">Unterstützte Formate</div>
     </div>
     <div class="reveal">
-      <div class="stat-value">∞</div>
-      <div class="stat-label" data-i18n="stat_modules">Module & Kurse</div>
+      <div class="stat-value" data-i18n="stat_src_v">Quellenangabe</div>
+      <div class="stat-label" data-i18n="stat_src_l">Bei jeder Antwort</div>
     </div>
     <div class="reveal">
       <div class="stat-value">100%</div>
@@ -799,12 +811,12 @@
     <h2 class="section-title" data-i18n="features_title">Deine gesamte Prüfungsvorbereitung an einem Ort</h2>
     <p class="section-sub" data-i18n="features_sub">Von der ersten Zusammenfassung bis zur letzten Probeklausur begleitet dich Veexa durch jede Phase deiner Vorbereitung.</p>
   </div>
-  <div class="features-carousel" id="featuresCarousel" aria-roledescription="carousel" aria-label="Features">
+  <div class="features-carousel" id="featuresCarousel" aria-roledescription="carousel" aria-label="Features" data-i18n-aria="nav_features">
     <div class="fc-viewport">
-      <button class="fc-arrow fc-prev" type="button" aria-label="Vorheriges Feature">
+      <button class="fc-arrow fc-prev" type="button" aria-label="Vorheriges Feature" data-i18n-aria="aria_prev_feature">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <button class="fc-arrow fc-next" type="button" aria-label="Nächstes Feature">
+      <button class="fc-arrow fc-next" type="button" aria-label="Nächstes Feature" data-i18n-aria="aria_next_feature">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
 
@@ -813,7 +825,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
       <div class="feature-title" data-i18n="feat1_title">Fragen zu deinen Unterlagen</div>
-      <div class="feature-desc" data-i18n="feat1_desc">Stelle jede Frage direkt zu deinem Stoff und erhalte präzise Antworten. Jede Aussage ist mit der passenden Stelle in deinem Material belegt, ganz ohne erfundene Fakten.</div>
+      <div class="feature-desc" data-i18n="feat1_desc">Stelle jede Frage direkt zu deinem Stoff und erhalte präzise Antworten. Jede Aussage ist mit der passenden Stelle in deinem Material belegt, damit du jede Antwort sofort selbst prüfen kannst.</div>
     </div>
 
     <div class="feature-card">
@@ -873,14 +885,14 @@
     </div>
 
     </div>
-    <div class="fc-dots" role="tablist" aria-label="Feature wählen"></div>
+    <div class="fc-dots" role="tablist" aria-label="Feature wählen" data-i18n-aria="aria_choose_feature"></div>
   </div>
 </section>
 
 <!-- ── How It Works ────────────────────────────────── -->
 <section id="how">
   <div class="section-head reveal">
-    <div class="section-label" data-i18n="how_label">So funktionierts</div>
+    <div class="section-label" data-i18n="how_label">So funktioniert's</div>
     <h2 class="section-title" data-i18n="how_title">In drei Schritten zur bestandenen Klausur</h2>
     <p class="section-sub" data-i18n="how_sub">Keine aufwändige Einrichtung und keine lange Einarbeitung. Du bist in wenigen Minuten startklar.</p>
   </div>
@@ -903,70 +915,6 @@
   </div>
 </section>
 
-<!-- ── Testimonials ────────────────────────────────── -->
-<section id="testimonials">
-  <div class="section-head reveal">
-    <div class="section-label" data-i18n="testi_label">Stimmen</div>
-    <h2 class="section-title" data-i18n="testi_title">Was Studierende über Veexa sagen</h2>
-    <p class="section-sub" data-i18n="testi_sub">Studierende quer durch alle Fächer setzen in der Prüfungsphase auf Veexa. Das berichten sie aus ihrer Lernzeit.</p>
-  </div>
-  <div class="testi-grid" data-stagger>
-    <div class="testi-card reveal">
-      <div class="testi-stars" aria-label="5 von 5 Sternen">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </div>
-      <p class="testi-quote">„Ich habe in zwei Wochen den Statistik-Stoff aufgeholt, für den ich sonst ein halbes Semester gebraucht hätte. Die Probeklausuren lagen näher an der echten Prüfung als alles, was ich vorher genutzt habe."</p>
-      <div class="testi-author">
-        <div class="testi-avatar">LM</div>
-        <div>
-          <div class="testi-name">Lena M.</div>
-          <div class="testi-detail">BWL, 4. Semester · Uni Mannheim</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="testi-card reveal">
-      <div class="testi-stars" aria-label="5 von 5 Sternen">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </div>
-      <p class="testi-quote">„Endlich ein Tool, das ausschließlich mit meinen eigenen Unterlagen arbeitet und nichts dazuerfindet. Die Quellenangabe unter jeder Antwort gibt mir beim Lernen echtes Vertrauen."</p>
-      <div class="testi-author">
-        <div class="testi-avatar">JK</div>
-        <div>
-          <div class="testi-name">Jonas K.</div>
-          <div class="testi-detail">Informatik, Master · TU München</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="testi-card reveal">
-      <div class="testi-stars" aria-label="5 von 5 Sternen">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      </div>
-      <p class="testi-quote">„Der Lernplan hat mich sicher durch die gesamte Prüfungsphase getragen. Statt Panik hatte ich jeden Tag klare Aufgaben und war zum ersten Mal wirklich entspannt vor einer Klausur."</p>
-      <div class="testi-author">
-        <div class="testi-avatar">SA</div>
-        <div>
-          <div class="testi-name">Sarah A.</div>
-          <div class="testi-detail">Medizin, 6. Semester · Charité Berlin</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ── Pricing ─────────────────────────────────────── -->
 <section id="pricing">
   <div class="section-head reveal">
@@ -975,7 +923,7 @@
     <p class="section-sub" data-i18n="pricing_sub">Starte kostenlos und wechsle jederzeit auf Student oder Pro. Alle Abos sind monatlich kündbar.</p>
   </div>
   <div class="billing-switch-wrap reveal">
-    <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum">
+    <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum" data-i18n-aria="aria_billing">
       <button class="bs-opt is-active" type="button" data-cycle="monthly" aria-pressed="true" data-i18n="billing_monthly">Monatlich</button>
       <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false"><span data-i18n="billing_yearly">Jährlich</span> <span class="bs-save">−33%</span></button>
     </div>
@@ -983,7 +931,7 @@
   <div class="pricing-grid" data-stagger>
     <div class="price-card reveal">
       <div class="price-plan">Free</div>
-      <div class="price-amount-wrap" data-m="0€" data-mp="/ Monat" data-y="0€" data-yp="/ Jahr"><span class="price-amount">0€</span><span class="price-period">/ Monat</span></div>
+      <div class="price-amount-wrap" data-m="0€" data-mp="/ Monat" data-y="0€" data-yp="/ Jahr"><span class="price-amount">0€</span><span class="price-period" data-i18n="per_month">/ Monat</span></div>
       <ul class="price-list">
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="free_f1">1 Modul</span></li>
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="free_f2">50 KI-Fragen / Monat</span></li>
@@ -996,10 +944,10 @@
     <div class="price-card featured reveal">
       <div class="price-badge" data-i18n="student_badge">Beliebteste Wahl</div>
       <div class="price-plan">Student</div>
-      <div class="price-amount-wrap" data-m="4,99€" data-mp="/ Monat" data-y="39,99€" data-yp="/ Jahr"><span class="price-amount">4,99€</span><span class="price-period">/ Monat</span></div>
+      <div class="price-amount-wrap" data-m="4,99€" data-mp="/ Monat" data-y="39,99€" data-yp="/ Jahr"><span class="price-amount">4,99€</span><span class="price-period" data-i18n="per_month">/ Monat</span></div>
       <ul class="price-list">
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="student_f1">5 Module</span></li>
-        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="student_f2">300 KI-Fragen / Monat (Haiku + Sonnet)</span></li>
+        <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="student_f2">300 KI-Fragen / Monat</span></li>
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="student_f3">15 Zusammenfassungen / Monat</span></li>
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="student_f4">5 Roadmaps / Monat (editierbar)</span></li>
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="student_f5">5 Probeklausuren / Monat</span></li>
@@ -1009,7 +957,7 @@
     </div>
     <div class="price-card reveal">
       <div class="price-plan">Pro</div>
-      <div class="price-amount-wrap" data-m="9,99€" data-mp="/ Monat" data-y="79,99€" data-yp="/ Jahr"><span class="price-amount">9,99€</span><span class="price-period">/ Monat</span></div>
+      <div class="price-amount-wrap" data-m="9,99€" data-mp="/ Monat" data-y="79,99€" data-yp="/ Jahr"><span class="price-amount">9,99€</span><span class="price-period" data-i18n="per_month">/ Monat</span></div>
       <ul class="price-list">
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="pro_f1">Unbegrenzte Module & KI-Fragen</span></li>
         <li><span class="chk"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> <span data-i18n="pro_f2">Unbegrenzte Zusammenfassungen</span></li>
@@ -1085,7 +1033,7 @@
       <span data-i18n="cta_btn">Kostenlos starten</span>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <div class="cta-note" data-i18n="cta_note">Kostenlos starten · Keine Kreditkarte nötig · In 2 Minuten startklar</div>
+    <div class="cta-note" data-i18n="cta_note">Keine Kreditkarte nötig · In 2 Minuten startklar</div>
   </div>
 </section>
 
@@ -1099,8 +1047,8 @@
     <div class="footer-col">
       <h4 data-i18n="footer_col_product">Produkt</h4>
       <ul>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#how" data-i18n="footer_how">So funktionierts</a></li>
+        <li><a href="#features" data-i18n="footer_features">Features</a></li>
+        <li><a href="#how" data-i18n="footer_how">So funktioniert's</a></li>
         <li><a href="#pricing" data-i18n="footer_pricing">Preise</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
@@ -1124,14 +1072,14 @@
   </div>
   <div class="footer-bottom">
     <span data-i18n="footer_copyright">© 2026 Veexa. Alle Rechte vorbehalten.</span>
-    <span data-i18n="footer_made_with">Made with ♥ für Studierende</span>
+    <span data-i18n="footer_made_with">Mit ♥ für Studierende gebaut</span>
   </div>
 </footer>
 
 <!-- ── Auth Modal ──────────────────────────────────── -->
-<div id="auth-modal" role="dialog" aria-modal="true" aria-label="Anmeldung">
+<div id="auth-modal" role="dialog" aria-modal="true" aria-label="Anmeldung" data-i18n-aria="aria_auth">
   <div class="modal-card">
-    <button class="modal-close" onclick="closeAuth()" aria-label="Schließen">
+    <button class="modal-close" onclick="closeAuth()" aria-label="Schließen" data-i18n-aria="aria_close">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <div class="auth-logo">
@@ -1270,7 +1218,7 @@
 
   // ── "Passwort vergessen?" → Reset-Mail anfordern ────────────────────────────
   document.getElementById('auth-forgot-a').addEventListener('click', async () => {
-    if (!_sb) { _msg('Supabase nicht konfiguriert.', 'error'); return; }
+    if (!_sb) { _msg(t('msg_supabase_missing'), 'error'); return; }
     const email = document.getElementById('auth-email').value.trim();
     if (!email) { _msg(t('modal_forgot_need_email'), 'error'); document.getElementById('auth-email').focus(); return; }
     _msg(t('modal_forgot_sending'), 'info');
@@ -1280,14 +1228,14 @@
   });
 
   document.getElementById('auth-submit-btn').addEventListener('click', async () => {
-    if (!_sb) { _msg('Supabase nicht konfiguriert.', 'error'); return; }
+    if (!_sb) { _msg(t('msg_supabase_missing'), 'error'); return; }
 
     // Recovery: neues Passwort setzen (kein E-Mail/Login nötig).
     if (_recovery) {
       const npw  = document.getElementById('auth-password').value;
       const npw2 = document.getElementById('auth-password2').value;
-      if (npw.length < 8) { _msg('Passwort muss mindestens 8 Zeichen haben.', 'error'); return; }
-      if (npw !== npw2)   { _msg('Passwörter stimmen nicht überein.', 'error'); return; }
+      if (npw.length < 8) { _msg(t('msg_pw_short'), 'error'); return; }
+      if (npw !== npw2)   { _msg(t('msg_pw_mismatch'), 'error'); return; }
       const btn = document.getElementById('auth-submit-btn');
       btn.disabled = true; btn.textContent = t('modal_setting_pw');
       const { error } = await _sb.auth.updateUser({ password: npw });
@@ -1300,13 +1248,13 @@
 
     const email = document.getElementById('auth-email').value.trim();
     const pw    = document.getElementById('auth-password').value;
-    if (!email || !pw) { _msg('Bitte E-Mail und Passwort eingeben.', 'error'); return; }
-    if (pw.length < 8) { _msg('Passwort muss mindestens 8 Zeichen haben.', 'error'); return; }
+    if (!email || !pw) { _msg(t('msg_enter_both'), 'error'); return; }
+    if (pw.length < 8) { _msg(t('msg_pw_short'), 'error'); return; }
     if (_isReg) {
       const name = document.getElementById('auth-name').value.trim();
       const pw2  = document.getElementById('auth-password2').value;
-      if (!name) { _msg('Bitte Name eingeben.', 'error'); return; }
-      if (pw !== pw2) { _msg('Passwörter stimmen nicht überein.', 'error'); return; }
+      if (!name) { _msg(t('msg_enter_name'), 'error'); return; }
+      if (pw !== pw2) { _msg(t('msg_pw_mismatch'), 'error'); return; }
       if (!document.getElementById('auth-consent')?.checked) { _msg(t('modal_consent_error'), 'error'); return; }
     }
     _setLoading(true);
@@ -1315,7 +1263,7 @@
       const { error } = await _sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: window.location.origin + '/app', data: { full_name: name } } });
       _setLoading(false);
       if (error) _msg(error.message, 'error');
-      else       _msg('✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.', 'success');
+      else       _msg(t('msg_confirm_sent'), 'success');
     } else {
       const { error } = await _sb.auth.signInWithPassword({ email, password: pw });
       _setLoading(false);
@@ -1324,7 +1272,7 @@
   });
 
   document.getElementById('auth-google-btn').addEventListener('click', async () => {
-    if (!_sb) { _msg('Supabase nicht konfiguriert.', 'error'); return; }
+    if (!_sb) { _msg(t('msg_supabase_missing'), 'error'); return; }
     const { error } = await _sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -1369,9 +1317,9 @@
 
   function _updateCtasForLoggedIn() {
     document.querySelectorAll('.nav-cta, .btn-primary').forEach(btn => {
-      if (btn.classList.contains('nav-cta')) btn.textContent = 'Zur App';
+      if (btn.classList.contains('nav-cta')) btn.textContent = t('nav_to_app');
       if (btn.classList.contains('btn-primary')) {
-        btn.childNodes[0].textContent = 'App öffnen ';
+        btn.childNodes[0].textContent = t('open_app') + ' ';
       }
     });
   }
@@ -1539,7 +1487,7 @@
   const TRANSLATIONS = {
     de: {
       // Nav
-      nav_how: 'So funktionierts',
+      nav_how: 'So funktioniert\'s',
       nav_pricing: 'Preise',
       nav_cta: 'Kostenlos starten',
       // Hero
@@ -1549,20 +1497,22 @@
       hero_cta_primary: 'Kostenlos starten',
       hero_cta_secondary: 'Funktionen ansehen',
       trust_no_cc: 'Keine Kreditkarte nötig',
-      trust_gdpr: 'DSGVO-orientiert',
+      trust_gdpr: 'Konto jederzeit löschbar',
       trust_eu: 'Server in der EU',
       trust_claude: 'Powered by Claude',
       // Stats
-      stat_ai_features: 'KI-Funktionen',
+      stat_speed_v: 'Sekunden',
+      stat_speed_l: 'Vom Upload zur Zusammenfassung',
       stat_formats: 'Unterstützte Formate',
-      stat_modules: 'Module & Kurse',
+      stat_src_v: 'Quellenangabe',
+      stat_src_l: 'Bei jeder Antwort',
       stat_materials: 'Aus deinen Unterlagen',
       // Features
       features_label: 'Funktionen',
       features_title: 'Deine gesamte Prüfungsvorbereitung an einem Ort',
       features_sub: 'Von der ersten Zusammenfassung bis zur letzten Probeklausur begleitet dich Veexa durch jede Phase deiner Vorbereitung.',
       feat1_title: 'Fragen zu deinen Unterlagen',
-      feat1_desc: 'Stelle jede Frage direkt zu deinem Stoff und erhalte präzise Antworten. Jede Aussage ist mit der passenden Stelle in deinem Material belegt, ganz ohne erfundene Fakten.',
+      feat1_desc: 'Stelle jede Frage direkt zu deinem Stoff und erhalte präzise Antworten. Jede Aussage ist mit der passenden Stelle in deinem Material belegt, damit du jede Antwort sofort selbst prüfen kannst.',
       feat2_title: 'Automatische Zusammenfassungen',
       feat2_desc: 'Lade Folien, Skripte oder PDFs hoch und erhalte in Sekunden eine klar strukturierte Zusammenfassung mit allen Schlüsselkonzepten.',
       feat3_title: 'Persönliche Lernroadmap',
@@ -1578,7 +1528,7 @@
       feat8_title: 'Alle gängigen Formate',
       feat8_desc: 'Ob PDF, PowerPoint, Word oder Markdown: Lade deine Unterlagen in jedem Format hoch und überlass den Rest der KI.',
       // How it works
-      how_label: 'So funktionierts',
+      how_label: 'So funktioniert\'s',
       how_title: 'In drei Schritten zur bestandenen Klausur',
       how_sub: 'Keine aufwändige Einrichtung und keine lange Einarbeitung. Du bist in wenigen Minuten startklar.',
       step1_title: 'Materialien hochladen',
@@ -1587,10 +1537,6 @@
       step2_desc: 'Gib deinen Prüfungstermin und deinen Lernstil an. Veexa erstellt daraufhin deinen persönlichen Lernplan und analysiert deine Altklausuren.',
       step3_title: 'Lernen & bestehen',
       step3_desc: 'Stelle Fragen, übe gezielt und schreibe Probeklausuren. Veexa begleitet dich jeden Tag bis zur Prüfung.',
-      // Testimonials
-      testi_label: 'Stimmen',
-      testi_title: 'Was Studierende über Veexa sagen',
-      testi_sub: 'Studierende quer durch alle Fächer setzen in der Prüfungsphase auf Veexa. Das berichten sie aus ihrer Lernzeit.',
       // Pricing
       pricing_label: 'Preise',
       pricing_title: 'Einfach. Transparent.',
@@ -1605,7 +1551,7 @@
       free_f5: '3 Datei-Uploads',
       free_btn: 'Kostenlos starten',
       student_f1: '5 Module',
-      student_f2: '300 KI-Fragen / Monat (Haiku + Sonnet)',
+      student_f2: '300 KI-Fragen / Monat',
       student_f3: '15 Zusammenfassungen / Monat',
       student_f4: '5 Roadmaps / Monat (editierbar)',
       student_f5: '5 Probeklausuren / Monat',
@@ -1638,11 +1584,11 @@
       cta_title: 'Bereit für deine nächste Klausur?',
       cta_sub: 'Starte heute kostenlos und mach deine Vorlesungsunterlagen zu deinem persönlichen Lernassistenten.',
       cta_btn: 'Kostenlos starten',
-      cta_note: 'Kostenlos starten · Keine Kreditkarte nötig · In 2 Minuten startklar',
+      cta_note: 'Keine Kreditkarte nötig · In 2 Minuten startklar',
       // Footer
       footer_tagline: 'Der KI-Lernassistent für deine Prüfungsphase. Aus deinen Unterlagen, in deinem Tempo.',
       footer_col_product: 'Produkt',
-      footer_how: 'So funktionierts',
+      footer_how: 'So funktioniert\'s',
       footer_pricing: 'Preise',
       footer_col_account: 'Konto',
       footer_register: 'Registrieren',
@@ -1653,7 +1599,7 @@
       footer_privacy: 'Datenschutz',
       footer_terms: 'AGB',
       footer_copyright: '© 2026 Veexa. Alle Rechte vorbehalten.',
-      footer_made_with: 'Made with ♥ für Studierende',
+      footer_made_with: 'Mit ♥ für Studierende gebaut',
       // Auth modal
       modal_sub: 'Dein KI-Lernassistent',
       ph_name: 'Name',
@@ -1683,6 +1629,28 @@
       modal_setting_pw: 'Speichern…',
       modal_recovery_hint: 'Wähle ein neues Passwort für dein Konto.',
       modal_pw_updated: '✓ Passwort aktualisiert. Weiterleitung…',
+      // Misc / Aria
+      nav_features: 'Features',
+      footer_features: 'Features',
+      aria_lang: 'Sprache',
+      aria_theme: 'Design wechseln',
+      aria_prev_feature: 'Vorheriges Feature',
+      aria_next_feature: 'Nächstes Feature',
+      aria_choose_feature: 'Feature wählen',
+      aria_billing: 'Abrechnungszeitraum',
+      aria_auth: 'Anmeldung',
+      aria_close: 'Schließen',
+      per_month: '/ Monat',
+      per_year: '/ Jahr',
+      nav_to_app: 'Zur App',
+      open_app: 'App öffnen',
+      // Auth messages
+      msg_supabase_missing: 'Login-Dienst nicht erreichbar. Bitte lade die Seite neu.',
+      msg_enter_both: 'Bitte E-Mail und Passwort eingeben.',
+      msg_enter_name: 'Bitte gib deinen Namen ein.',
+      msg_pw_short: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+      msg_pw_mismatch: 'Die Passwörter stimmen nicht überein.',
+      msg_confirm_sent: '✓ Bestätigungs-Mail gesendet. Bitte prüfe dein Postfach.',
     },
     en: {
       // Nav
@@ -1696,20 +1664,22 @@
       hero_cta_primary: 'Start for free',
       hero_cta_secondary: 'See features',
       trust_no_cc: 'No credit card required',
-      trust_gdpr: 'Privacy-first',
+      trust_gdpr: 'Delete your account anytime',
       trust_eu: 'Servers in the EU',
       trust_claude: 'Powered by Claude',
       // Stats
-      stat_ai_features: 'AI Features',
+      stat_speed_v: 'Seconds',
+      stat_speed_l: 'From upload to summary',
       stat_formats: 'Supported Formats',
-      stat_modules: 'Modules & Courses',
+      stat_src_v: 'Sources',
+      stat_src_l: 'Cited in every answer',
       stat_materials: 'From Your Materials',
       // Features
       features_label: 'Features',
       features_title: 'Your entire exam prep in one place',
       features_sub: 'From your first summary to your final practice exam, Veexa supports you through every stage of your preparation.',
       feat1_title: 'Questions About Your Materials',
-      feat1_desc: 'Ask any question directly about your content and get precise answers. Every statement is backed by the relevant passage in your own material, with no made-up facts.',
+      feat1_desc: 'Ask any question directly about your content and get precise answers. Every statement is backed by the relevant passage in your own material, so you can verify every answer instantly.',
       feat2_title: 'Automatic Summaries',
       feat2_desc: 'Upload slides, notes, or PDFs and get a clearly structured summary with every key concept in seconds.',
       feat3_title: 'Personal Study Roadmap',
@@ -1734,10 +1704,6 @@
       step2_desc: 'Enter your exam date and learning style. Veexa then builds your personal study plan and analyzes your past exams.',
       step3_title: 'Study & Pass',
       step3_desc: 'Ask questions, practice with focus, and write practice exams. Veexa supports you every day right up to your exam.',
-      // Testimonials
-      testi_label: 'Testimonials',
-      testi_title: 'What students say about Veexa',
-      testi_sub: "Students across every field rely on Veexa during exam season. Here's what they report from their study time.",
       // Pricing
       pricing_label: 'Pricing',
       pricing_title: 'Simple. Transparent.',
@@ -1752,7 +1718,7 @@
       free_f5: '3 File Uploads',
       free_btn: 'Start for Free',
       student_f1: '5 Modules',
-      student_f2: '300 AI Questions / Month (Haiku + Sonnet)',
+      student_f2: '300 AI Questions / Month',
       student_f3: '15 Summaries / Month',
       student_f4: '5 Roadmaps / Month (editable)',
       student_f5: '5 Practice Exams / Month',
@@ -1785,7 +1751,7 @@
       cta_title: 'Ready for your next exam?',
       cta_sub: 'Start for free today and turn your lecture materials into your personal study assistant.',
       cta_btn: 'Start for free',
-      cta_note: 'Free to start · No credit card required · Ready in 2 minutes',
+      cta_note: 'No credit card required · Ready in 2 minutes',
       // Footer
       footer_tagline: 'The AI study assistant for your exam season. From your materials, at your pace.',
       footer_col_product: 'Product',
@@ -1830,10 +1796,366 @@
       modal_setting_pw: 'Saving…',
       modal_recovery_hint: 'Choose a new password for your account.',
       modal_pw_updated: '✓ Password updated. Redirecting…',
+      // Misc / Aria
+      nav_features: 'Features',
+      footer_features: 'Features',
+      aria_lang: 'Language',
+      aria_theme: 'Toggle theme',
+      aria_prev_feature: 'Previous feature',
+      aria_next_feature: 'Next feature',
+      aria_choose_feature: 'Choose feature',
+      aria_billing: 'Billing period',
+      aria_auth: 'Sign in',
+      aria_close: 'Close',
+      per_month: '/ month',
+      per_year: '/ year',
+      nav_to_app: 'Go to App',
+      open_app: 'Open App',
+      // Auth messages
+      msg_supabase_missing: 'Login service unavailable. Please reload the page.',
+      msg_enter_both: 'Please enter your email and password.',
+      msg_enter_name: 'Please enter your name.',
+      msg_pw_short: 'The password must be at least 8 characters long.',
+      msg_pw_mismatch: 'The passwords do not match.',
+      msg_confirm_sent: '✓ Confirmation email sent. Please check your inbox.',
+    },
+    es: {
+      // Nav
+      nav_how: 'Cómo funciona',
+      nav_pricing: 'Precios',
+      nav_cta: 'Empieza gratis',
+      // Hero
+      hero_badge: 'La plataforma de estudio para tu época de exámenes',
+      hero_title: 'De los apuntes<br>al <em>examen aprobado.</em>',
+      hero_sub: 'Veexa convierte tus apuntes, diapositivas y exámenes anteriores en un asistente de estudio personal. Obtienes respuestas precisas con referencias, un plan de estudio realista y exámenes de práctica al estilo de tu universidad.',
+      hero_cta_primary: 'Empieza gratis',
+      hero_cta_secondary: 'Ver funciones',
+      trust_no_cc: 'Sin tarjeta de crédito',
+      trust_gdpr: 'Elimina tu cuenta cuando quieras',
+      trust_eu: 'Servidores en la UE',
+      trust_claude: 'Con tecnología de Claude',
+      // Stats
+      stat_speed_v: 'Segundos',
+      stat_speed_l: 'De la subida al resumen',
+      stat_formats: 'Formatos compatibles',
+      stat_src_v: 'Fuentes',
+      stat_src_l: 'Citadas en cada respuesta',
+      stat_materials: 'De tus materiales',
+      // Features
+      features_label: 'Funciones',
+      features_title: 'Toda tu preparación de exámenes en un solo lugar',
+      features_sub: 'Desde el primer resumen hasta el último examen de práctica, Veexa te acompaña en cada fase de tu preparación.',
+      feat1_title: 'Preguntas sobre tus materiales',
+      feat1_desc: 'Haz cualquier pregunta directamente sobre tu temario y recibe respuestas precisas. Cada afirmación está respaldada por el pasaje correspondiente de tu material, para que puedas comprobar cada respuesta al instante.',
+      feat2_title: 'Resúmenes automáticos',
+      feat2_desc: 'Sube diapositivas, apuntes o PDFs y obtén en segundos un resumen claramente estructurado con todos los conceptos clave.',
+      feat3_title: 'Hoja de ruta de estudio personal',
+      feat3_desc: 'Indícanos la fecha de tu examen y Veexa crea un plan de estudio realista, adaptado exactamente a tu temario y tus prioridades.',
+      feat4_title: 'Tareas diarias',
+      feat4_desc: 'Tareas concretas y alcanzables cada día en lugar de propósitos vagos. Marca lo que has terminado y controla tu progreso en todo momento.',
+      feat5_title: 'Exámenes de práctica',
+      feat5_desc: 'Veexa genera exámenes de práctica completos al estilo de tus exámenes reales, ajustados al formato, la distribución de puntos y los temas centrales de tu universidad.',
+      feat6_title: 'Solucionador de hojas de ejercicios',
+      feat6_desc: 'Sube tu hoja de ejercicios y recibe soluciones claras paso a paso, con una explicación de cada procedimiento.',
+      feat7_title: 'Análisis del estilo de examen',
+      feat7_desc: 'Veexa analiza tus exámenes anteriores y aprende el estilo típico de tu universidad, para que cada examen de práctica se acerque lo máximo posible al original.',
+      feat8_title: 'Todos los formatos habituales',
+      feat8_desc: 'Ya sea PDF, PowerPoint, Word o Markdown: sube tus materiales en cualquier formato y deja el resto a la IA.',
+      // How it works
+      how_label: 'Cómo funciona',
+      how_title: 'Aprueba tu examen en tres pasos',
+      how_sub: 'Sin configuraciones complicadas ni largas curvas de aprendizaje. Estás listo en pocos minutos.',
+      step1_title: 'Sube tus materiales',
+      step1_desc: 'Sube diapositivas, apuntes y exámenes anteriores en cualquier formato habitual. Veexa los lee y los entiende automáticamente.',
+      step2_title: 'Define tu objetivo',
+      step2_desc: 'Indica la fecha de tu examen y tu estilo de aprendizaje. Veexa crea tu plan de estudio personal y analiza tus exámenes anteriores.',
+      step3_title: 'Estudia y aprueba',
+      step3_desc: 'Haz preguntas, practica con foco y realiza exámenes de práctica. Veexa te acompaña cada día hasta el examen.',
+      // Pricing
+      pricing_label: 'Precios',
+      pricing_title: 'Simple. Transparente.',
+      pricing_sub: 'Empieza gratis y cambia a Student o Pro cuando quieras. Todas las suscripciones se pueden cancelar mensualmente.',
+      billing_monthly: 'Mensual',
+      billing_yearly: 'Anual',
+      student_badge: 'La más popular',
+      free_f1: '1 módulo',
+      free_f2: '50 preguntas de IA / mes',
+      free_f3: '2 resúmenes / mes',
+      free_f4: '1 hoja de ruta / mes',
+      free_f5: '3 archivos subidos',
+      free_btn: 'Empieza gratis',
+      student_f1: '5 módulos',
+      student_f2: '300 preguntas de IA / mes',
+      student_f3: '15 resúmenes / mes',
+      student_f4: '5 hojas de ruta / mes (editables)',
+      student_f5: '5 exámenes de práctica / mes',
+      student_f6: '25 subidas · Soporte por email',
+      student_btn: 'Elegir Student',
+      pro_f1: 'Módulos y preguntas de IA ilimitados',
+      pro_f2: 'Resúmenes ilimitados',
+      pro_f3: 'Hojas de ruta ilimitadas + exportación (PDF/Notion)',
+      pro_f4: 'Exámenes ilimitados + análisis de soluciones',
+      pro_f5: 'Tareas diarias: plan de estudio automático',
+      pro_f6: 'Subidas de hasta 500 MB · Soporte prioritario (< 24h)',
+      pro_btn: 'Empezar con Pro',
+      // FAQ
+      faq_label: 'FAQ',
+      faq_title: 'Preguntas frecuentes',
+      faq_sub: 'Todo lo que debes saber antes de empezar.',
+      faq1_q: '¿Mis materiales se mantienen privados?',
+      faq1_a: 'Sí. Tus documentos se procesan exclusivamente para tu cuenta, se almacenan en servidores de la UE y nunca se usan para entrenar modelos de IA.',
+      faq2_q: '¿Qué IA hay detrás de Veexa?',
+      faq2_a: 'Veexa funciona con Claude de Anthropic (Haiku y Sonnet). Las preguntas sencillas las responde el rápido modelo Haiku y las exigentes el más potente Sonnet. Así obtienes la mejor calidad a un precio justo.',
+      faq3_q: '¿Qué tan realistas son los exámenes de práctica?',
+      faq3_a: 'Se basan en tus exámenes reales anteriores y de clase. Veexa adopta el formato, la distribución de puntos y los temas centrales de tu universidad, para que la práctica se acerque lo máximo posible al examen real.',
+      faq4_q: '¿Puedo cancelar en cualquier momento?',
+      faq4_a: 'Sí, todas las suscripciones se pueden cancelar mensualmente. Sin contrato, sin permanencia mínima y sin costes ocultos.',
+      faq5_q: '¿Qué formatos de archivo son compatibles?',
+      faq5_a: 'PDF, PowerPoint (PPTX), Word (DOCX) y Markdown. Simplemente sube tus diapositivas y apuntes, la IA los entiende todos.',
+      faq6_q: '¿Necesito tarjeta de crédito para el plan Free?',
+      faq6_a: 'No. Empiezas de inmediato y completamente gratis, sin datos de pago. Solo necesitas un método de pago al pasar a Student o Pro.',
+      // CTA band
+      cta_title: '¿Listo para tu próximo examen?',
+      cta_sub: 'Empieza gratis hoy y convierte tus apuntes en tu asistente de estudio personal.',
+      cta_btn: 'Empieza gratis',
+      cta_note: 'Sin tarjeta de crédito · Listo en 2 minutos',
+      // Footer
+      footer_tagline: 'El asistente de estudio con IA para tu época de exámenes. A partir de tus materiales, a tu ritmo.',
+      footer_col_product: 'Producto',
+      footer_how: 'Cómo funciona',
+      footer_pricing: 'Precios',
+      footer_col_account: 'Cuenta',
+      footer_register: 'Registrarse',
+      footer_login: 'Iniciar sesión',
+      footer_app: 'Ir a la app',
+      footer_col_legal: 'Legal',
+      footer_impressum: 'Aviso legal',
+      footer_privacy: 'Privacidad',
+      footer_terms: 'Términos',
+      footer_copyright: '© 2026 Veexa. Todos los derechos reservados.',
+      footer_made_with: 'Hecho con ♥ para estudiantes',
+      // Auth modal
+      modal_sub: 'Tu asistente de estudio con IA',
+      ph_name: 'Nombre',
+      ph_email: 'Email',
+      ph_password: 'Contraseña',
+      ph_password2: 'Confirmar contraseña',
+      modal_login_btn: 'Iniciar sesión',
+      modal_register_btn: 'Crear cuenta',
+      modal_login_loading: 'Iniciando sesión…',
+      modal_register_loading: 'Creando cuenta…',
+      modal_toggle_login_text: '¿Aún no tienes cuenta?',
+      modal_toggle_login_link: 'Regístrate',
+      modal_toggle_register_text: '¿Ya estás registrado?',
+      modal_toggle_register_link: 'Inicia sesión',
+      modal_or: 'o',
+      modal_google_btn: 'Continuar con Google',
+      modal_consent: 'Tengo al menos 16 años y acepto los {agb} y la {ds}.',
+      modal_consent_terms: 'Términos',
+      modal_consent_privacy: 'Política de privacidad',
+      modal_consent_error: 'Confirma tu edad mínima, los Términos y la Privacidad.',
+      modal_forgot_link: '¿Olvidaste tu contraseña?',
+      modal_forgot_need_email: 'Introduce primero tu dirección de email.',
+      modal_forgot_sending: 'Enviando enlace de restablecimiento…',
+      modal_forgot_sent: '✓ Si existe una cuenta, se ha enviado un enlace de restablecimiento.',
+      modal_new_pw_ph: 'Nueva contraseña (mín. 8 caracteres)',
+      modal_set_pw_btn: 'Guardar contraseña',
+      modal_setting_pw: 'Guardando…',
+      modal_recovery_hint: 'Elige una nueva contraseña para tu cuenta.',
+      modal_pw_updated: '✓ Contraseña actualizada. Redirigiendo…',
+      // Misc / Aria
+      nav_features: 'Funciones',
+      footer_features: 'Funciones',
+      aria_lang: 'Idioma',
+      aria_theme: 'Cambiar tema',
+      aria_prev_feature: 'Función anterior',
+      aria_next_feature: 'Función siguiente',
+      aria_choose_feature: 'Elegir función',
+      aria_billing: 'Período de facturación',
+      aria_auth: 'Inicio de sesión',
+      aria_close: 'Cerrar',
+      per_month: '/ mes',
+      per_year: '/ año',
+      nav_to_app: 'Ir a la app',
+      open_app: 'Abrir app',
+      // Auth messages
+      msg_supabase_missing: 'Servicio de inicio de sesión no disponible. Recarga la página.',
+      msg_enter_both: 'Introduce tu email y tu contraseña.',
+      msg_enter_name: 'Introduce tu nombre.',
+      msg_pw_short: 'La contraseña debe tener al menos 8 caracteres.',
+      msg_pw_mismatch: 'Las contraseñas no coinciden.',
+      msg_confirm_sent: '✓ Email de confirmación enviado. Revisa tu bandeja de entrada.',
+    },
+    fr: {
+      // Nav
+      nav_how: 'Comment ça marche',
+      nav_pricing: 'Tarifs',
+      nav_cta: 'Commencer gratuitement',
+      // Hero
+      hero_badge: "La plateforme d'étude pour ta période d'examens",
+      hero_title: 'Des notes de cours<br>à <em>l\'examen réussi.</em>',
+      hero_sub: "Veexa transforme tes notes, diapositives et annales en un assistant d'étude personnel. Tu obtiens des réponses précises avec sources, un plan d'étude réaliste et des examens blancs dans le style de ton université.",
+      hero_cta_primary: 'Commencer gratuitement',
+      hero_cta_secondary: 'Voir les fonctionnalités',
+      trust_no_cc: 'Sans carte bancaire',
+      trust_gdpr: 'Compte supprimable à tout moment',
+      trust_eu: "Serveurs dans l'UE",
+      trust_claude: 'Propulsé par Claude',
+      // Stats
+      stat_speed_v: 'Secondes',
+      stat_speed_l: 'Du téléversement au résumé',
+      stat_formats: 'Formats pris en charge',
+      stat_src_v: 'Sources',
+      stat_src_l: 'Citées dans chaque réponse',
+      stat_materials: 'À partir de tes documents',
+      // Features
+      features_label: 'Fonctionnalités',
+      features_title: "Toute ta préparation d'examens au même endroit",
+      features_sub: "Du premier résumé au dernier examen blanc, Veexa t'accompagne à chaque étape de ta préparation.",
+      feat1_title: 'Questions sur tes documents',
+      feat1_desc: "Pose n'importe quelle question directement sur ton cours et reçois des réponses précises. Chaque affirmation est étayée par le passage correspondant de tes documents, pour que tu puisses vérifier chaque réponse immédiatement.",
+      feat2_title: 'Résumés automatiques',
+      feat2_desc: 'Téléverse des diapositives, notes ou PDF et obtiens en quelques secondes un résumé clairement structuré avec tous les concepts clés.',
+      feat3_title: "Feuille de route d'étude personnelle",
+      feat3_desc: "Indique-nous la date de ton examen et Veexa crée un plan d'étude réaliste, parfaitement adapté à ton programme et à tes priorités.",
+      feat4_title: 'Tâches quotidiennes',
+      feat4_desc: 'Des tâches concrètes et réalisables chaque jour plutôt que de vagues résolutions. Coche ce qui est fait et garde ta progression sous les yeux à tout moment.',
+      feat5_title: 'Examens blancs',
+      feat5_desc: "Veexa génère des examens blancs complets dans le style de tes vrais examens, adaptés au format, à la répartition des points et aux thèmes clés de ton université.",
+      feat6_title: "Résolveur de feuilles d'exercices",
+      feat6_desc: "Téléverse ta feuille d'exercices et reçois des solutions claires étape par étape, avec une explication pour chaque démarche.",
+      feat7_title: "Analyse du style d'examen",
+      feat7_desc: "Veexa analyse tes annales et apprend le style d'examen typique de ton université, pour que chaque examen blanc soit aussi proche que possible de l'original.",
+      feat8_title: 'Tous les formats courants',
+      feat8_desc: "Qu'il s'agisse de PDF, PowerPoint, Word ou Markdown : téléverse tes documents dans n'importe quel format et laisse l'IA faire le reste.",
+      // How it works
+      how_label: 'Comment ça marche',
+      how_title: 'Réussis ton examen en trois étapes',
+      how_sub: "Pas de configuration compliquée ni de longue prise en main. Tu es prêt en quelques minutes.",
+      step1_title: 'Téléverse tes documents',
+      step1_desc: 'Téléverse diapositives, notes et annales dans tous les formats courants. Veexa les lit et les comprend automatiquement.',
+      step2_title: 'Définis ton objectif',
+      step2_desc: "Indique la date de ton examen et ton style d'apprentissage. Veexa crée ensuite ton plan d'étude personnel et analyse tes annales.",
+      step3_title: 'Étudie et réussis',
+      step3_desc: "Pose des questions, entraîne-toi de façon ciblée et passe des examens blancs. Veexa t'accompagne chaque jour jusqu'à l'examen.",
+      // Pricing
+      pricing_label: 'Tarifs',
+      pricing_title: 'Simple. Transparent.',
+      pricing_sub: 'Commence gratuitement et passe à Student ou Pro quand tu veux. Tous les abonnements sont résiliables chaque mois.',
+      billing_monthly: 'Mensuel',
+      billing_yearly: 'Annuel',
+      student_badge: 'Le plus populaire',
+      free_f1: '1 module',
+      free_f2: '50 questions IA / mois',
+      free_f3: '2 résumés / mois',
+      free_f4: '1 feuille de route / mois',
+      free_f5: '3 fichiers téléversés',
+      free_btn: 'Commencer gratuitement',
+      student_f1: '5 modules',
+      student_f2: '300 questions IA / mois',
+      student_f3: '15 résumés / mois',
+      student_f4: '5 feuilles de route / mois (modifiables)',
+      student_f5: '5 examens blancs / mois',
+      student_f6: '25 téléversements · Support par e-mail',
+      student_btn: 'Choisir Student',
+      pro_f1: 'Modules et questions IA illimités',
+      pro_f2: 'Résumés illimités',
+      pro_f3: 'Feuilles de route illimitées + export (PDF/Notion)',
+      pro_f4: 'Examens illimités + analyse des solutions',
+      pro_f5: "Tâches quotidiennes : plan d'étude automatique",
+      pro_f6: "Téléversements jusqu'à 500 Mo · Support prioritaire (< 24h)",
+      pro_btn: 'Démarrer Pro',
+      // FAQ
+      faq_label: 'FAQ',
+      faq_title: 'Questions fréquentes',
+      faq_sub: 'Tout ce que tu dois savoir avant de commencer.',
+      faq1_q: 'Mes documents restent-ils privés ?',
+      faq1_a: "Oui. Tes documents sont traités exclusivement pour ton compte, stockés sur des serveurs dans l'UE et jamais utilisés pour entraîner des modèles d'IA.",
+      faq2_q: 'Quelle IA se cache derrière Veexa ?',
+      faq2_a: "Veexa fonctionne avec Claude d'Anthropic (Haiku et Sonnet). Les questions simples sont traitées par le rapide modèle Haiku, les plus exigeantes par le plus puissant Sonnet. Tu obtiens ainsi la meilleure qualité à un prix juste.",
+      faq3_q: 'Les examens blancs sont-ils réalistes ?',
+      faq3_a: "Ils se basent sur tes vraies annales et examens de cours. Veexa reprend le format, la répartition des points et les thèmes clés de ton université, pour que l'entraînement soit aussi proche que possible du véritable examen.",
+      faq4_q: 'Puis-je résilier à tout moment ?',
+      faq4_a: 'Oui, tous les abonnements sont résiliables chaque mois. Pas de contrat, pas de durée minimale et pas de frais cachés.',
+      faq5_q: 'Quels formats de fichiers sont pris en charge ?',
+      faq5_a: "PDF, PowerPoint (PPTX), Word (DOCX) et Markdown. Téléverse simplement tes diapositives et tes notes, l'IA les comprend tous.",
+      faq6_q: "Ai-je besoin d'une carte bancaire pour le plan Free ?",
+      faq6_a: "Non. Tu commences immédiatement et entièrement gratuitement, sans aucune donnée de paiement. Un moyen de paiement n'est nécessaire que pour passer à Student ou Pro.",
+      // CTA band
+      cta_title: 'Prêt pour ton prochain examen ?',
+      cta_sub: "Commence gratuitement dès aujourd'hui et transforme tes notes de cours en assistant d'étude personnel.",
+      cta_btn: 'Commencer gratuitement',
+      cta_note: 'Sans carte bancaire · Prêt en 2 minutes',
+      // Footer
+      footer_tagline: "L'assistant d'étude IA pour ta période d'examens. À partir de tes documents, à ton rythme.",
+      footer_col_product: 'Produit',
+      footer_how: 'Comment ça marche',
+      footer_pricing: 'Tarifs',
+      footer_col_account: 'Compte',
+      footer_register: "S'inscrire",
+      footer_login: 'Se connecter',
+      footer_app: "Vers l'app",
+      footer_col_legal: 'Mentions légales',
+      footer_impressum: 'Mentions légales',
+      footer_privacy: 'Confidentialité',
+      footer_terms: 'CGV',
+      footer_copyright: '© 2026 Veexa. Tous droits réservés.',
+      footer_made_with: 'Fait avec ♥ pour les étudiants',
+      // Auth modal
+      modal_sub: "Ton assistant d'étude IA",
+      ph_name: 'Nom',
+      ph_email: 'E-mail',
+      ph_password: 'Mot de passe',
+      ph_password2: 'Confirmer le mot de passe',
+      modal_login_btn: 'Se connecter',
+      modal_register_btn: 'Créer un compte',
+      modal_login_loading: 'Connexion…',
+      modal_register_loading: 'Création du compte…',
+      modal_toggle_login_text: 'Pas encore de compte ?',
+      modal_toggle_login_link: "S'inscrire",
+      modal_toggle_register_text: 'Déjà inscrit ?',
+      modal_toggle_register_link: 'Se connecter',
+      modal_or: 'ou',
+      modal_google_btn: 'Continuer avec Google',
+      modal_consent: "J'ai au moins 16 ans et j'accepte les {agb} et la {ds}.",
+      modal_consent_terms: 'CGV',
+      modal_consent_privacy: 'Politique de confidentialité',
+      modal_consent_error: "Merci de confirmer l'âge minimum, les CGV et la confidentialité.",
+      modal_forgot_link: 'Mot de passe oublié ?',
+      modal_forgot_need_email: "Entre d'abord ton adresse e-mail.",
+      modal_forgot_sending: 'Envoi du lien de réinitialisation…',
+      modal_forgot_sent: '✓ Si un compte existe, un lien de réinitialisation a été envoyé.',
+      modal_new_pw_ph: 'Nouveau mot de passe (min. 8 caractères)',
+      modal_set_pw_btn: 'Enregistrer le mot de passe',
+      modal_setting_pw: 'Enregistrement…',
+      modal_recovery_hint: 'Choisis un nouveau mot de passe pour ton compte.',
+      modal_pw_updated: '✓ Mot de passe mis à jour. Redirection…',
+      // Misc / Aria
+      nav_features: 'Fonctionnalités',
+      footer_features: 'Fonctionnalités',
+      aria_lang: 'Langue',
+      aria_theme: 'Changer de thème',
+      aria_prev_feature: 'Fonctionnalité précédente',
+      aria_next_feature: 'Fonctionnalité suivante',
+      aria_choose_feature: 'Choisir une fonctionnalité',
+      aria_billing: 'Période de facturation',
+      aria_auth: 'Connexion',
+      aria_close: 'Fermer',
+      per_month: '/ mois',
+      per_year: '/ an',
+      nav_to_app: "Vers l'app",
+      open_app: "Ouvrir l'app",
+      // Auth messages
+      msg_supabase_missing: 'Service de connexion indisponible. Merci de recharger la page.',
+      msg_enter_both: 'Merci de saisir ton e-mail et ton mot de passe.',
+      msg_enter_name: 'Merci de saisir ton nom.',
+      msg_pw_short: 'Le mot de passe doit contenir au moins 8 caractères.',
+      msg_pw_mismatch: 'Les mots de passe ne correspondent pas.',
+      msg_confirm_sent: '✓ E-mail de confirmation envoyé. Vérifie ta boîte de réception.',
     },
   };
 
-  const _supportedLangs = ['de', 'en'];
+  const _supportedLangs = ['de', 'en', 'es', 'fr'];
   const _browserLang = (navigator.language || 'en').slice(0, 2).toLowerCase();
   let currentLang = localStorage.getItem('app-lang') || (_supportedLangs.includes(_browserLang) ? _browserLang : 'en');
 
@@ -1855,6 +2177,18 @@
     document.querySelectorAll('[data-i18n-ph]').forEach(el => {
       const key = el.getAttribute('data-i18n-ph');
       if (T[key] !== undefined) el.placeholder = T[key];
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+      const key = el.getAttribute('data-i18n-aria');
+      if (T[key] !== undefined) el.setAttribute('aria-label', T[key]);
+    });
+    // Preis-Suffixe (/ Monat bzw. / Jahr) je nach aktivem Abrechnungszyklus
+    const yearly = document.querySelector('.bs-opt[data-cycle="yearly"]')?.classList.contains('is-active');
+    document.querySelectorAll('#pricing .price-amount-wrap').forEach(w => {
+      if (T.per_month !== undefined) w.dataset.mp = T.per_month;
+      if (T.per_year !== undefined) w.dataset.yp = T.per_year;
+      const p = w.querySelector('.price-period');
+      if (p) p.textContent = yearly ? w.dataset.yp : w.dataset.mp;
     });
     document.querySelectorAll('.lang-opt').forEach(b => {
       b.classList.toggle('active', b.dataset.lang === lang);
@@ -1974,6 +2308,20 @@
           if (a) a.style.maxHeight = a.scrollHeight + 'px';
         }
       }, 150);
+    });
+  })();
+
+  /* ── Theme Toggle ── */
+  (function () {
+    const btn = document.getElementById('theme-toggle');
+    function applyTheme(t) {
+      document.body.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      if (btn) btn.textContent = t === 'dark' ? '☀' : '☾';
+    }
+    applyTheme(localStorage.getItem('theme') || 'light');
+    if (btn) btn.addEventListener('click', () => {
+      applyTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     });
   })();
 </script>

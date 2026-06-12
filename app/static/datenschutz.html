@@ -12,11 +12,15 @@
       --bg: #F5F1EB; --panel: #EDE7DC; --border: #C4BAB0;
       --text: #1A1614; --muted: #5C5450; --accent: #C2410C;
     }
+    [data-theme="dark"] {
+      --bg: #161210; --panel: #1F1A16; --border: #3A3028;
+      --text: #F0EDE8; --muted: #A8A29E; --accent: #F97316;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; transition: background 0.25s ease, color 0.25s ease; }
     .legal-nav {
       position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 1.5rem; background: rgba(245,241,235,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
     }
     .legal-nav a.brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
     .legal-nav a.brand span { color: var(--accent); }
@@ -47,17 +51,20 @@
   </style>
 </head>
 <body>
+  <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='dark')document.body.setAttribute('data-theme','dark');})();
+  </script>
   <nav class="legal-nav">
     <a class="brand" href="/">Vee<span>xa</span></a>
-    <a class="back" href="/">← Zurück zur Startseite</a>
+    <a class="back" href="/" data-i18n="back-home">← Zurück zur Startseite</a>
   </nav>
 
   <main>
-    <div class="legal-kicker">Rechtliches</div>
-    <h1>Datenschutzerklärung</h1>
-    <p class="muted">Informationen gemäß Art. 13 und 14 DSGVO</p>
+    <div class="legal-kicker" data-i18n="kicker">Rechtliches</div>
+    <h1 data-i18n="title">Datenschutzerklärung</h1>
+    <p class="muted" data-i18n="subtitle">Informationen gemäß Art. 13 und 14 DSGVO</p>
 
-    <div class="note">
+    <div class="note" data-i18n-html="note">
       <strong>Hinweis:</strong> Dieser Entwurf ist auf die tatsächlichen Datenflüsse von Veexa
       zugeschnitten (Supabase, OpenAI, Anthropic). Mit <span class="ph">[…]</span> markierte Felder
       sind vor dem Live-Gang auszufüllen. Eine anwaltliche Endabnahme — insbesondere zur
@@ -65,8 +72,8 @@
     </div>
 
     <div class="toc">
-      <strong>Inhalt</strong>
-      <ol>
+      <strong data-i18n="toc-title">Inhalt</strong>
+      <ol data-i18n-html="toc">
         <li><a href="#verantwortlicher">Verantwortlicher</a></li>
         <li><a href="#ueberblick">Überblick der Verarbeitungen</a></li>
         <li><a href="#rechtsgrundlagen">Rechtsgrundlagen</a></li>
@@ -81,20 +88,20 @@
       </ol>
     </div>
 
-    <h2 id="verantwortlicher">1. Verantwortlicher</h2>
-    <p>
+    <h2 id="verantwortlicher" data-i18n="h-1">1. Verantwortlicher</h2>
+    <p data-i18n-html="p-1">
       Verantwortlicher im Sinne der DSGVO ist:<br />
       <span class="ph">[NAME / FIRMA]</span><br />
       <span class="ph">[STRASSE NR.]</span>, <span class="ph">[PLZ ORT]</span>, <span class="ph">[LAND]</span><br />
       E-Mail: <span class="ph">[KONTAKT-E-MAIL]</span>
     </p>
-    <p class="muted">
+    <p class="muted" data-i18n-html="p-1b">
       Einen Datenschutzbeauftragten haben wir <span class="ph">[bestellt: NAME/KONTAKT — falls zutreffend / nicht bestellt, da gesetzlich nicht erforderlich]</span>.
     </p>
 
-    <h2 id="ueberblick">2. Überblick der Verarbeitungen</h2>
-    <p>Wir verarbeiten personenbezogene Daten, um dir den Lern-Assistenten Veexa bereitzustellen. Im Wesentlichen sind das:</p>
-    <ul>
+    <h2 id="ueberblick" data-i18n="h-2">2. Überblick der Verarbeitungen</h2>
+    <p data-i18n="p-2">Wir verarbeiten personenbezogene Daten, um dir den Lern-Assistenten Veexa bereitzustellen. Im Wesentlichen sind das:</p>
+    <ul data-i18n-html="list-2">
       <li><strong>Konto- und Anmeldedaten</strong> (E-Mail-Adresse, ggf. Name bei Google-Login, verschlüsseltes Passwort).</li>
       <li><strong>Von dir hochgeladene Lernmaterialien</strong> (PDF-, PPTX-, TXT-, MD-Dateien) und daraus erzeugte Texte/Embeddings.</li>
       <li><strong>Von der KI generierte Inhalte</strong> (Zusammenfassungen, Lernpläne, Übungsklausuren, Quizfragen).</li>
@@ -102,52 +109,52 @@
       <li><strong>Technische Daten</strong> (IP-Adresse, Zeitstempel, Browser-Informationen über Server-Logs des Hosters).</li>
     </ul>
 
-    <h2 id="rechtsgrundlagen">3. Rechtsgrundlagen</h2>
-    <ul>
+    <h2 id="rechtsgrundlagen" data-i18n="h-3">3. Rechtsgrundlagen</h2>
+    <ul data-i18n-html="list-3">
       <li><strong>Art. 6 Abs. 1 lit. b DSGVO</strong> (Vertragserfüllung) — für Registrierung, Bereitstellung der Kernfunktionen und Verarbeitung deiner Materialien.</li>
       <li><strong>Art. 6 Abs. 1 lit. f DSGVO</strong> (berechtigtes Interesse) — für technisch notwendige Logs, Sicherheit und Missbrauchsvermeidung (z. B. Rate-Limiting).</li>
       <li><strong>Art. 6 Abs. 1 lit. c DSGVO</strong> (rechtliche Verpflichtung) — soweit wir gesetzlich zur Aufbewahrung verpflichtet sind.</li>
       <li><strong>Art. 6 Abs. 1 lit. a DSGVO</strong> (Einwilligung) — soweit wir dich um eine gesonderte Einwilligung bitten; diese kannst du jederzeit mit Wirkung für die Zukunft widerrufen.</li>
     </ul>
 
-    <h2 id="hosting">4. Hosting &amp; Server-Logs</h2>
-    <p>
+    <h2 id="hosting" data-i18n="h-4">4. Hosting &amp; Server-Logs</h2>
+    <p data-i18n-html="p-4">
       Die Anwendung wird bei <span class="ph">[HOSTING-ANBIETER, z. B. Railway / Region]</span> betrieben.
       Datenbank, Datei-Speicher und Authentifizierung laufen über <strong>Supabase</strong>
       (Supabase, Inc.). Beim Aufruf der Anwendung verarbeitet der Server technisch notwendige
       Zugriffsdaten (u. a. IP-Adresse, Datum/Uhrzeit, abgerufene Ressource, Browser-/Geräteangaben),
       um den Dienst auszuliefern und abzusichern (Art. 6 Abs. 1 lit. f DSGVO).
     </p>
-    <p class="muted">
+    <p class="muted" data-i18n-html="p-4b">
       Wir empfehlen, die Supabase-Region auf die EU (z. B. Frankfurt) zu setzen, damit Datenbank- und
       Speicherdaten innerhalb der EU verbleiben. <span class="ph">[Aktuell gewählte Region eintragen.]</span>
     </p>
 
-    <h2 id="konto">5. Registrierung &amp; Konto</h2>
-    <p>
+    <h2 id="konto" data-i18n="h-5">5. Registrierung &amp; Konto</h2>
+    <p data-i18n="p-5">
       Für die Nutzung legst du ein Konto an (E-Mail + Passwort oder Google-Login). Die Authentifizierung
       erfolgt über Supabase Auth. Das Passwort wird ausschließlich als kryptografischer Hash gespeichert;
       wir haben keinen Zugriff auf dein Klartext-Passwort. Bei Anmeldung über Google erhalten wir die zur
       Kontoerstellung erforderlichen Profildaten (Name, E-Mail) von Google.
     </p>
-    <p>Mit der Registrierung bestätigst du, dass du mindestens 16 Jahre alt bist (siehe Art. 8 DSGVO).</p>
+    <p data-i18n="p-5b">Mit der Registrierung bestätigst du, dass du mindestens 16 Jahre alt bist (siehe Art. 8 DSGVO).</p>
 
-    <h2 id="inhalte">6. Hochgeladene Materialien &amp; KI-Funktionen</h2>
-    <p>
+    <h2 id="inhalte" data-i18n="h-6">6. Hochgeladene Materialien &amp; KI-Funktionen</h2>
+    <p data-i18n="p-6">
       Die von dir hochgeladenen Dateien werden gespeichert, in Text umgewandelt, in Abschnitte („Chunks")
       zerlegt und in Vektor-Repräsentationen (Embeddings) überführt, damit die KI deine Fragen anhand
       deiner Materialien beantworten kann. Zur Erzeugung von Antworten, Zusammenfassungen, Lernplänen,
       Übungsklausuren und Embeddings werden relevante Textausschnitte an die unten genannten
       KI-Dienstleister übermittelt.
     </p>
-    <div class="note">
+    <div class="note" data-i18n="note-6">
       Lade keine Materialien hoch, an denen du keine Nutzungsrechte hast, sowie keine besonderen
       Kategorien personenbezogener Daten Dritter (Art. 9 DSGVO). KI-Ausgaben können fehlerhaft sein und
       ersetzen keine offiziellen Studien- oder Prüfungsunterlagen.
     </div>
 
-    <h2 id="dienste">7. Eingesetzte Dienste &amp; Drittland-Übermittlung</h2>
-    <p>
+    <h2 id="dienste" data-i18n="h-7">7. Eingesetzte Dienste &amp; Drittland-Übermittlung</h2>
+    <p data-i18n="p-7">
       Zur Bereitstellung der Funktionen setzen wir folgende Auftragsverarbeiter ein. Mit ihnen besteht
       bzw. wird ein Vertrag zur Auftragsverarbeitung (Art. 28 DSGVO) geschlossen. Soweit Daten in die USA
       übermittelt werden, stützen wir dies auf Standardvertragsklauseln (Art. 46 DSGVO) und/oder die
@@ -155,9 +162,9 @@
     </p>
     <table>
       <thead>
-        <tr><th>Dienst</th><th>Anbieter / Sitz</th><th>Zweck</th><th>Daten</th></tr>
+        <tr data-i18n-html="table-head"><th>Dienst</th><th>Anbieter / Sitz</th><th>Zweck</th><th>Daten</th></tr>
       </thead>
-      <tbody>
+      <tbody data-i18n-html="table-body">
         <tr>
           <td>Supabase</td>
           <td>Supabase, Inc., USA <span class="ph">[Region prüfen]</span></td>
@@ -190,26 +197,26 @@
         </tr>
       </tbody>
     </table>
-    <p class="muted">
+    <p class="muted" data-i18n="p-7b">
       Hinweis der API-Anbieter: OpenAI und Anthropic geben an, über die API übermittelte Daten nicht zum
       Training ihrer Modelle zu verwenden. Bitte prüfe die jeweils gültigen Vertrags- und
       Datenschutzbedingungen und schließe die entsprechenden AVV/DPA ab.
     </p>
 
-    <h2 id="speicherdauer">8. Speicherdauer</h2>
-    <ul>
+    <h2 id="speicherdauer" data-i18n="h-8">8. Speicherdauer</h2>
+    <ul data-i18n-html="list-8">
       <li><strong>Konto- und Inhaltsdaten:</strong> bis zur Löschung deines Kontos durch dich oder bis zum Wegfall des Zwecks.</li>
       <li><strong>Server-Logs:</strong> für die zur Sicherheit erforderliche Dauer, danach Löschung bzw. Anonymisierung.</li>
       <li><strong>Daten an KI-Dienstleister:</strong> gemäß deren Aufbewahrungsfristen (i. d. R. kurzfristige Speicherung zur Missbrauchskontrolle).</li>
     </ul>
-    <p>
+    <p data-i18n="p-8b">
       Bei Konto-Löschung über die Einstellungen werden deine Datenbank-Einträge und gespeicherten Dateien
       unwiderruflich entfernt.
     </p>
 
-    <h2 id="rechte">9. Deine Rechte</h2>
-    <p>Dir stehen gegenüber dem Verantwortlichen folgende Rechte zu:</p>
-    <ul>
+    <h2 id="rechte" data-i18n="h-9">9. Deine Rechte</h2>
+    <p data-i18n="p-9">Dir stehen gegenüber dem Verantwortlichen folgende Rechte zu:</p>
+    <ul data-i18n-html="list-9">
       <li><strong>Auskunft</strong> (Art. 15 DSGVO) — Veexa bietet hierfür einen Daten-Export in den Einstellungen.</li>
       <li><strong>Berichtigung</strong> (Art. 16 DSGVO).</li>
       <li><strong>Löschung</strong> (Art. 17 DSGVO) — direkt über „Konto löschen" in den Einstellungen.</li>
@@ -218,48 +225,216 @@
       <li><strong>Widerspruch</strong> (Art. 21 DSGVO) gegen Verarbeitungen auf Grundlage berechtigter Interessen.</li>
       <li><strong>Widerruf</strong> erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO).</li>
     </ul>
-    <p>
+    <p data-i18n-html="p-9b">
       Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren
       (Art. 77 DSGVO), insbesondere in dem Mitgliedstaat deines Aufenthaltsorts. Zuständige Behörde für
       uns ist <span class="ph">[zuständige Aufsichtsbehörde des Verantwortlichen]</span>.
     </p>
 
-    <h2 id="cookies">10. Cookies &amp; lokale Speicherung</h2>
-    <p>
+    <h2 id="cookies" data-i18n="h-10">10. Cookies &amp; lokale Speicherung</h2>
+    <p data-i18n-html="p-10">
       Veexa setzt <strong>keine Tracking- oder Marketing-Cookies</strong> und bindet keine
       Analyse-Dienste Dritter ein. Für den Betrieb verwenden wir ausschließlich technisch
       notwendige lokale Speicherung im Browser (<code>localStorage</code>):
     </p>
-    <ul>
+    <ul data-i18n-html="list-10">
       <li><strong>Anmelde-Sitzung</strong> (Supabase Auth-Token) — damit du angemeldet bleibst.</li>
       <li><strong>Oberflächen-Einstellungen</strong> — z. B. Sprache, Hell-/Dunkel-Design, Ordnerstruktur.</li>
     </ul>
-    <p>
+    <p data-i18n="p-10b">
       Auch die verwendeten Schriftarten werden von unserem eigenen Server geladen (kein Abruf von
       Google-Servern), sodass beim Seitenaufruf keine IP-Adresse an Dritte übermittelt wird.
     </p>
-    <p>
+    <p data-i18n="p-10c">
       Diese lokale Speicherung ist für die von dir angeforderte Nutzung erforderlich
       (§ 25 Abs. 2 TDDDG) und benötigt daher keine gesonderte Einwilligung. Es werden keine
       personenbezogenen Nutzungsprofile gebildet. Du kannst die lokale Speicherung jederzeit über
       die Einstellungen deines Browsers löschen; danach musst du dich erneut anmelden.
     </p>
 
-    <h2 id="aenderungen">11. Änderungen dieser Erklärung</h2>
-    <p>
+    <h2 id="aenderungen" data-i18n="h-11">11. Änderungen dieser Erklärung</h2>
+    <p data-i18n="p-11">
       Wir passen diese Datenschutzerklärung an, sobald sich Funktionen oder Rechtslage ändern. Die jeweils
       aktuelle Fassung ist auf dieser Seite abrufbar.
     </p>
 
-    <p class="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
+    <p class="updated" data-i18n-html="updated">Stand: <span class="ph">[DATUM EINSETZEN]</span></p>
   </main>
 
   <footer class="legal-footer">
-    <a href="/impressum">Impressum</a> ·
-    <a href="/datenschutz">Datenschutz</a> ·
-    <a href="/agb">AGB</a> ·
-    <a href="/">Startseite</a>
+    <a href="/impressum" data-i18n="f-impressum">Impressum</a> ·
+    <a href="/datenschutz" data-i18n="f-privacy">Datenschutz</a> ·
+    <a href="/agb" data-i18n="f-terms">AGB</a> ·
+    <a href="/" data-i18n="f-home">Startseite</a>
     <div style="margin-top:0.5rem;">© 2026 Veexa</div>
   </footer>
+
+  <script>
+  // Convenience translations — the German version prevails legally.
+  const TRANSLATIONS = {
+    en: {
+      'page-title':'Privacy Policy — Veexa',
+      'back-home':'← Back to home',
+      'kicker':'Legal',
+      'title':'Privacy Policy',
+      'subtitle':'Information pursuant to Art. 13 and 14 GDPR',
+      'note':'<strong>Note:</strong> This draft is tailored to Veexa\'s actual data flows (Supabase, OpenAI, Anthropic). Fields marked with <span class="ph">[…]</span> must be filled in before going live. A final legal review — especially regarding third-country transfers to the USA — is recommended. This English version is a convenience translation — the German version is legally binding.',
+      'toc-title':'Contents',
+      'toc':'<li><a href="#verantwortlicher">Controller</a></li><li><a href="#ueberblick">Overview of processing</a></li><li><a href="#rechtsgrundlagen">Legal bases</a></li><li><a href="#hosting">Hosting &amp; server logs</a></li><li><a href="#konto">Registration &amp; account</a></li><li><a href="#inhalte">Uploaded materials &amp; AI features</a></li><li><a href="#dienste">Services used &amp; third-country transfers</a></li><li><a href="#speicherdauer">Storage period</a></li><li><a href="#rechte">Your rights</a></li><li><a href="#cookies">Cookies &amp; local storage</a></li><li><a href="#aenderungen">Changes</a></li>',
+      'h-1':'1. Controller',
+      'p-1':'The controller within the meaning of the GDPR is:<br /><span class="ph">[NAME / COMPANY]</span><br /><span class="ph">[STREET NO.]</span>, <span class="ph">[POSTAL CODE CITY]</span>, <span class="ph">[COUNTRY]</span><br />Email: <span class="ph">[CONTACT EMAIL]</span>',
+      'p-1b':'We have <span class="ph">[appointed a data protection officer: NAME/CONTACT — if applicable / not appointed one, as not legally required]</span>.',
+      'h-2':'2. Overview of processing',
+      'p-2':'We process personal data to provide you with the Veexa study assistant. In essence, this is:',
+      'list-2':'<li><strong>Account and login data</strong> (email address, name if using Google login, encrypted password).</li><li><strong>Study materials you upload</strong> (PDF, PPTX, TXT, MD files) and texts/embeddings generated from them.</li><li><strong>AI-generated content</strong> (summaries, study plans, practice exams, quiz questions).</li><li><strong>Usage and preference data</strong> (e.g. favourite module, folder structure, study progress).</li><li><strong>Technical data</strong> (IP address, timestamps, browser information via the host\'s server logs).</li>',
+      'h-3':'3. Legal bases',
+      'list-3':'<li><strong>Art. 6(1)(b) GDPR</strong> (performance of contract) — for registration, providing the core features and processing your materials.</li><li><strong>Art. 6(1)(f) GDPR</strong> (legitimate interest) — for technically necessary logs, security and abuse prevention (e.g. rate limiting).</li><li><strong>Art. 6(1)(c) GDPR</strong> (legal obligation) — insofar as we are legally required to retain data.</li><li><strong>Art. 6(1)(a) GDPR</strong> (consent) — where we ask you for separate consent; you can revoke it at any time with effect for the future.</li>',
+      'h-4':'4. Hosting & server logs',
+      'p-4':'The application is operated at <span class="ph">[HOSTING PROVIDER, e.g. Railway / region]</span>. Database, file storage and authentication run via <strong>Supabase</strong> (Supabase, Inc.). When you access the application, the server processes technically necessary access data (including IP address, date/time, requested resource, browser/device details) to deliver and secure the service (Art. 6(1)(f) GDPR).',
+      'p-4b':'We recommend setting the Supabase region to the EU (e.g. Frankfurt) so that database and storage data remain within the EU. <span class="ph">[Enter the currently selected region.]</span>',
+      'h-5':'5. Registration & account',
+      'p-5':'To use the service you create an account (email + password or Google login). Authentication is handled via Supabase Auth. The password is stored exclusively as a cryptographic hash; we have no access to your plain-text password. When signing in with Google, we receive the profile data required to create the account (name, email) from Google.',
+      'p-5b':'By registering you confirm that you are at least 16 years old (see Art. 8 GDPR).',
+      'h-6':'6. Uploaded materials & AI features',
+      'p-6':'The files you upload are stored, converted to text, split into sections ("chunks") and transformed into vector representations (embeddings) so that the AI can answer your questions based on your materials. To generate answers, summaries, study plans, practice exams and embeddings, relevant text excerpts are transmitted to the AI service providers listed below.',
+      'note-6':'Do not upload materials for which you do not hold usage rights, or special categories of third-party personal data (Art. 9 GDPR). AI outputs may contain errors and do not replace official study or exam documents.',
+      'h-7':'7. Services used & third-country transfers',
+      'p-7':'To provide the features we use the following processors. A data processing agreement (Art. 28 GDPR) exists or will be concluded with them. Insofar as data is transferred to the USA, we base this on standard contractual clauses (Art. 46 GDPR) and/or the providers\' certification under the EU-US Data Privacy Framework.',
+      'table-head':'<th>Service</th><th>Provider / Location</th><th>Purpose</th><th>Data</th>',
+      'table-body':'<tr><td>Supabase</td><td>Supabase, Inc., USA <span class="ph">[check region]</span></td><td>Authentication, database, file storage</td><td>Account, content, usage data</td></tr><tr><td>OpenAI API</td><td>OpenAI, L.L.C., USA</td><td>Embeddings (<code>text-embedding-3-small</code>) &amp; text generation (<code>gpt-4o-mini</code>)</td><td>Text excerpts from your materials, questions</td></tr><tr><td>Anthropic API</td><td>Anthropic, PBC, USA</td><td>Text generation / chat control (Claude models)</td><td>Text excerpts from your materials, questions</td></tr><tr><td>Hosting</td><td><span class="ph">[HOST, location/region]</span></td><td>Operation of the application</td><td>Server logs, technical access data</td></tr><tr><td>Google (optional)</td><td>Google Ireland Ltd. / Google LLC</td><td>Login via Google account (only if used)</td><td>Name, email address</td></tr>',
+      'p-7b':'Note from the API providers: OpenAI and Anthropic state that they do not use data transmitted via the API to train their models. Please check the currently applicable contractual and privacy terms and conclude the relevant DPAs.',
+      'h-8':'8. Storage period',
+      'list-8':'<li><strong>Account and content data:</strong> until you delete your account or the purpose ceases to apply.</li><li><strong>Server logs:</strong> for the period required for security, then deletion or anonymisation.</li><li><strong>Data sent to AI providers:</strong> according to their retention periods (usually short-term storage for abuse monitoring).</li>',
+      'p-8b':'When you delete your account via the settings, your database entries and stored files are irrevocably removed.',
+      'h-9':'9. Your rights',
+      'p-9':'You have the following rights vis-à-vis the controller:',
+      'list-9':'<li><strong>Access</strong> (Art. 15 GDPR) — Veexa offers a data export in the settings for this.</li><li><strong>Rectification</strong> (Art. 16 GDPR).</li><li><strong>Erasure</strong> (Art. 17 GDPR) — directly via "Delete account" in the settings.</li><li><strong>Restriction of processing</strong> (Art. 18 GDPR).</li><li><strong>Data portability</strong> (Art. 20 GDPR) — machine-readable ZIP export.</li><li><strong>Objection</strong> (Art. 21 GDPR) to processing based on legitimate interests.</li><li><strong>Withdrawal</strong> of granted consent with effect for the future (Art. 7(3) GDPR).</li>',
+      'p-9b':'You also have the right to lodge a complaint with a data protection supervisory authority (Art. 77 GDPR), in particular in the member state of your habitual residence. The authority responsible for us is <span class="ph">[competent supervisory authority of the controller]</span>.',
+      'h-10':'10. Cookies & local storage',
+      'p-10':'Veexa sets <strong>no tracking or marketing cookies</strong> and does not embed third-party analytics services. For operation we exclusively use technically necessary local storage in the browser (<code>localStorage</code>):',
+      'list-10':'<li><strong>Login session</strong> (Supabase auth token) — so that you stay signed in.</li><li><strong>Interface preferences</strong> — e.g. language, light/dark theme, folder structure.</li>',
+      'p-10b':'The fonts used are also loaded from our own server (no requests to Google servers), so no IP address is transmitted to third parties when the page is loaded.',
+      'p-10c':'This local storage is required for the use you have requested (§ 25(2) of the German TDDDG) and therefore does not require separate consent. No personal usage profiles are created. You can delete the local storage at any time via your browser settings; afterwards you will need to sign in again.',
+      'h-11':'11. Changes to this policy',
+      'p-11':'We will adapt this privacy policy as soon as features or the legal situation change. The current version is always available on this page.',
+      'updated':'Last updated: <span class="ph">[INSERT DATE]</span>',
+      'f-impressum':'Imprint','f-privacy':'Privacy','f-terms':'Terms','f-home':'Home',
+    },
+    es: {
+      'page-title':'Política de privacidad — Veexa',
+      'back-home':'← Volver al inicio',
+      'kicker':'Información legal',
+      'title':'Política de privacidad',
+      'subtitle':'Información conforme a los arts. 13 y 14 del RGPD',
+      'note':'<strong>Nota:</strong> Este borrador está adaptado a los flujos de datos reales de Veexa (Supabase, OpenAI, Anthropic). Los campos marcados con <span class="ph">[…]</span> deben completarse antes de la puesta en marcha. Se recomienda una revisión legal final, especialmente sobre la transferencia a terceros países (EE. UU.). Esta versión en español es una traducción de cortesía — la versión alemana es la jurídicamente vinculante.',
+      'toc-title':'Contenido',
+      'toc':'<li><a href="#verantwortlicher">Responsable</a></li><li><a href="#ueberblick">Resumen de los tratamientos</a></li><li><a href="#rechtsgrundlagen">Bases jurídicas</a></li><li><a href="#hosting">Alojamiento y registros del servidor</a></li><li><a href="#konto">Registro y cuenta</a></li><li><a href="#inhalte">Materiales subidos y funciones de IA</a></li><li><a href="#dienste">Servicios utilizados y transferencias a terceros países</a></li><li><a href="#speicherdauer">Período de conservación</a></li><li><a href="#rechte">Tus derechos</a></li><li><a href="#cookies">Cookies y almacenamiento local</a></li><li><a href="#aenderungen">Cambios</a></li>',
+      'h-1':'1. Responsable',
+      'p-1':'El responsable en el sentido del RGPD es:<br /><span class="ph">[NOMBRE / EMPRESA]</span><br /><span class="ph">[CALLE N.º]</span>, <span class="ph">[CP CIUDAD]</span>, <span class="ph">[PAÍS]</span><br />Correo electrónico: <span class="ph">[CORREO DE CONTACTO]</span>',
+      'p-1b':'Hemos <span class="ph">[designado un delegado de protección de datos: NOMBRE/CONTACTO — si procede / no designado, por no ser legalmente obligatorio]</span>.',
+      'h-2':'2. Resumen de los tratamientos',
+      'p-2':'Tratamos datos personales para ofrecerte el asistente de estudio Veexa. En esencia, se trata de:',
+      'list-2':'<li><strong>Datos de cuenta e inicio de sesión</strong> (dirección de correo, nombre si usas el login de Google, contraseña cifrada).</li><li><strong>Materiales de estudio que subes</strong> (archivos PDF, PPTX, TXT, MD) y los textos/embeddings generados a partir de ellos.</li><li><strong>Contenidos generados por la IA</strong> (resúmenes, planes de estudio, exámenes de práctica, preguntas de quiz).</li><li><strong>Datos de uso y preferencias</strong> (p. ej. módulo favorito, estructura de carpetas, progreso de estudio).</li><li><strong>Datos técnicos</strong> (dirección IP, marcas de tiempo, información del navegador a través de los registros del servidor del proveedor de alojamiento).</li>',
+      'h-3':'3. Bases jurídicas',
+      'list-3':'<li><strong>Art. 6, apdo. 1, letra b del RGPD</strong> (ejecución del contrato) — para el registro, la prestación de las funciones principales y el tratamiento de tus materiales.</li><li><strong>Art. 6, apdo. 1, letra f del RGPD</strong> (interés legítimo) — para registros técnicamente necesarios, seguridad y prevención de abusos (p. ej. limitación de velocidad).</li><li><strong>Art. 6, apdo. 1, letra c del RGPD</strong> (obligación legal) — en la medida en que estemos legalmente obligados a conservar datos.</li><li><strong>Art. 6, apdo. 1, letra a del RGPD</strong> (consentimiento) — cuando te pedimos un consentimiento separado; puedes revocarlo en cualquier momento con efecto para el futuro.</li>',
+      'h-4':'4. Alojamiento y registros del servidor',
+      'p-4':'La aplicación se opera en <span class="ph">[PROVEEDOR DE ALOJAMIENTO, p. ej. Railway / región]</span>. La base de datos, el almacenamiento de archivos y la autenticación funcionan a través de <strong>Supabase</strong> (Supabase, Inc.). Al acceder a la aplicación, el servidor procesa datos de acceso técnicamente necesarios (entre otros, dirección IP, fecha/hora, recurso solicitado, datos del navegador/dispositivo) para entregar y proteger el servicio (art. 6, apdo. 1, letra f del RGPD).',
+      'p-4b':'Recomendamos configurar la región de Supabase en la UE (p. ej. Fráncfort) para que los datos de la base de datos y del almacenamiento permanezcan dentro de la UE. <span class="ph">[Indicar la región actualmente seleccionada.]</span>',
+      'h-5':'5. Registro y cuenta',
+      'p-5':'Para usar el servicio creas una cuenta (correo + contraseña o login de Google). La autenticación se realiza a través de Supabase Auth. La contraseña se almacena exclusivamente como hash criptográfico; no tenemos acceso a tu contraseña en texto claro. Al iniciar sesión con Google, recibimos de Google los datos de perfil necesarios para crear la cuenta (nombre, correo).',
+      'p-5b':'Con el registro confirmas que tienes al menos 16 años (véase el art. 8 del RGPD).',
+      'h-6':'6. Materiales subidos y funciones de IA',
+      'p-6':'Los archivos que subes se almacenan, se convierten en texto, se dividen en secciones («chunks») y se transforman en representaciones vectoriales (embeddings) para que la IA pueda responder a tus preguntas basándose en tus materiales. Para generar respuestas, resúmenes, planes de estudio, exámenes de práctica y embeddings, se transmiten extractos de texto relevantes a los proveedores de IA indicados a continuación.',
+      'note-6':'No subas materiales sobre los que no tengas derechos de uso, ni categorías especiales de datos personales de terceros (art. 9 del RGPD). Los resultados de la IA pueden contener errores y no sustituyen los documentos oficiales de estudio o examen.',
+      'h-7':'7. Servicios utilizados y transferencias a terceros países',
+      'p-7':'Para prestar las funciones utilizamos los siguientes encargados del tratamiento. Con ellos existe o se celebrará un contrato de encargo de tratamiento (art. 28 del RGPD). En la medida en que se transfieran datos a EE. UU., nos basamos en cláusulas contractuales tipo (art. 46 del RGPD) y/o en la certificación de los proveedores bajo el EU-US Data Privacy Framework.',
+      'table-head':'<th>Servicio</th><th>Proveedor / Sede</th><th>Finalidad</th><th>Datos</th>',
+      'table-body':'<tr><td>Supabase</td><td>Supabase, Inc., EE. UU. <span class="ph">[comprobar región]</span></td><td>Autenticación, base de datos, almacenamiento de archivos</td><td>Datos de cuenta, contenido y uso</td></tr><tr><td>OpenAI API</td><td>OpenAI, L.L.C., EE. UU.</td><td>Embeddings (<code>text-embedding-3-small</code>) y generación de texto (<code>gpt-4o-mini</code>)</td><td>Extractos de texto de tus materiales, preguntas</td></tr><tr><td>Anthropic API</td><td>Anthropic, PBC, EE. UU.</td><td>Generación de texto / control del chat (modelos Claude)</td><td>Extractos de texto de tus materiales, preguntas</td></tr><tr><td>Alojamiento</td><td><span class="ph">[PROVEEDOR, sede/región]</span></td><td>Operación de la aplicación</td><td>Registros del servidor, datos técnicos de acceso</td></tr><tr><td>Google (opcional)</td><td>Google Ireland Ltd. / Google LLC</td><td>Inicio de sesión con cuenta de Google (solo si se usa)</td><td>Nombre, dirección de correo</td></tr>',
+      'p-7b':'Nota de los proveedores de API: OpenAI y Anthropic declaran que no utilizan los datos transmitidos a través de la API para entrenar sus modelos. Comprueba las condiciones contractuales y de privacidad vigentes y celebra los correspondientes contratos de encargo (DPA).',
+      'h-8':'8. Período de conservación',
+      'list-8':'<li><strong>Datos de cuenta y contenido:</strong> hasta que elimines tu cuenta o desaparezca la finalidad.</li><li><strong>Registros del servidor:</strong> durante el período necesario para la seguridad; después, eliminación o anonimización.</li><li><strong>Datos enviados a proveedores de IA:</strong> según sus plazos de conservación (por lo general, almacenamiento breve para el control de abusos).</li>',
+      'p-8b':'Al eliminar la cuenta a través de los ajustes, tus entradas en la base de datos y los archivos almacenados se eliminan de forma irrevocable.',
+      'h-9':'9. Tus derechos',
+      'p-9':'Frente al responsable te asisten los siguientes derechos:',
+      'list-9':'<li><strong>Acceso</strong> (art. 15 del RGPD) — Veexa ofrece para ello una exportación de datos en los ajustes.</li><li><strong>Rectificación</strong> (art. 16 del RGPD).</li><li><strong>Supresión</strong> (art. 17 del RGPD) — directamente mediante «Eliminar cuenta» en los ajustes.</li><li><strong>Limitación del tratamiento</strong> (art. 18 del RGPD).</li><li><strong>Portabilidad de los datos</strong> (art. 20 del RGPD) — exportación ZIP legible por máquina.</li><li><strong>Oposición</strong> (art. 21 del RGPD) a los tratamientos basados en intereses legítimos.</li><li><strong>Revocación</strong> de los consentimientos otorgados con efecto para el futuro (art. 7, apdo. 3 del RGPD).</li>',
+      'p-9b':'Además, tienes derecho a presentar una reclamación ante una autoridad de control de protección de datos (art. 77 del RGPD), en particular en el Estado miembro de tu residencia. La autoridad competente para nosotros es <span class="ph">[autoridad de control competente del responsable]</span>.',
+      'h-10':'10. Cookies y almacenamiento local',
+      'p-10':'Veexa no utiliza <strong>cookies de seguimiento ni de marketing</strong> y no integra servicios de análisis de terceros. Para el funcionamiento utilizamos exclusivamente almacenamiento local técnicamente necesario en el navegador (<code>localStorage</code>):',
+      'list-10':'<li><strong>Sesión de inicio</strong> (token de Supabase Auth) — para que permanezcas conectado.</li><li><strong>Preferencias de la interfaz</strong> — p. ej. idioma, tema claro/oscuro, estructura de carpetas.</li>',
+      'p-10b':'Las fuentes utilizadas también se cargan desde nuestro propio servidor (sin solicitudes a servidores de Google), de modo que al cargar la página no se transmite ninguna dirección IP a terceros.',
+      'p-10c':'Este almacenamiento local es necesario para el uso que has solicitado (§ 25, apdo. 2 de la ley alemana TDDDG) y, por tanto, no requiere un consentimiento separado. No se crean perfiles de uso personales. Puedes borrar el almacenamiento local en cualquier momento a través de la configuración de tu navegador; después tendrás que volver a iniciar sesión.',
+      'h-11':'11. Cambios en esta declaración',
+      'p-11':'Adaptaremos esta política de privacidad en cuanto cambien las funciones o la situación legal. La versión actual está siempre disponible en esta página.',
+      'updated':'Última actualización: <span class="ph">[INSERTAR FECHA]</span>',
+      'f-impressum':'Aviso legal','f-privacy':'Privacidad','f-terms':'Términos','f-home':'Inicio',
+    },
+    fr: {
+      'page-title':'Politique de confidentialité — Veexa',
+      'back-home':'← Retour à l\'accueil',
+      'kicker':'Juridique',
+      'title':'Politique de confidentialité',
+      'subtitle':'Informations conformément aux art. 13 et 14 du RGPD',
+      'note':'<strong>Remarque :</strong> Ce projet est adapté aux flux de données réels de Veexa (Supabase, OpenAI, Anthropic). Les champs marqués <span class="ph">[…]</span> doivent être remplis avant la mise en ligne. Une validation juridique finale — notamment concernant les transferts vers les États-Unis — est recommandée. Cette version française est une traduction de courtoisie — la version allemande fait foi.',
+      'toc-title':'Sommaire',
+      'toc':'<li><a href="#verantwortlicher">Responsable du traitement</a></li><li><a href="#ueberblick">Aperçu des traitements</a></li><li><a href="#rechtsgrundlagen">Bases juridiques</a></li><li><a href="#hosting">Hébergement et journaux du serveur</a></li><li><a href="#konto">Inscription et compte</a></li><li><a href="#inhalte">Supports téléversés et fonctions d\'IA</a></li><li><a href="#dienste">Services utilisés et transferts vers des pays tiers</a></li><li><a href="#speicherdauer">Durée de conservation</a></li><li><a href="#rechte">Tes droits</a></li><li><a href="#cookies">Cookies et stockage local</a></li><li><a href="#aenderungen">Modifications</a></li>',
+      'h-1':'1. Responsable du traitement',
+      'p-1':'Le responsable du traitement au sens du RGPD est :<br /><span class="ph">[NOM / SOCIÉTÉ]</span><br /><span class="ph">[RUE N°]</span>, <span class="ph">[CP VILLE]</span>, <span class="ph">[PAYS]</span><br />E-mail : <span class="ph">[E-MAIL DE CONTACT]</span>',
+      'p-1b':'Nous avons <span class="ph">[désigné un délégué à la protection des données : NOM/CONTACT — le cas échéant / pas désigné, car non requis par la loi]</span>.',
+      'h-2':'2. Aperçu des traitements',
+      'p-2':'Nous traitons des données personnelles pour te fournir l\'assistant d\'étude Veexa. Il s\'agit essentiellement de :',
+      'list-2':'<li><strong>Données de compte et de connexion</strong> (adresse e-mail, nom en cas de connexion Google, mot de passe chiffré).</li><li><strong>Supports d\'étude que tu téléverses</strong> (fichiers PDF, PPTX, TXT, MD) et les textes/embeddings générés à partir de ceux-ci.</li><li><strong>Contenus générés par l\'IA</strong> (résumés, plans d\'étude, examens d\'entraînement, questions de quiz).</li><li><strong>Données d\'utilisation et de préférences</strong> (p. ex. module favori, structure des dossiers, progression).</li><li><strong>Données techniques</strong> (adresse IP, horodatages, informations du navigateur via les journaux du serveur de l\'hébergeur).</li>',
+      'h-3':'3. Bases juridiques',
+      'list-3':'<li><strong>Art. 6, par. 1, point b du RGPD</strong> (exécution du contrat) — pour l\'inscription, la fourniture des fonctions principales et le traitement de tes supports.</li><li><strong>Art. 6, par. 1, point f du RGPD</strong> (intérêt légitime) — pour les journaux techniquement nécessaires, la sécurité et la prévention des abus (p. ex. limitation de débit).</li><li><strong>Art. 6, par. 1, point c du RGPD</strong> (obligation légale) — dans la mesure où nous sommes légalement tenus de conserver des données.</li><li><strong>Art. 6, par. 1, point a du RGPD</strong> (consentement) — lorsque nous te demandons un consentement séparé ; tu peux le révoquer à tout moment avec effet pour l\'avenir.</li>',
+      'h-4':'4. Hébergement et journaux du serveur',
+      'p-4':'L\'application est exploitée chez <span class="ph">[HÉBERGEUR, p. ex. Railway / région]</span>. La base de données, le stockage de fichiers et l\'authentification fonctionnent via <strong>Supabase</strong> (Supabase, Inc.). Lors de l\'accès à l\'application, le serveur traite des données d\'accès techniquement nécessaires (notamment adresse IP, date/heure, ressource demandée, informations sur le navigateur/l\'appareil) pour fournir et sécuriser le service (art. 6, par. 1, point f du RGPD).',
+      'p-4b':'Nous recommandons de définir la région Supabase dans l\'UE (p. ex. Francfort) afin que les données de la base de données et du stockage restent dans l\'UE. <span class="ph">[Indiquer la région actuellement sélectionnée.]</span>',
+      'h-5':'5. Inscription et compte',
+      'p-5':'Pour utiliser le service, tu crées un compte (e-mail + mot de passe ou connexion Google). L\'authentification est gérée via Supabase Auth. Le mot de passe est stocké exclusivement sous forme de hachage cryptographique ; nous n\'avons pas accès à ton mot de passe en clair. En cas de connexion via Google, nous recevons de Google les données de profil nécessaires à la création du compte (nom, e-mail).',
+      'p-5b':'En t\'inscrivant, tu confirmes avoir au moins 16 ans (voir art. 8 du RGPD).',
+      'h-6':'6. Supports téléversés et fonctions d\'IA',
+      'p-6':'Les fichiers que tu téléverses sont stockés, convertis en texte, découpés en sections (« chunks ») et transformés en représentations vectorielles (embeddings) afin que l\'IA puisse répondre à tes questions sur la base de tes supports. Pour générer des réponses, des résumés, des plans d\'étude, des examens d\'entraînement et des embeddings, des extraits de texte pertinents sont transmis aux prestataires d\'IA mentionnés ci-dessous.',
+      'note-6':'Ne téléverse pas de supports pour lesquels tu ne détiens pas de droits d\'utilisation, ni de catégories particulières de données personnelles de tiers (art. 9 du RGPD). Les sorties de l\'IA peuvent comporter des erreurs et ne remplacent pas les documents officiels d\'étude ou d\'examen.',
+      'h-7':'7. Services utilisés et transferts vers des pays tiers',
+      'p-7':'Pour fournir les fonctionnalités, nous faisons appel aux sous-traitants suivants. Un contrat de sous-traitance (art. 28 du RGPD) existe ou sera conclu avec eux. Dans la mesure où des données sont transférées vers les États-Unis, nous nous appuyons sur des clauses contractuelles types (art. 46 du RGPD) et/ou sur la certification des prestataires dans le cadre du EU-US Data Privacy Framework.',
+      'table-head':'<th>Service</th><th>Prestataire / Siège</th><th>Finalité</th><th>Données</th>',
+      'table-body':'<tr><td>Supabase</td><td>Supabase, Inc., États-Unis <span class="ph">[vérifier la région]</span></td><td>Authentification, base de données, stockage de fichiers</td><td>Données de compte, de contenu et d\'utilisation</td></tr><tr><td>OpenAI API</td><td>OpenAI, L.L.C., États-Unis</td><td>Embeddings (<code>text-embedding-3-small</code>) et génération de texte (<code>gpt-4o-mini</code>)</td><td>Extraits de texte de tes supports, questions</td></tr><tr><td>Anthropic API</td><td>Anthropic, PBC, États-Unis</td><td>Génération de texte / pilotage du chat (modèles Claude)</td><td>Extraits de texte de tes supports, questions</td></tr><tr><td>Hébergement</td><td><span class="ph">[HÉBERGEUR, siège/région]</span></td><td>Exploitation de l\'application</td><td>Journaux du serveur, données techniques d\'accès</td></tr><tr><td>Google (optionnel)</td><td>Google Ireland Ltd. / Google LLC</td><td>Connexion via compte Google (uniquement si utilisée)</td><td>Nom, adresse e-mail</td></tr>',
+      'p-7b':'Remarque des fournisseurs d\'API : OpenAI et Anthropic déclarent ne pas utiliser les données transmises via l\'API pour entraîner leurs modèles. Vérifie les conditions contractuelles et de confidentialité en vigueur et conclus les DPA correspondants.',
+      'h-8':'8. Durée de conservation',
+      'list-8':'<li><strong>Données de compte et de contenu :</strong> jusqu\'à la suppression de ton compte par toi-même ou jusqu\'à la disparition de la finalité.</li><li><strong>Journaux du serveur :</strong> pendant la durée nécessaire à la sécurité, puis suppression ou anonymisation.</li><li><strong>Données transmises aux prestataires d\'IA :</strong> selon leurs durées de conservation (en général, stockage de courte durée pour le contrôle des abus).</li>',
+      'p-8b':'En cas de suppression du compte via les paramètres, tes entrées en base de données et tes fichiers stockés sont supprimés de manière irrévocable.',
+      'h-9':'9. Tes droits',
+      'p-9':'Tu disposes des droits suivants vis-à-vis du responsable du traitement :',
+      'list-9':'<li><strong>Accès</strong> (art. 15 du RGPD) — Veexa propose pour cela un export de données dans les paramètres.</li><li><strong>Rectification</strong> (art. 16 du RGPD).</li><li><strong>Effacement</strong> (art. 17 du RGPD) — directement via « Supprimer le compte » dans les paramètres.</li><li><strong>Limitation du traitement</strong> (art. 18 du RGPD).</li><li><strong>Portabilité des données</strong> (art. 20 du RGPD) — export ZIP lisible par machine.</li><li><strong>Opposition</strong> (art. 21 du RGPD) aux traitements fondés sur des intérêts légitimes.</li><li><strong>Retrait</strong> des consentements accordés avec effet pour l\'avenir (art. 7, par. 3 du RGPD).</li>',
+      'p-9b':'Tu as en outre le droit d\'introduire une réclamation auprès d\'une autorité de contrôle de la protection des données (art. 77 du RGPD), notamment dans l\'État membre de ta résidence habituelle. L\'autorité compétente pour nous est <span class="ph">[autorité de contrôle compétente du responsable]</span>.',
+      'h-10':'10. Cookies et stockage local',
+      'p-10':'Veexa n\'utilise <strong>aucun cookie de suivi ou de marketing</strong> et n\'intègre aucun service d\'analyse tiers. Pour le fonctionnement, nous utilisons exclusivement un stockage local techniquement nécessaire dans le navigateur (<code>localStorage</code>) :',
+      'list-10':'<li><strong>Session de connexion</strong> (jeton Supabase Auth) — pour que tu restes connecté.</li><li><strong>Préférences de l\'interface</strong> — p. ex. langue, thème clair/sombre, structure des dossiers.</li>',
+      'p-10b':'Les polices utilisées sont également chargées depuis notre propre serveur (aucune requête vers les serveurs de Google), de sorte qu\'aucune adresse IP n\'est transmise à des tiers lors du chargement de la page.',
+      'p-10c':'Ce stockage local est nécessaire à l\'utilisation que tu as demandée (§ 25, al. 2 de la loi allemande TDDDG) et ne nécessite donc pas de consentement séparé. Aucun profil d\'utilisation personnel n\'est créé. Tu peux supprimer le stockage local à tout moment via les paramètres de ton navigateur ; tu devras ensuite te reconnecter.',
+      'h-11':'11. Modifications de la présente déclaration',
+      'p-11':'Nous adaptons cette politique de confidentialité dès que les fonctionnalités ou la situation juridique évoluent. La version actuelle est toujours disponible sur cette page.',
+      'updated':'Dernière mise à jour : <span class="ph">[INSÉRER LA DATE]</span>',
+      'f-impressum':'Mentions légales','f-privacy':'Confidentialité','f-terms':'CGU','f-home':'Accueil',
+    },
+  };
+
+  (function () {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const browser = (navigator.language || 'de').slice(0, 2).toLowerCase();
+    const lang = localStorage.getItem('app-lang') || (supported.includes(browser) ? browser : 'de');
+    document.documentElement.lang = lang;
+    if (lang === 'de') return;
+    const T = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    if (T['page-title']) document.title = T['page-title'];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const v = T[el.dataset.i18nHtml];
+      if (v !== undefined) el.innerHTML = v;
+    });
+  })();
+  </script>
 </body>
 </html>

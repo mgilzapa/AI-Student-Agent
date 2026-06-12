@@ -2987,20 +2987,20 @@
   <div id="auth-card" class="auth-card" style="display:none">
     <div class="auth-logo">
       <div class="auth-logo-title">Veexa</div>
-      <div class="auth-logo-sub">Dein KI-Lernassistent</div>
+      <div class="auth-logo-sub" data-i18n="auth-sub">Dein KI-Lernassistent</div>
     </div>
     <div id="auth-msg" class="auth-msg"></div>
     <div class="auth-form">
-      <input class="auth-input" id="auth-email"    type="email"    placeholder="E-Mail"   autocomplete="email">
-      <input class="auth-input" id="auth-password" type="password" placeholder="Passwort" autocomplete="current-password">
-      <button class="auth-submit" id="auth-submit-btn" type="button">Anmelden</button>
+      <input class="auth-input" id="auth-email"    type="email"    placeholder="E-Mail"   autocomplete="email" data-i18n-ph="auth-email-ph">
+      <input class="auth-input" id="auth-password" type="password" placeholder="Passwort" autocomplete="current-password" data-i18n-ph="auth-password-ph">
+      <button class="auth-submit" id="auth-submit-btn" type="button" data-i18n="auth-login-btn">Anmelden</button>
       <p class="auth-toggle" id="auth-toggle-wrap">
-        Noch kein Konto? <a id="auth-toggle-link">Registrieren</a>
+        <span data-i18n="auth-no-account">Noch kein Konto?</span> <a id="auth-toggle-link" data-i18n="auth-register-link">Registrieren</a>
       </p>
-      <div class="auth-divider">oder</div>
+      <div class="auth-divider" data-i18n="auth-or">oder</div>
       <button class="auth-google-btn" id="auth-google-btn" type="button">
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Mit Google anmelden
+        <span data-i18n="auth-google">Mit Google anmelden</span>
       </button>
     </div>
   </div>
@@ -3008,7 +3008,7 @@
 
 <!-- ── Setup-Screen Profil-Widget (fixed oben rechts, nur auf Setup-Screen) ── -->
 <div id="setup-profile-wrap">
-  <div class="setup-profile-dropdown" id="setup-profile-dropdown" role="menu" aria-label="Profileinstellungen">
+  <div class="setup-profile-dropdown" id="setup-profile-dropdown" role="menu" aria-label="Profileinstellungen" data-i18n-aria="profile-settings">
     <div class="rail-profile-menu-email" id="setup-profile-email">—</div>
     <button class="rail-profile-menu-item" type="button" id="setup-settings-btn" role="menuitem">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -3020,21 +3020,21 @@
         <span data-i18n="language">Sprache</span>
         <svg class="lang-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
-      <div class="lang-submenu" role="menu" aria-label="Sprache wählen">
+      <div class="lang-submenu" role="menu" aria-label="Sprache wählen" data-i18n-aria="choose-language">
         <button class="lang-submenu-item active" type="button" data-lang="de" role="menuitem">
           Deutsch
           <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
         <button class="lang-submenu-item" type="button" data-lang="en" role="menuitem">
-          Englisch
+          English
           <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
         <button class="lang-submenu-item" type="button" data-lang="es" role="menuitem">
-          Spanisch
+          Español
           <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
         <button class="lang-submenu-item" type="button" data-lang="fr" role="menuitem">
-          Französisch
+          Français
           <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
       </div>
@@ -3128,17 +3128,17 @@
         <aside class="setup-right-panel">
           <div class="dash-panel" id="dash-right-panel">
             <div class="dash-panel-header">
-              <span class="dash-panel-title">Tagesübersicht</span>
+              <span class="dash-panel-title" data-i18n="dash-title">Tagesübersicht</span>
               <div class="dash-toggle">
-                <button class="dash-toggle-btn active" id="dash-tab-todo" type="button" onclick="switchDashTab('todo')">Noch zu erledigen</button>
-                <button class="dash-toggle-btn" id="dash-tab-done" type="button" onclick="switchDashTab('done')">Abgeschlossen</button>
+                <button class="dash-toggle-btn active" id="dash-tab-todo" type="button" onclick="switchDashTab('todo')" data-i18n="dash-tab-todo">Noch zu erledigen</button>
+                <button class="dash-toggle-btn" id="dash-tab-done" type="button" onclick="switchDashTab('done')" data-i18n="dash-tab-done">Abgeschlossen</button>
               </div>
             </div>
             <div class="dash-panel-body" id="dash-panel-body">
-              <p class="dash-no-plan">Wird geladen…</p>
+              <p class="dash-no-plan" data-i18n="dash-loading">Wird geladen…</p>
             </div>
             <div class="dash-total-strip" id="dash-total-strip" hidden>
-              <span class="dash-total-label">Noch zu lernen</span>
+              <span class="dash-total-label" data-i18n="dash-left-label">Noch zu lernen</span>
               <span class="dash-total-value" id="dash-total-value">0h</span>
             </div>
           </div>
@@ -3165,7 +3165,7 @@
               </div>
             </div>
             <span class="rail-course-name" id="header-status"></span>
-            <button class="rail-collapse-btn" id="rail-collapse-btn" title="Sidebar einklappen" data-i18n-title="collapse-sidebar" type="button" aria-label="Sidebar einklappen">
+            <button class="rail-collapse-btn" id="rail-collapse-btn" title="Sidebar einklappen" data-i18n-title="collapse-sidebar" type="button" aria-label="Sidebar einklappen" data-i18n-aria="collapse-sidebar">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
           </div>
@@ -3173,19 +3173,19 @@
           <!-- Scrollable body: nav tabs + files -->
           <div class="rail-body">
             <!-- Nav tabs: Roadmap, Klausur, Tasks, Chat -->
-            <button class="rail-tab" id="roadmap-btn" data-tab="roadmap" title="Lernplan" type="button" aria-label="Lernplan">
+            <button class="rail-tab" id="roadmap-btn" data-tab="roadmap" title="Lernplan" data-i18n-title="tab-roadmap" type="button" aria-label="Lernplan" data-i18n-aria="tab-roadmap">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
               <span class="rail-tab-label" data-i18n="tab-roadmap">Lernplan</span>
             </button>
-            <button class="rail-tab" id="pk-btn" data-tab="pk" title="Probeklausur" type="button" aria-label="Probeklausur">
+            <button class="rail-tab" id="pk-btn" data-tab="pk" title="Probeklausur" data-i18n-title="pk-name" type="button" aria-label="Probeklausur" data-i18n-aria="pk-name">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
               <span class="rail-tab-label" data-i18n="tab-exam">Klausur</span>
             </button>
-            <button class="rail-tab" id="daily-btn" data-tab="daily" title="Tasks" type="button" aria-label="Tasks">
+            <button class="rail-tab" id="daily-btn" data-tab="daily" title="Tasks" data-i18n-title="tab-tasks" type="button" aria-label="Tasks" data-i18n-aria="tab-tasks">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
               <span class="rail-tab-label" data-i18n="tab-tasks">Tasks</span>
             </button>
-            <button class="rail-tab" id="rail-tab-chat" data-tab="chat" title="Chat" type="button" aria-label="Chat">
+            <button class="rail-tab" id="rail-tab-chat" data-tab="chat" title="Chat" data-i18n-title="tab-chat" type="button" aria-label="Chat" data-i18n-aria="tab-chat">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               <span class="rail-tab-label" data-i18n="tab-chat">Chat</span>
             </button>
@@ -3196,13 +3196,13 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <span class="rail-files-header-label" data-i18n="files-label">Dateien</span>
                 <div class="rail-files-actions">
-                  <button class="file-action-btn" id="new-folder-btn" type="button" title="Ordner erstellen" style="width:22px;height:22px;">
+                  <button class="file-action-btn" id="new-folder-btn" type="button" title="Ordner erstellen" data-i18n-title="create-folder" style="width:22px;height:22px;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
                   </button>
-                  <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" style="width:22px;height:22px;">
+                  <button class="file-action-btn" id="add-files-btn" type="button" title="Dateien hinzufügen" data-i18n-title="add-files" style="width:22px;height:22px;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   </button>
-                  <button class="file-action-btn" id="add-folder-btn" type="button" title="Ordner hinzufügen" style="width:22px;height:22px;">
+                  <button class="file-action-btn" id="add-folder-btn" type="button" title="Ordner hinzufügen" data-i18n-title="add-folder" style="width:22px;height:22px;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 9 12 14"/><polyline points="9.5 11.5 12 9 14.5 11.5"/></svg>
                   </button>
                 </div>
@@ -3216,7 +3216,7 @@
           <!-- Profile: always fixed at bottom -->
           <div class="rail-profile" id="rail-profile">
             <!-- Popup menu (appears above on click) -->
-            <div class="rail-profile-menu" id="rail-profile-menu" role="menu" aria-label="Profileinstellungen">
+            <div class="rail-profile-menu" id="rail-profile-menu" role="menu" aria-label="Profileinstellungen" data-i18n-aria="profile-settings">
               <div class="rail-profile-menu-email" id="rail-profile-email">—</div>
               <button class="rail-profile-menu-item" type="button" role="menuitem">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -3228,21 +3228,21 @@
                   <span data-i18n="language">Sprache</span>
                   <svg class="lang-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
-                <div class="lang-submenu" role="menu" aria-label="Sprache wählen">
+                <div class="lang-submenu" role="menu" aria-label="Sprache wählen" data-i18n-aria="choose-language">
                   <button class="lang-submenu-item active" type="button" data-lang="de" role="menuitem">
                     Deutsch
                     <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </button>
                   <button class="lang-submenu-item" type="button" data-lang="en" role="menuitem">
-                    Englisch
+                    English
                     <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </button>
                   <button class="lang-submenu-item" type="button" data-lang="es" role="menuitem">
-                    Spanisch
+                    Español
                     <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </button>
                   <button class="lang-submenu-item" type="button" data-lang="fr" role="menuitem">
-                    Französisch
+                    Français
                     <svg class="lang-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </button>
                 </div>
@@ -3271,7 +3271,7 @@
               </button>
             </div>
             <!-- Clickable trigger: avatar + name -->
-            <button class="rail-profile-trigger" id="rail-profile-trigger" type="button" aria-haspopup="true" aria-expanded="false" title="Profileinstellungen">
+            <button class="rail-profile-trigger" id="rail-profile-trigger" type="button" aria-haspopup="true" aria-expanded="false" title="Profileinstellungen" data-i18n-title="profile-settings">
               <div class="rail-profile-avatar">M</div>
               <div class="rail-profile-info">
                 <span class="rail-profile-name">Miguel</span>
@@ -3296,7 +3296,7 @@
               <h3>Chat</h3>
               <p id="chat-subtitle" data-i18n="chat-subtitle">Antworten basieren auf den Materialien des Kurses.</p>
             </div>
-            <button class="chat-close-btn" id="toggle-right" type="button" title="Chat zuklappen" data-i18n-title="chat-close" aria-label="Chat zuklappen">✕</button>
+            <button class="chat-close-btn" id="toggle-right" type="button" title="Chat zuklappen" data-i18n-title="chat-close" aria-label="Chat zuklappen" data-i18n-aria="chat-close">✕</button>
           </div>
           <div id="chat">
             <div class="chat-empty" id="empty">
@@ -3311,10 +3311,10 @@
             <div class="chat-form">
               <textarea id="input" placeholder="Frage stellen…" rows="1" data-i18n-ph="chat-ph"></textarea>
               <div class="chat-actions">
-                <button class="chat-icon-btn" id="mic-btn" title="Spracheingabe" disabled>
+                <button class="chat-icon-btn" id="mic-btn" title="Spracheingabe" data-i18n-title="mic-title" disabled>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
                 </button>
-                <button class="chat-send-btn" id="send" title="Senden">
+                <button class="chat-send-btn" id="send" title="Senden" data-i18n-title="send-title">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 </button>
               </div>
@@ -3508,10 +3508,10 @@
         <div class="form-group">
           <label class="form-label" data-i18n="hours-per-day">Stunden pro Tag</label>
           <div class="time-options">
-            <button class="time-opt" data-val="1 Stunde pro Tag">1h / Tag</button>
-            <button class="time-opt" data-val="2 Stunden pro Tag">2h / Tag</button>
-            <button class="time-opt" data-val="3 Stunden pro Tag">3h / Tag</button>
-            <button class="time-opt" data-val="4+ Stunden pro Tag">4h+ / Tag</button>
+            <button class="time-opt" data-val="1 Stunde pro Tag" data-i18n="time-1h">1h / Tag</button>
+            <button class="time-opt" data-val="2 Stunden pro Tag" data-i18n="time-2h">2h / Tag</button>
+            <button class="time-opt" data-val="3 Stunden pro Tag" data-i18n="time-3h">3h / Tag</button>
+            <button class="time-opt" data-val="4+ Stunden pro Tag" data-i18n="time-4h">4h+ / Tag</button>
           </div>
         </div>
         <div class="form-group">
@@ -3669,7 +3669,7 @@
       <div class="settings-section-label" data-i18n="appearance">Erscheinungsbild</div>
       <div class="settings-row">
         <span class="settings-row-label" data-i18n="design">Design</span>
-        <div class="theme-segmented" id="settings-theme-seg" role="group" aria-label="Design wählen">
+        <div class="theme-segmented" id="settings-theme-seg" role="group" aria-label="Design wählen" data-i18n-aria="choose-design">
           <button class="theme-seg-btn" id="settings-theme-light" type="button" aria-pressed="false">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             <span data-i18n="light">Hell</span>
@@ -3897,19 +3897,25 @@
   // ── Auth mode: 'login' | 'register' ──────────────────────────────────────
   let _authMode = 'login';
 
+  // Safe translator: this IIFE runs before the TRANSLATIONS const below is
+  // initialised (TDZ), so fall back to German until t() is available.
+  function _at(key, fallback) {
+    try { const v = t(key); return v === key ? fallback : v; } catch (_) { return fallback; }
+  }
+
   function _applyAuthMode(mode) {
     _authMode = mode;
     const submitBtn  = document.getElementById('auth-submit-btn');
     const pwInput    = document.getElementById('auth-password');
     const toggleWrap = document.getElementById('auth-toggle-wrap');
     if (mode === 'login') {
-      if (submitBtn)  submitBtn.textContent = 'Anmelden';
-      if (pwInput)  { pwInput.placeholder = 'Passwort'; pwInput.autocomplete = 'current-password'; }
-      if (toggleWrap) toggleWrap.innerHTML = 'Noch kein Konto? <a id="auth-toggle-link">Registrieren</a>';
+      if (submitBtn)  { submitBtn.textContent = _at('auth-login-btn', 'Anmelden'); submitBtn.dataset.i18n = 'auth-login-btn'; }
+      if (pwInput)  { pwInput.placeholder = _at('auth-password-ph', 'Passwort'); pwInput.dataset.i18nPh = 'auth-password-ph'; pwInput.autocomplete = 'current-password'; }
+      if (toggleWrap) toggleWrap.innerHTML = '<span data-i18n="auth-no-account">' + _at('auth-no-account', 'Noch kein Konto?') + '</span> <a id="auth-toggle-link" data-i18n="auth-register-link">' + _at('auth-register-link', 'Registrieren') + '</a>';
     } else {
-      if (submitBtn)  submitBtn.textContent = 'Konto erstellen';
-      if (pwInput)  { pwInput.placeholder = 'Passwort (min. 8 Zeichen)'; pwInput.autocomplete = 'new-password'; }
-      if (toggleWrap) toggleWrap.innerHTML = 'Schon ein Konto? <a id="auth-toggle-link">Anmelden</a>';
+      if (submitBtn)  { submitBtn.textContent = _at('auth-create-btn', 'Konto erstellen'); submitBtn.dataset.i18n = 'auth-create-btn'; }
+      if (pwInput)  { pwInput.placeholder = _at('auth-password-new-ph', 'Passwort (min. 8 Zeichen)'); pwInput.dataset.i18nPh = 'auth-password-new-ph'; pwInput.autocomplete = 'new-password'; }
+      if (toggleWrap) toggleWrap.innerHTML = '<span data-i18n="auth-have-account">' + _at('auth-have-account', 'Schon ein Konto?') + '</span> <a id="auth-toggle-link" data-i18n="auth-login-link">' + _at('auth-login-link', 'Anmelden') + '</a>';
     }
     _setAuthMsg('', '');
     // Re-attach toggle link after innerHTML replacement
@@ -3923,15 +3929,15 @@
   async function doAuthSubmit() {
     const email = document.getElementById('auth-email').value.trim();
     const pw    = document.getElementById('auth-password').value;
-    if (!email || !pw) { _setAuthMsg('Bitte E-Mail und Passwort eingeben.', 'error'); return; }
+    if (!email || !pw) { _setAuthMsg(_at('auth-enter-both', 'Bitte E-Mail und Passwort eingeben.'), 'error'); return; }
     if (_authMode === 'register') {
-      if (pw.length < 8) { _setAuthMsg('Passwort muss mindestens 8 Zeichen haben.', 'error'); return; }
-      _setAuthMsg('Konto erstellen…', 'info');
+      if (pw.length < 8) { _setAuthMsg(_at('auth-pw-short', 'Passwort muss mindestens 8 Zeichen haben.'), 'error'); return; }
+      _setAuthMsg(_at('auth-creating', 'Konto erstellen…'), 'info');
       const { error } = await _sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: window.location.origin } });
       if (error) _setAuthMsg(error.message, 'error');
-      else       _setAuthMsg('✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.', 'success');
+      else       _setAuthMsg(_at('auth-confirm-sent', '✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.'), 'success');
     } else {
-      _setAuthMsg('Anmelden…', 'info');
+      _setAuthMsg(_at('auth-signing-in', 'Anmelden…'), 'info');
       const { error } = await _sb.auth.signInWithPassword({ email, password: pw });
       if (error) _setAuthMsg(error.message, 'error');
     }
@@ -4102,6 +4108,63 @@ const TRANSLATIONS = {
     'summary-error':'Fehler beim Zusammenfassen.',
     'summary-error-fallback':'Unbekannter Fehler beim Zusammenfassen.',
     'open-module-first':'Bitte zuerst ein Modul öffnen.',
+    'auth-sub':'Dein KI-Lernassistent','auth-email-ph':'E-Mail','auth-password-ph':'Passwort',
+    'auth-password-new-ph':'Passwort (min. 8 Zeichen)','auth-login-btn':'Anmelden','auth-create-btn':'Konto erstellen',
+    'auth-no-account':'Noch kein Konto?','auth-register-link':'Registrieren',
+    'auth-have-account':'Schon ein Konto?','auth-login-link':'Anmelden',
+    'auth-or':'oder','auth-google':'Mit Google anmelden',
+    'auth-enter-both':'Bitte E-Mail und Passwort eingeben.','auth-pw-short':'Passwort muss mindestens 8 Zeichen haben.',
+    'auth-creating':'Konto erstellen…','auth-confirm-sent':'✓ Bestätigungs-E-Mail gesendet. Bitte Postfach prüfen.','auth-signing-in':'Anmelden…',
+    'profile-label':'Profil','profile-settings':'Profileinstellungen','choose-language':'Sprache wählen','choose-design':'Design wählen',
+    'dash-title':'Tagesübersicht','dash-tab-todo':'Noch zu erledigen','dash-tab-done':'Abgeschlossen',
+    'dash-loading':'Wird geladen…','dash-left-label':'Noch zu lernen',
+    'dash-all-done':'Alle Tasks für heute erledigt.','dash-none-done':'Noch keine abgeschlossenen Tasks.',
+    'create-folder':'Ordner erstellen','add-files':'Dateien hinzufügen','add-folder':'Ordner hinzufügen',
+    'folder-name-ph':'Ordnername …','folder-delete-title':'Ordner löschen',
+    'folder-delete-many':'Ordner „{name}" und alle {n} enthaltenen Datei(en) werden unwiderruflich gelöscht.',
+    'folder-delete-one':'Ordner „{name}" wird gelöscht.',
+    'file-fallback':'Datei','file-delete-title':'Datei löschen',
+    'file-delete-msg':'„{name}" wird unwiderruflich entfernt — inklusive aller Chunks und Embeddings.',
+    'file-read-failed':'Datei konnte nicht gelesen werden','entry-delete-msg':'„{name}" wird unwiderruflich entfernt.',
+    'menu-delete':'🗑 Löschen','menu-rename':'✎ Umbenennen','menu-solve':'⚡ Lösen','menu-summarize':'≡ Zusammenfassen',
+    'back-short':'‹ Zurück','delete-btn':'Löschen',
+    'error-generic':'Fehler','failed-generic':'Fehlgeschlagen.','created-generic':'✓ Erstellt.','open-generic':'Öffnen',
+    'delete-failed':'Löschen fehlgeschlagen','rename-failed':'Umbenennen fehlgeschlagen','add-failed':'Hinzufügen fehlgeschlagen',
+    'accept-failed':'Übernehmen fehlgeschlagen','action-failed':'Aktion fehlgeschlagen','unknown-action':'Unbekannte Aktion',
+    'takes-moment':'Das kann einen Moment dauern','no-server-answer':'Keine Antwort vom Server.','nothing-found':'Nichts gefunden.',
+    'saved-other-module':' (in einem anderen Modul gespeichert)',
+    'chat-no-answer':'Ich konnte keine Antwort erzeugen.','chat-conn-error':'Fehler beim Verbinden mit dem Server.',
+    'mic-title':'Spracheingabe','send-title':'Senden',
+    'proposal-create':'✓ Erstellen','proposal-cancel':'✗ Abbrechen','proposal-cancelled':'Abgebrochen.','proposal-adjusted':'↓ angepasst',
+    'pf-tasks':'Aufgaben','pf-points':'Punkte','pf-focus':'Fokus (optional)',
+    'pf-source':'Übungsblatt-Datei oder Aufgabentext','pf-topic':'Thema (aus der Roadmap)',
+    'open-pk':'Probeklausur {n} öffnen','open-summary':'Zusammenfassung öffnen','open-solution':'Lösung öffnen','open-daily':'Tagesplan öffnen',
+    'pk-name':'Probeklausur','pk-delete-title':'Probeklausur löschen','pk-delete-confirm':'Probeklausur {n} wirklich löschen?',
+    'pk-load-failed':'Klausur konnte nicht geladen werden',
+    'sol-prefix':'Lösung','solutions-header':'Lösungen','show-solution':'Lösung anzeigen',
+    'solve-failed':'Lösen fehlgeschlagen','solve-failed-details':'Lösen fehlgeschlagen — Details im Lösungs-Tab.',
+    'solving-hint':'Übungsblatt wird gelöst… Das kann einen Moment dauern.',
+    'task-one':'Aufgabe','task-many':'Aufgaben','task-label':'Aufgabe','points-label':'Punkte','created-label':'Erstellt',
+    'questions-label':'Fragen','final-quiz-label':'Abschluss-Quiz','completed-tasks-fmt':'{n} erledigte Aufgaben','old-exam-label':'Altklausur',
+    'quiz-create':'Quiz erstellen','quiz-creating':'Quiz wird erstellt…','quiz-created':'✓ Quiz erstellt.',
+    'quiz-create-failed':'Quiz konnte nicht erstellt werden','quiz-create-failed-hint':'Bitte schließe den Tab und versuche es erneut.',
+    'quiz-finish':'Quiz abschließen','quiz-finishing':'Wird abgeschlossen…','quiz-mastered':'Karte als gemeistert markiert.',
+    'quiz-skipped':'Übersprungen. Du kannst die Karte jederzeit manuell als erledigt markieren.',
+    'quiz-locked-hint':'Erledige alle Aufgaben dieses Themas zum Freischalten','quiz-gen-failed':'Quiz-Generierung fehlgeschlagen.',
+    'topic-complete-html':'🎉 <strong>{topic}</strong> abgeschlossen! Du hast alle Aufgaben zu diesem Thema erledigt. Teste dein Wissen mit einem kurzen Quiz, um die Karte als gemeistert zu markieren.',
+    'course-load-failed':'Der Kurs konnte nicht geladen werden.','course-delete-title':'Kurs löschen',
+    'course-delete-msg':'Kurs „{name}" wirklich löschen? Alle Dateien, Zusammenfassungen und Embeddings werden unwiderruflich entfernt.',
+    'course-deleted':'Kurs „{name}" wurde gelöscht.',
+    'summary-load-failed':'Zusammenfassung konnte nicht geladen werden','summary-delete-title':'Zusammenfassung löschen',
+    'sol-delete-title':'Lösung löschen','generate-now':'✦ Jetzt generieren','pane-close':'Pane schließen',
+    'needs-onboarding-error':'Für dieses Modul fehlt ein Profil. Bitte zuerst über „Zusammenfassen" anlegen.',
+    'plan-gen-failed':'Plan-Generierung fehlgeschlagen.','no-topic-given':'Kein Thema angegeben.',
+    'topic-not-in-roadmap':'Thema „{name}" nicht in der Roadmap gefunden. Bitte einen Themen-Namen aus der Roadmap verwenden.',
+    'daily-generating-strong':'Tagesplan wird generiert…',
+    'type-klausur':'🎓 Klausur','type-uebungsblatt':'📝 Übungsblatt','type-vorlesung':'📖 Vorlesung','type-sonstiges':'📁 Sonstiges',
+    'file-type-row':'Diese Datei ist','type-change-failed':'Typ-Änderung fehlgeschlagen',
+    'time-1h':'1h / Tag','time-2h':'2h / Tag','time-3h':'3h / Tag','time-4h':'4h+ / Tag',
+    'rename-title':'Umbenennen','open-roadmap':'Roadmap öffnen','open-quiz':'Quiz „{name}" öffnen',
   },
   en: {
     'page-title':'Where do you want to continue?','empty-courses':'No courses yet — get started and create your first one.',
@@ -4231,6 +4294,63 @@ const TRANSLATIONS = {
     'summary-error':'Error while summarizing.',
     'summary-error-fallback':'Unknown error while summarizing.',
     'open-module-first':'Please open a module first.',
+    'auth-sub':'Your AI study assistant','auth-email-ph':'Email','auth-password-ph':'Password',
+    'auth-password-new-ph':'Password (min. 8 characters)','auth-login-btn':'Sign in','auth-create-btn':'Create account',
+    'auth-no-account':'No account yet?','auth-register-link':'Register',
+    'auth-have-account':'Already have an account?','auth-login-link':'Sign in',
+    'auth-or':'or','auth-google':'Sign in with Google',
+    'auth-enter-both':'Please enter email and password.','auth-pw-short':'Password must be at least 8 characters.',
+    'auth-creating':'Creating account…','auth-confirm-sent':'✓ Confirmation email sent. Please check your inbox.','auth-signing-in':'Signing in…',
+    'profile-label':'Profile','profile-settings':'Profile settings','choose-language':'Choose language','choose-design':'Choose theme',
+    'dash-title':'Daily overview','dash-tab-todo':'To do','dash-tab-done':'Completed',
+    'dash-loading':'Loading…','dash-left-label':'Left to study',
+    'dash-all-done':'All tasks for today completed.','dash-none-done':'No completed tasks yet.',
+    'create-folder':'Create folder','add-files':'Add files','add-folder':'Add folder',
+    'folder-name-ph':'Folder name …','folder-delete-title':'Delete folder',
+    'folder-delete-many':'Folder "{name}" and all {n} file(s) inside will be permanently deleted.',
+    'folder-delete-one':'Folder "{name}" will be deleted.',
+    'file-fallback':'File','file-delete-title':'Delete file',
+    'file-delete-msg':'"{name}" will be permanently removed — including all chunks and embeddings.',
+    'file-read-failed':'File could not be read','entry-delete-msg':'"{name}" will be permanently removed.',
+    'menu-delete':'🗑 Delete','menu-rename':'✎ Rename','menu-solve':'⚡ Solve','menu-summarize':'≡ Summarize',
+    'back-short':'‹ Back','delete-btn':'Delete',
+    'error-generic':'Error','failed-generic':'Failed.','created-generic':'✓ Created.','open-generic':'Open',
+    'delete-failed':'Delete failed','rename-failed':'Rename failed','add-failed':'Adding failed',
+    'accept-failed':'Accept failed','action-failed':'Action failed','unknown-action':'Unknown action',
+    'takes-moment':'This may take a moment','no-server-answer':'No response from the server.','nothing-found':'Nothing found.',
+    'saved-other-module':' (saved in another module)',
+    'chat-no-answer':'I could not generate a response.','chat-conn-error':'Error connecting to the server.',
+    'mic-title':'Voice input','send-title':'Send',
+    'proposal-create':'✓ Create','proposal-cancel':'✗ Cancel','proposal-cancelled':'Cancelled.','proposal-adjusted':'↓ adjusted',
+    'pf-tasks':'Tasks','pf-points':'Points','pf-focus':'Focus (optional)',
+    'pf-source':'Exercise sheet file or task text','pf-topic':'Topic (from the roadmap)',
+    'open-pk':'Open mock exam {n}','open-summary':'Open summary','open-solution':'Open solution','open-daily':'Open daily plan',
+    'pk-name':'Mock exam','pk-delete-title':'Delete mock exam','pk-delete-confirm':'Really delete mock exam {n}?',
+    'pk-load-failed':'Exam could not be loaded',
+    'sol-prefix':'Solution','solutions-header':'Solutions','show-solution':'Show solution',
+    'solve-failed':'Solving failed','solve-failed-details':'Solving failed — see details in the solution tab.',
+    'solving-hint':'Solving exercise sheet… This may take a moment.',
+    'task-one':'task','task-many':'tasks','task-label':'Task','points-label':'points','created-label':'Created',
+    'questions-label':'questions','final-quiz-label':'Final quiz','completed-tasks-fmt':'{n} completed tasks','old-exam-label':'Past exam',
+    'quiz-create':'Create quiz','quiz-creating':'Creating quiz…','quiz-created':'✓ Quiz created.',
+    'quiz-create-failed':'Quiz could not be created','quiz-create-failed-hint':'Please close the tab and try again.',
+    'quiz-finish':'Finish quiz','quiz-finishing':'Finishing…','quiz-mastered':'Card marked as mastered.',
+    'quiz-skipped':'Skipped. You can manually mark the card as done at any time.',
+    'quiz-locked-hint':'Complete all tasks of this topic to unlock','quiz-gen-failed':'Quiz generation failed.',
+    'topic-complete-html':'🎉 <strong>{topic}</strong> completed! You have finished all tasks for this topic. Test your knowledge with a short quiz to mark the card as mastered.',
+    'course-load-failed':'The course could not be loaded.','course-delete-title':'Delete course',
+    'course-delete-msg':'Really delete course "{name}"? All files, summaries and embeddings will be permanently removed.',
+    'course-deleted':'Course "{name}" was deleted.',
+    'summary-load-failed':'Summary could not be loaded','summary-delete-title':'Delete summary',
+    'sol-delete-title':'Delete solution','generate-now':'✦ Generate now','pane-close':'Close pane',
+    'needs-onboarding-error':'This module has no profile yet. Please create one first via "Summarize".',
+    'plan-gen-failed':'Plan generation failed.','no-topic-given':'No topic given.',
+    'topic-not-in-roadmap':'Topic "{name}" not found in the roadmap. Please use a topic name from the roadmap.',
+    'daily-generating-strong':'Generating daily plan…',
+    'type-klausur':'🎓 Exam','type-uebungsblatt':'📝 Exercise sheet','type-vorlesung':'📖 Lecture','type-sonstiges':'📁 Other',
+    'file-type-row':'This file is','type-change-failed':'Type change failed',
+    'time-1h':'1h / day','time-2h':'2h / day','time-3h':'3h / day','time-4h':'4h+ / day',
+    'rename-title':'Rename','open-roadmap':'Open roadmap','open-quiz':'Open quiz "{name}"',
   },
   es: {
     'page-title':'¿Dónde quieres continuar?','empty-courses':'Aún no hay cursos — empieza y crea el primero.',
@@ -4360,6 +4480,63 @@ const TRANSLATIONS = {
     'summary-error':'Error al generar el resumen.',
     'summary-error-fallback':'Error desconocido al generar el resumen.',
     'open-module-first':'Por favor, abre primero un módulo.',
+    'auth-sub':'Tu asistente de estudio con IA','auth-email-ph':'Correo electrónico','auth-password-ph':'Contraseña',
+    'auth-password-new-ph':'Contraseña (mín. 8 caracteres)','auth-login-btn':'Iniciar sesión','auth-create-btn':'Crear cuenta',
+    'auth-no-account':'¿Aún no tienes cuenta?','auth-register-link':'Regístrate',
+    'auth-have-account':'¿Ya tienes cuenta?','auth-login-link':'Inicia sesión',
+    'auth-or':'o','auth-google':'Iniciar sesión con Google',
+    'auth-enter-both':'Introduce el correo y la contraseña.','auth-pw-short':'La contraseña debe tener al menos 8 caracteres.',
+    'auth-creating':'Creando cuenta…','auth-confirm-sent':'✓ Correo de confirmación enviado. Revisa tu bandeja de entrada.','auth-signing-in':'Iniciando sesión…',
+    'profile-label':'Perfil','profile-settings':'Ajustes del perfil','choose-language':'Elegir idioma','choose-design':'Elegir tema',
+    'dash-title':'Resumen del día','dash-tab-todo':'Pendientes','dash-tab-done':'Completadas',
+    'dash-loading':'Cargando…','dash-left-label':'Por estudiar',
+    'dash-all-done':'Todas las tareas de hoy completadas.','dash-none-done':'Aún no hay tareas completadas.',
+    'create-folder':'Crear carpeta','add-files':'Añadir archivos','add-folder':'Añadir carpeta',
+    'folder-name-ph':'Nombre de la carpeta …','folder-delete-title':'Eliminar carpeta',
+    'folder-delete-many':'La carpeta «{name}» y los {n} archivo(s) que contiene se eliminarán de forma permanente.',
+    'folder-delete-one':'Se eliminará la carpeta «{name}».',
+    'file-fallback':'Archivo','file-delete-title':'Eliminar archivo',
+    'file-delete-msg':'«{name}» se eliminará de forma permanente, incluidos todos los fragmentos y embeddings.',
+    'file-read-failed':'No se pudo leer el archivo','entry-delete-msg':'«{name}» se eliminará de forma permanente.',
+    'menu-delete':'🗑 Eliminar','menu-rename':'✎ Renombrar','menu-solve':'⚡ Resolver','menu-summarize':'≡ Resumir',
+    'back-short':'‹ Atrás','delete-btn':'Eliminar',
+    'error-generic':'Error','failed-generic':'Falló.','created-generic':'✓ Creado.','open-generic':'Abrir',
+    'delete-failed':'Error al eliminar','rename-failed':'Error al renombrar','add-failed':'Error al añadir',
+    'accept-failed':'Error al aceptar','action-failed':'La acción falló','unknown-action':'Acción desconocida',
+    'takes-moment':'Esto puede tardar un momento','no-server-answer':'Sin respuesta del servidor.','nothing-found':'No se encontró nada.',
+    'saved-other-module':' (guardado en otro módulo)',
+    'chat-no-answer':'No pude generar una respuesta.','chat-conn-error':'Error al conectar con el servidor.',
+    'mic-title':'Entrada de voz','send-title':'Enviar',
+    'proposal-create':'✓ Crear','proposal-cancel':'✗ Cancelar','proposal-cancelled':'Cancelado.','proposal-adjusted':'↓ ajustado',
+    'pf-tasks':'Tareas','pf-points':'Puntos','pf-focus':'Enfoque (opcional)',
+    'pf-source':'Archivo de hoja de ejercicios o texto de la tarea','pf-topic':'Tema (de la hoja de ruta)',
+    'open-pk':'Abrir examen de prueba {n}','open-summary':'Abrir resumen','open-solution':'Abrir solución','open-daily':'Abrir plan diario',
+    'pk-name':'Examen de prueba','pk-delete-title':'Eliminar examen de prueba','pk-delete-confirm':'¿Eliminar el examen de prueba {n}?',
+    'pk-load-failed':'No se pudo cargar el examen',
+    'sol-prefix':'Solución','solutions-header':'Soluciones','show-solution':'Mostrar solución',
+    'solve-failed':'Error al resolver','solve-failed-details':'Error al resolver — detalles en la pestaña de solución.',
+    'solving-hint':'Resolviendo la hoja de ejercicios… Esto puede tardar un momento.',
+    'task-one':'tarea','task-many':'tareas','task-label':'Tarea','points-label':'puntos','created-label':'Creado',
+    'questions-label':'preguntas','final-quiz-label':'Quiz final','completed-tasks-fmt':'{n} tareas completadas','old-exam-label':'Examen anterior',
+    'quiz-create':'Crear quiz','quiz-creating':'Creando quiz…','quiz-created':'✓ Quiz creado.',
+    'quiz-create-failed':'No se pudo crear el quiz','quiz-create-failed-hint':'Cierra la pestaña e inténtalo de nuevo.',
+    'quiz-finish':'Terminar quiz','quiz-finishing':'Finalizando…','quiz-mastered':'Tarjeta marcada como dominada.',
+    'quiz-skipped':'Omitido. Puedes marcar la tarjeta como completada manualmente en cualquier momento.',
+    'quiz-locked-hint':'Completa todas las tareas de este tema para desbloquear','quiz-gen-failed':'La generación del quiz falló.',
+    'topic-complete-html':'🎉 ¡<strong>{topic}</strong> completado! Has terminado todas las tareas de este tema. Pon a prueba tus conocimientos con un quiz corto para marcar la tarjeta como dominada.',
+    'course-load-failed':'No se pudo cargar el curso.','course-delete-title':'Eliminar curso',
+    'course-delete-msg':'¿Eliminar el curso «{name}»? Todos los archivos, resúmenes y embeddings se eliminarán de forma permanente.',
+    'course-deleted':'El curso «{name}» fue eliminado.',
+    'summary-load-failed':'No se pudo cargar el resumen','summary-delete-title':'Eliminar resumen',
+    'sol-delete-title':'Eliminar solución','generate-now':'✦ Generar ahora','pane-close':'Cerrar panel',
+    'needs-onboarding-error':'A este módulo le falta un perfil. Créalo primero con «Resumir».',
+    'plan-gen-failed':'La generación del plan falló.','no-topic-given':'No se indicó ningún tema.',
+    'topic-not-in-roadmap':'El tema «{name}» no se encontró en la hoja de ruta. Usa un nombre de tema de la hoja de ruta.',
+    'daily-generating-strong':'Generando plan diario…',
+    'type-klausur':'🎓 Examen','type-uebungsblatt':'📝 Hoja de ejercicios','type-vorlesung':'📖 Clase','type-sonstiges':'📁 Otros',
+    'file-type-row':'Este archivo es','type-change-failed':'Error al cambiar el tipo',
+    'time-1h':'1h / día','time-2h':'2h / día','time-3h':'3h / día','time-4h':'4h+ / día',
+    'rename-title':'Renombrar','open-roadmap':'Abrir hoja de ruta','open-quiz':'Abrir quiz «{name}»',
   },
   fr: {
     'page-title':'Où veux-tu continuer ?','empty-courses':'Aucun cours pour l\'instant — lance-toi et crée le premier.',
@@ -4489,6 +4666,63 @@ const TRANSLATIONS = {
     'summary-error':'Erreur lors du résumé.',
     'summary-error-fallback':'Erreur inconnue lors du résumé.',
     'open-module-first':'Veuillez d\'abord ouvrir un module.',
+    'auth-sub':'Ton assistant d\'étude IA','auth-email-ph':'E-mail','auth-password-ph':'Mot de passe',
+    'auth-password-new-ph':'Mot de passe (min. 8 caractères)','auth-login-btn':'Se connecter','auth-create-btn':'Créer un compte',
+    'auth-no-account':'Pas encore de compte ?','auth-register-link':'S\'inscrire',
+    'auth-have-account':'Déjà un compte ?','auth-login-link':'Se connecter',
+    'auth-or':'ou','auth-google':'Se connecter avec Google',
+    'auth-enter-both':'Saisis ton e-mail et ton mot de passe.','auth-pw-short':'Le mot de passe doit contenir au moins 8 caractères.',
+    'auth-creating':'Création du compte…','auth-confirm-sent':'✓ E-mail de confirmation envoyé. Vérifie ta boîte de réception.','auth-signing-in':'Connexion…',
+    'profile-label':'Profil','profile-settings':'Paramètres du profil','choose-language':'Choisir la langue','choose-design':'Choisir le thème',
+    'dash-title':'Aperçu du jour','dash-tab-todo':'À faire','dash-tab-done':'Terminées',
+    'dash-loading':'Chargement…','dash-left-label':'Reste à étudier',
+    'dash-all-done':'Toutes les tâches du jour sont terminées.','dash-none-done':'Aucune tâche terminée pour l\'instant.',
+    'create-folder':'Créer un dossier','add-files':'Ajouter des fichiers','add-folder':'Ajouter un dossier',
+    'folder-name-ph':'Nom du dossier …','folder-delete-title':'Supprimer le dossier',
+    'folder-delete-many':'Le dossier « {name} » et les {n} fichier(s) qu\'il contient seront supprimés définitivement.',
+    'folder-delete-one':'Le dossier « {name} » sera supprimé.',
+    'file-fallback':'Fichier','file-delete-title':'Supprimer le fichier',
+    'file-delete-msg':'« {name} » sera supprimé définitivement — y compris tous les fragments et embeddings.',
+    'file-read-failed':'Le fichier n\'a pas pu être lu','entry-delete-msg':'« {name} » sera supprimé définitivement.',
+    'menu-delete':'🗑 Supprimer','menu-rename':'✎ Renommer','menu-solve':'⚡ Résoudre','menu-summarize':'≡ Résumer',
+    'back-short':'‹ Retour','delete-btn':'Supprimer',
+    'error-generic':'Erreur','failed-generic':'Échec.','created-generic':'✓ Créé.','open-generic':'Ouvrir',
+    'delete-failed':'Échec de la suppression','rename-failed':'Échec du renommage','add-failed':'Échec de l\'ajout',
+    'accept-failed':'Échec de l\'acceptation','action-failed':'Échec de l\'action','unknown-action':'Action inconnue',
+    'takes-moment':'Cela peut prendre un instant','no-server-answer':'Pas de réponse du serveur.','nothing-found':'Rien trouvé.',
+    'saved-other-module':' (enregistré dans un autre module)',
+    'chat-no-answer':'Je n\'ai pas pu générer de réponse.','chat-conn-error':'Erreur de connexion au serveur.',
+    'mic-title':'Saisie vocale','send-title':'Envoyer',
+    'proposal-create':'✓ Créer','proposal-cancel':'✗ Annuler','proposal-cancelled':'Annulé.','proposal-adjusted':'↓ ajusté',
+    'pf-tasks':'Exercices','pf-points':'Points','pf-focus':'Focus (optionnel)',
+    'pf-source':'Fichier de feuille d\'exercices ou énoncé','pf-topic':'Sujet (de la roadmap)',
+    'open-pk':'Ouvrir l\'examen blanc {n}','open-summary':'Ouvrir le résumé','open-solution':'Ouvrir la solution','open-daily':'Ouvrir le plan du jour',
+    'pk-name':'Examen blanc','pk-delete-title':'Supprimer l\'examen blanc','pk-delete-confirm':'Vraiment supprimer l\'examen blanc {n} ?',
+    'pk-load-failed':'L\'examen n\'a pas pu être chargé',
+    'sol-prefix':'Solution','solutions-header':'Solutions','show-solution':'Afficher la solution',
+    'solve-failed':'Échec de la résolution','solve-failed-details':'Échec de la résolution — détails dans l\'onglet solution.',
+    'solving-hint':'Résolution de la feuille d\'exercices… Cela peut prendre un instant.',
+    'task-one':'exercice','task-many':'exercices','task-label':'Exercice','points-label':'points','created-label':'Créé',
+    'questions-label':'questions','final-quiz-label':'Quiz final','completed-tasks-fmt':'{n} exercices terminés','old-exam-label':'Annale',
+    'quiz-create':'Créer un quiz','quiz-creating':'Création du quiz…','quiz-created':'✓ Quiz créé.',
+    'quiz-create-failed':'Le quiz n\'a pas pu être créé','quiz-create-failed-hint':'Ferme l\'onglet et réessaie.',
+    'quiz-finish':'Terminer le quiz','quiz-finishing':'Finalisation…','quiz-mastered':'Carte marquée comme maîtrisée.',
+    'quiz-skipped':'Ignoré. Tu peux marquer la carte comme terminée manuellement à tout moment.',
+    'quiz-locked-hint':'Termine tous les exercices de ce sujet pour déverrouiller','quiz-gen-failed':'Échec de la génération du quiz.',
+    'topic-complete-html':'🎉 <strong>{topic}</strong> terminé ! Tu as fini tous les exercices de ce sujet. Teste tes connaissances avec un petit quiz pour marquer la carte comme maîtrisée.',
+    'course-load-failed':'Le cours n\'a pas pu être chargé.','course-delete-title':'Supprimer le cours',
+    'course-delete-msg':'Vraiment supprimer le cours « {name} » ? Tous les fichiers, résumés et embeddings seront supprimés définitivement.',
+    'course-deleted':'Le cours « {name} » a été supprimé.',
+    'summary-load-failed':'Le résumé n\'a pas pu être chargé','summary-delete-title':'Supprimer le résumé',
+    'sol-delete-title':'Supprimer la solution','generate-now':'✦ Générer maintenant','pane-close':'Fermer le panneau',
+    'needs-onboarding-error':'Ce module n\'a pas encore de profil. Crée-le d\'abord via « Résumer ».',
+    'plan-gen-failed':'Échec de la génération du plan.','no-topic-given':'Aucun sujet indiqué.',
+    'topic-not-in-roadmap':'Sujet « {name} » introuvable dans la roadmap. Utilise un nom de sujet de la roadmap.',
+    'daily-generating-strong':'Génération du plan du jour…',
+    'type-klausur':'🎓 Examen','type-uebungsblatt':'📝 Feuille d\'exercices','type-vorlesung':'📖 Cours','type-sonstiges':'📁 Autre',
+    'file-type-row':'Ce fichier est','type-change-failed':'Échec du changement de type',
+    'time-1h':'1h / jour','time-2h':'2h / jour','time-3h':'3h / jour','time-4h':'4h+ / jour',
+    'rename-title':'Renommer','open-roadmap':'Ouvrir la roadmap','open-quiz':'Ouvrir le quiz « {name} »',
   }
 };
 
@@ -4520,6 +4754,10 @@ function applyI18n(lang) {
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     const v = T[el.dataset.i18nTitle];
     if (v !== undefined) el.title = v;
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const v = T[el.dataset.i18nAria];
+    if (v !== undefined) el.setAttribute('aria-label', v);
   });
   document.documentElement.lang = lang;
   if (typeof updateGreeting === 'function') updateGreeting();
@@ -4726,6 +4964,11 @@ function openSolution(sol) {
   if (!tab) {
     tab = { path: sol.path, kind: 'solution', name: sol.name, solveData: sol.solveData };
     pane.tabs.push(tab);
+  } else if (sol.solveData) {
+    tab.solveData = sol.solveData;
+    tab.name = sol.name;
+    tab.loading = false;
+    tab.error = null;
   }
   pane.activeTab = sol.path;
   state.focusedPane = paneIdx;
@@ -4733,8 +4976,42 @@ function openSolution(sol) {
   highlightActiveFileRow();
 }
 
+// Open (or re-open) a solution tab in loading state — the spinner lives where
+// the result will appear, so a solve started from the context menu or chat is
+// visibly in progress.
+function openSolutionLoadingTab(solPath, solName) {
+  const paneIdx = state.focusedPane;
+  if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
+  const pane = state.panes[paneIdx];
+  let tab = pane.tabs.find(t => t.path === solPath);
+  if (!tab) {
+    tab = { path: solPath, kind: 'solution', name: solName, solveData: null };
+    pane.tabs.push(tab);
+  }
+  tab.solveData = null;  // re-solve: show the spinner, not the stale solution
+  tab.loading = true;
+  tab.error = null;
+  pane.activeTab = solPath;
+  state.focusedPane = paneIdx;
+  renderPanes();
+  highlightActiveFileRow();
+  return tab;
+}
+
 async function solveSheet(file, btnEl) {
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
+  if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<span class="step-spinner"></span>'; }
+
+  const solPath = `solution:${file.relative_path || file.name}`;
+  const solName = `${t('sol-prefix')}: ${file.name}`;
+  const sheetFilePath = file.relative_path || file.name;
+  const loadingTab = openSolutionLoadingTab(solPath, solName);
+
+  function failTab(msg) {
+    loadingTab.loading = false;
+    loadingTab.error = msg;
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
+    renderPanes();
+  }
 
   // 1) Fetch text
   let sheetText;
@@ -4744,14 +5021,9 @@ async function solveSheet(file, btnEl) {
     if (!r.ok) throw new Error(d.detail || r.statusText);
     sheetText = d.text || '';
   } catch (err) {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
-    alert(`Datei konnte nicht gelesen werden: ${err.message}`);
-    return;
+    failTab(`${t('file-read-failed')}: ${err.message}`);
+    return false;
   }
-
-  const solPath = `solution:${file.relative_path || file.name}`;
-  const solName = `Lösung: ${file.name}`;
-  const sheetFilePath = file.relative_path || file.name;
 
   // 2) Solve
   let solveData;
@@ -4770,9 +5042,8 @@ async function solveSheet(file, btnEl) {
     if (!r.ok) throw new Error(d.detail || r.statusText);
     solveData = d;
   } catch (err) {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
-    alert(`Lösen fehlgeschlagen: ${err.message}`);
-    return;
+    failTab(`${t('solve-failed')}: ${err.message}`);
+    return false;
   }
 
   if (btnEl) { btnEl.disabled = false; btnEl.textContent = '⚡'; }
@@ -4798,8 +5069,9 @@ async function solveSheet(file, btnEl) {
   // Refresh files panel to show/update "Lösungen" section
   renderWorkspaceFiles(state.moduleFiles);
 
-  // Open solution tab
+  // Fill the loading tab with the result
   openSolution(solEntry);
+  return true;
 }
 
 // ── Upload ─────────────────────────────────────────────────────────────────────
@@ -4843,7 +5115,7 @@ function renderSelectedFiles() {
       row.innerHTML = `
         <div style="min-width:0;flex:1;">
           <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(displayName)}</div>
-          <small>${escHtml(item.file.type||'Datei')}</small>
+          <small>${escHtml(item.file.type||t('file-fallback'))}</small>
         </div>
         <div class="selected-meta">
           <small>${formatBytes(item.file.size)}</small>
@@ -5132,9 +5404,9 @@ async function deleteFolder(module, folderName) {
   const filePaths = Array.from(pathSet);
 
   const confirmMsg = filePaths.length > 0
-    ? `Ordner „${folderName}" und alle ${filePaths.length} enthaltenen Datei(en) werden unwiderruflich gelöscht.`
-    : `Ordner „${folderName}" wird gelöscht.`;
-  if (!await showConfirm('Ordner löschen', confirmMsg)) return;
+    ? tf('folder-delete-many', { name: folderName, n: filePaths.length })
+    : tf('folder-delete-one', { name: folderName });
+  if (!await showConfirm(t('folder-delete-title'), confirmMsg)) return;
 
   // Delete each file from the server
   for (const filePath of filePaths) {
@@ -5284,8 +5556,8 @@ function renderWorkspaceFiles(files) {
         <span class="folder-icon">${isCollapsed ? '📁' : '📂'}</span>
         <span class="folder-name-text">${escHtml(folderName)}</span>
         <span class="folder-row-actions">
-          <button class="folder-action-btn" data-action="rename" title="Umbenennen">✏</button>
-          <button class="folder-action-btn" data-action="delete" title="Ordner löschen" style="color:#f87171;">🗑</button>
+          <button class="folder-action-btn" data-action="rename" title="${t('rename-title')}">✏</button>
+          <button class="folder-action-btn" data-action="delete" title="${t('folder-delete-title')}" style="color:#f87171;">🗑</button>
         </span>
       `;
       folderRow.addEventListener('dragover', e => { e.preventDefault(); folderRow.classList.add('drag-over'); });
@@ -5346,12 +5618,12 @@ function renderWorkspaceFiles(files) {
       const row = document.createElement('div');
       row.className = 'file-row is-summary';
       row.dataset.path = `summary:${s.path}`;
-      row.dataset.name = s.titel || 'Zusammenfassung';
+      row.dataset.name = s.titel || t('summary-label');
       row.innerHTML = `
         <span class="file-icon">✦</span>
         <div class="file-meta">
-          <div class="file-name" title="${escHtml(s.titel || '')}">${escHtml(s.titel || 'Zusammenfassung')}</div>
-          <div class="file-sub">${escHtml(s.date || 'MD')} · Zusammenfassung</div>
+          <div class="file-name" title="${escHtml(s.titel || '')}">${escHtml(s.titel || t('summary-label'))}</div>
+          <div class="file-sub">${escHtml(s.date || 'MD')} · ${t('summary-label')}</div>
         </div>
         <div class="file-actions">
           <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
@@ -5362,8 +5634,8 @@ function renderWorkspaceFiles(files) {
         if (actionBtn) {
           e.stopPropagation();
           genFilePopup.open([
-            { label: '✎ Umbenennen', fn: () => renameSummary(s, row) },
-            { label: '🗑 Löschen', danger: true, fn: () => deleteSummary(s) },
+            { label: t('menu-rename'), fn: () => renameSummary(s, row) },
+            { label: t('menu-delete'), danger: true, fn: () => deleteSummary(s) },
           ], actionBtn);
           return;
         }
@@ -5389,7 +5661,7 @@ function renderWorkspaceFiles(files) {
       row.innerHTML = `
         <span class="file-icon">📝</span>
         <div class="file-meta">
-          <div class="file-name">Probeklausur ${exam.n}</div>
+          <div class="file-name">${t('pk-name')} ${exam.n}</div>
           <div class="file-sub">${exam.num_tasks} Aufg. · ${exam.total_points} Pkt. · ${escHtml(exam.generated || '—')}</div>
         </div>
         <div class="file-actions">
@@ -5401,7 +5673,7 @@ function renderWorkspaceFiles(files) {
         if (actionBtn) {
           e.stopPropagation();
           genFilePopup.open([
-            { label: '🗑 Löschen', danger: true, fn: () => deleteProbeklausur(exam) },
+            { label: t('menu-delete'), danger: true, fn: () => deleteProbeklausur(exam) },
           ], actionBtn);
           return;
         }
@@ -5416,7 +5688,7 @@ function renderWorkspaceFiles(files) {
     const solCollapsed = collapsedSections.includes('loesungen');
     const solHeader = document.createElement('div');
     solHeader.className = 'files-section-header' + (solCollapsed ? ' collapsed' : '');
-    solHeader.innerHTML = `<span>Lösungen</span><span class="section-chevron">▼</span>`;
+    solHeader.innerHTML = `<span>${t('solutions-header')}</span><span class="section-chevron">▼</span>`;
     solHeader.addEventListener('click', () => toggleSectionCollapse(state.moduleName, 'loesungen'));
     filesPanel.appendChild(solHeader);
 
@@ -5430,7 +5702,7 @@ function renderWorkspaceFiles(files) {
         <span class="file-icon">⚡</span>
         <div class="file-meta">
           <div class="file-name" title="${escHtml(sol.name)}">${escHtml(sol.name)}</div>
-          <div class="file-sub">${n} Aufgabe${n !== 1 ? 'n' : ''} · ${tok} Tokens</div>
+          <div class="file-sub">${n} ${n === 1 ? t('task-one') : t('task-many')} · ${tok} Tokens</div>
         </div>
         <div class="file-actions">
           <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
@@ -5441,8 +5713,8 @@ function renderWorkspaceFiles(files) {
         if (actionBtn) {
           e.stopPropagation();
           genFilePopup.open([
-            { label: '✎ Umbenennen', fn: () => renameSolution(sol, row) },
-            { label: '🗑 Löschen', danger: true, fn: () => deleteSolution(sol) },
+            { label: t('menu-rename'), fn: () => renameSolution(sol, row) },
+            { label: t('menu-delete'), danger: true, fn: () => deleteSolution(sol) },
           ], actionBtn);
           return;
         }
@@ -5480,7 +5752,7 @@ function renderWorkspaceFiles(files) {
         if (actionBtn) {
           e.stopPropagation();
           genFilePopup.open([
-            { label: '🗑 Löschen', danger: true, fn: () => deleteTopicQuiz(quiz) },
+            { label: t('menu-delete'), danger: true, fn: () => deleteTopicQuiz(quiz) },
           ], actionBtn);
           return;
         }
@@ -5555,7 +5827,7 @@ function openProbeklausurTab(examEntry, paneIdx) {
   const path = `probeklausur:${examEntry.n}`;
   let tab = pane.tabs.find(t => t.path === path);
   if (!tab) {
-    tab = { path, kind: 'probeklausur', name: `Probeklausur ${examEntry.n}`, examEntry };
+    tab = { path, kind: 'probeklausur', name: `${t('pk-name')} ${examEntry.n}`, examEntry };
     pane.tabs.push(tab);
   }
   pane.activeTab = path;
@@ -5574,7 +5846,7 @@ async function renderProbeklausurView(vp, tab) {
     const n = tab.examEntry.n;
     const res = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${n}`);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Fehler');
+    if (!res.ok) throw new Error(data.detail || t('error-generic'));
 
     const md = data.content || '';
     const meta = tab.examEntry;
@@ -5584,9 +5856,9 @@ async function renderProbeklausurView(vp, tab) {
     header.innerHTML = `
       <div>
         <h2>Probeklausur ${n} — ${escHtml(state.moduleName)}</h2>
-        <div class="pk-meta-bar">${meta.num_tasks} Aufgaben · ${meta.total_points} Punkte · Erstellt: ${escHtml(meta.generated || '—')}</div>
+        <div class="pk-meta-bar">${meta.num_tasks} ${t('task-many')} · ${meta.total_points} ${t('points-label')} · ${t('created-label')}: ${escHtml(meta.generated || '—')}</div>
       </div>
-      <button class="pk-delete-btn" id="pk-del-${n}" title="Klausur löschen">Löschen</button>
+      <button class="pk-delete-btn" id="pk-del-${n}" title="${t('pk-delete-title')}">${t('delete-btn')}</button>
     `;
     p.innerHTML = '';
     p.appendChild(header);
@@ -5599,10 +5871,10 @@ async function renderProbeklausurView(vp, tab) {
     requestAnimationFrame(() => renderMathIn(p));
 
     header.querySelector(`#pk-del-${n}`).addEventListener('click', async () => {
-      if (!confirm(`Probeklausur ${n} wirklich löschen?`)) return;
+      if (!confirm(tf('pk-delete-confirm', { n }))) return;
       try {
         const dr = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${n}`, { method: 'DELETE' });
-        if (!dr.ok) { const dd = await dr.json(); throw new Error(dd.detail || 'Fehler'); }
+        if (!dr.ok) { const dd = await dr.json(); throw new Error(dd.detail || t('error-generic')); }
         const pane = state.panes[state.focusedPane];
         if (pane) {
           pane.tabs = pane.tabs.filter(t => t.path !== tab.path);
@@ -5612,11 +5884,11 @@ async function renderProbeklausurView(vp, tab) {
         renderWorkspaceFiles(state.moduleFiles);
         renderPanes();
       } catch (err) {
-        alert(`Löschen fehlgeschlagen: ${err.message}`);
+        alert(`${t('delete-failed')}: ${err.message}`);
       }
     });
   } catch (err) {
-    p.innerHTML = `<div class="summary-cta"><strong>Klausur konnte nicht geladen werden</strong><p>${escHtml(err.message || '')}</p></div>`;
+    p.innerHTML = `<div class="summary-cta"><strong>${t('pk-load-failed')}</strong><p>${escHtml(err.message || '')}</p></div>`;
   }
 }
 
@@ -5632,7 +5904,7 @@ function renderProbeklausurMd(md) {
   return parts.map(part => {
     if (part.startsWith(':::solution')) {
       const inner = part.replace(/^:::solution\s*/, '').replace(/:::\s*$/, '').trim();
-      return `<details class="pk-solution"><summary>Lösung anzeigen</summary><div class="pk-solution-body">${renderMarkdown(inner)}</div></details>`;
+      return `<details class="pk-solution"><summary>${t('show-solution')}</summary><div class="pk-solution-body">${renderMarkdown(inner)}</div></details>`;
     }
     return renderMarkdown(part);
   }).join('');
@@ -6097,8 +6369,8 @@ async function generateDailyPlan() {
     overlay.innerHTML = `
       <div class="daily-board-loading-spinner"></div>
       <div class="daily-board-loading-text">
-        <strong>Tagesplan wird generiert…</strong>
-        Das kann einen Moment dauern.
+        <strong>${t('daily-generating-strong')}</strong>
+        ${t('takes-moment')}.
       </div>`;
     board.appendChild(overlay);
   }
@@ -6188,7 +6460,7 @@ async function clearDailyHistory() {
     }
     addMsg('agent', t('daily-clear-success'));
   } catch (err) {
-    addMsg('agent', `❌ Netzwerkfehler: ${err.message}`);
+    addMsg('agent', `${t('daily-net-error')} ${err.message}`);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -6261,17 +6533,17 @@ function showCardCompletionPrompt(topicId, topicName) {
   card.className = 'chat-proposal';
   const summary = document.createElement('div');
   summary.className = 'chat-proposal-summary';
-  summary.innerHTML = `🎉 <strong>${escHtml(topicName)}</strong> abgeschlossen! Du hast alle Aufgaben zu diesem Thema erledigt. Teste dein Wissen mit einem kurzen Quiz, um die Karte als gemeistert zu markieren.`;
+  summary.innerHTML = tf('topic-complete-html', { topic: escHtml(topicName) });
   card.appendChild(summary);
 
   const actions = document.createElement('div');
   actions.className = 'chat-proposal-actions';
   const quizBtn = document.createElement('button');
   quizBtn.className = 'chat-proposal-btn primary';
-  quizBtn.textContent = 'Quiz erstellen';
+  quizBtn.textContent = t('quiz-create');
   const skipBtn = document.createElement('button');
   skipBtn.className = 'chat-proposal-btn ghost';
-  skipBtn.textContent = 'Überspringen';
+  skipBtn.textContent = t('skip');
   actions.append(quizBtn, skipBtn);
   card.appendChild(actions);
 
@@ -6282,7 +6554,7 @@ function showCardCompletionPrompt(topicId, topicName) {
   quizBtn.addEventListener('click', () => createTopicQuiz(topicId, topicName, card));
   skipBtn.addEventListener('click', () => {
     actions.remove();
-    status.textContent = 'Übersprungen. Du kannst die Karte jederzeit manuell als erledigt markieren.';
+    status.textContent = t('quiz-skipped');
   });
 
   wrap.append(label, card);
@@ -6294,22 +6566,22 @@ async function createTopicQuiz(topicId, topicName, card) {
   const actions = card.querySelector('.chat-proposal-actions');
   const status = card.querySelector('.chat-proposal-status');
   card.querySelectorAll('button').forEach(b => b.disabled = true);
-  if (status) status.innerHTML = '<span class="modal-spinner"></span> Quiz wird erstellt…';
+  if (status) status.innerHTML = `<span class="modal-spinner"></span> ${t('quiz-creating')}`;
   try {
     const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(topicId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || 'Fehler');
+    if (!res.ok) throw new Error(data.detail || t('error-generic'));
     if (actions) actions.remove();
-    if (status) status.textContent = '✓ Quiz erstellt.';
+    if (status) status.textContent = t('quiz-created');
     openTopicQuizTab(topicId, data.topic_name || topicName, data);
     await loadTopicQuizzes(state.moduleName);
     renderWorkspaceFiles(state.moduleFiles);
   } catch (err) {
     card.querySelectorAll('button').forEach(b => b.disabled = false);
-    if (status) status.textContent = `Fehler: ${err.message}`;
+    if (status) status.textContent = `${t('error-generic')}: ${err.message}`;
   }
 }
 
@@ -6345,7 +6617,7 @@ function renderTopicQuizView(vp, tab) {
   header.innerHTML = `
     <div>
       <h2>Quiz — ${escHtml(tab.topicName || quiz.topic_name || '')}</h2>
-      <div class="pk-meta-bar">${questions.length} Fragen · Abschluss-Quiz · Erstellt: ${escHtml(quiz.generated_at || '—')}</div>
+      <div class="pk-meta-bar">${questions.length} ${t('questions-label')} · ${t('final-quiz-label')} · ${t('created-label')}: ${escHtml(quiz.generated_at || '—')}</div>
     </div>
   `;
   p.appendChild(header);
@@ -6354,7 +6626,7 @@ function renderTopicQuizView(vp, tab) {
   body.className = 'pk-body';
 
   if (!questions.length) {
-    body.innerHTML = `<div class="summary-cta"><strong>Quiz konnte nicht erstellt werden</strong><p>Bitte schließe den Tab und versuche es erneut.</p></div>`;
+    body.innerHTML = `<div class="summary-cta"><strong>${t('quiz-create-failed')}</strong><p>${t('quiz-create-failed-hint')}</p></div>`;
     p.appendChild(body);
     return;
   }
@@ -6375,7 +6647,7 @@ function renderTopicQuizView(vp, tab) {
     qEl.innerHTML = `
       <div class="tq-question-text"><strong>${i + 1}.</strong> ${renderMarkdown(q.question || '')}</div>
       ${optionsHtml}
-      <details class="pk-solution"><summary>Lösung anzeigen</summary>
+      <details class="pk-solution"><summary>${t('show-solution')}</summary>
         <div class="pk-solution-body">${renderMarkdown(q.solution || '')}</div>
       </details>
     `;
@@ -6386,13 +6658,13 @@ function renderTopicQuizView(vp, tab) {
   footer.style.cssText = 'margin-top:20px;display:flex;gap:12px;align-items:center;';
   const finishBtn = document.createElement('button');
   finishBtn.className = 'chat-proposal-btn primary';
-  finishBtn.textContent = 'Quiz abschließen';
+  finishBtn.textContent = t('quiz-finish');
   const finishStatus = document.createElement('span');
   finishStatus.style.cssText = 'font-size:0.84rem;color:var(--muted);';
   if (tab.completed) {
     finishBtn.disabled = true;
     finishBtn.textContent = '✓ Abgeschlossen';
-    finishStatus.textContent = 'Karte als gemeistert markiert.';
+    finishStatus.textContent = t('quiz-mastered');
   }
   footer.append(finishBtn, finishStatus);
   body.appendChild(footer);
@@ -6405,14 +6677,14 @@ function renderTopicQuizView(vp, tab) {
 
 async function completeTopicQuiz(tab, btn, statusEl) {
   if (btn) btn.disabled = true;
-  if (statusEl) statusEl.innerHTML = '<span class="modal-spinner" style="width:14px;height:14px;display:inline-block;"></span> Wird abgeschlossen…';
+  if (statusEl) statusEl.innerHTML = `<span class="modal-spinner" style="width:14px;height:14px;display:inline-block;"></span> ${t('quiz-finishing')}`;
   try {
     const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(tab.topicId)}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || 'Fehler');
+    if (!res.ok) throw new Error(data.detail || t('error-generic'));
     tab.completed = true;
     // Refresh the roadmap so the card turns green wherever it is shown.
     state.roadmapLoadedFor = null;
@@ -6420,7 +6692,7 @@ async function completeTopicQuiz(tab, btn, statusEl) {
     renderPanes();
   } catch (err) {
     if (btn) btn.disabled = false;
-    if (statusEl) statusEl.textContent = `Fehler: ${err.message}`;
+    if (statusEl) statusEl.textContent = `${t('error-generic')}: ${err.message}`;
   }
 }
 
@@ -6607,7 +6879,7 @@ function paintRoadmapDetail() {
   const quizBtn = document.createElement('button');
   quizBtn.className = 'rm-quiz-btn' + (allTopicTasksDone ? '' : ' locked');
   quizBtn.disabled = !allTopicTasksDone;
-  quizBtn.textContent = allTopicTasksDone ? '✦ Quiz erstellen' : '🔒 Quiz erstellen';
+  quizBtn.textContent = (allTopicTasksDone ? '✦ ' : '🔒 ') + t('quiz-create');
   quizActions.appendChild(quizBtn);
 
   const quizStatusEl = document.createElement('div');
@@ -6619,7 +6891,7 @@ function paintRoadmapDetail() {
   if (!allTopicTasksDone) {
     const lockMsg = document.createElement('div');
     lockMsg.className = 'rm-quiz-lock-msg';
-    lockMsg.textContent = 'Erledige alle Aufgaben dieses Themas zum Freischalten';
+    lockMsg.textContent = t('quiz-locked-hint');
     quizSection.appendChild(lockMsg);
   } else {
     quizBtn.addEventListener('click', () => createTopicQuiz(t.id, t.name, quizSection));
@@ -6775,13 +7047,13 @@ async function acceptPendingRoadmap(_tab) {
   if (!state.moduleName) return;
   try {
     const res = await fetch(`/roadmap/${encodeURIComponent(state.moduleName)}/accept`, { method: 'POST' });
-    if (!res.ok) throw new Error('Accept fehlgeschlagen');
+    if (!res.ok) throw new Error(t('accept-failed'));
     state.roadmapPending = null;
     await loadRoadmapForCurrentModule();
     await refreshModuleFiles();  // updates the Roadmap entry in the left files panel
     renderPanes();
   } catch (err) {
-    addMsg('agent', `❌ Accept fehlgeschlagen: ${err.message}`);
+    addMsg('agent', `❌ ${t('accept-failed')}: ${err.message}`);
   }
 }
 
@@ -6798,7 +7070,7 @@ async function toggleExamFlag(file) {
   const path = file.relative_path || file.name;
   try {
     const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file/exam-flag?path=${encodeURIComponent(path)}`, { method: 'POST' });
-    if (!res.ok) throw new Error('Flag-Toggle fehlgeschlagen');
+    if (!res.ok) throw new Error(t('action-failed'));
     await refreshModuleFiles();
   } catch (err) {
     addMsg('agent', `❌ ${err.message}`);
@@ -6828,7 +7100,7 @@ async function renameFileInline(file, row) {
         body: JSON.stringify({ path: file.relative_path || file.name, new_name: newName }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Umbenennen fehlgeschlagen');
+      if (!res.ok) throw new Error(data.detail || t('rename-failed'));
       await refreshModuleFiles();
     } catch (err) {
       addMsg('agent', `❌ ${err.message}`);
@@ -6922,7 +7194,7 @@ async function addFilesToCurrentModule(input) {
     renderPanes();
     persistWorkspace();
   } catch (err) {
-    addMsg('agent', `❌ Hinzufügen fehlgeschlagen: ${err.message}`);
+    addMsg('agent', `❌ ${t('add-failed')}: ${err.message}`);
   } finally {
     setProcessingState(false);
   }
@@ -6930,11 +7202,11 @@ async function addFilesToCurrentModule(input) {
 
 async function deleteModuleFile(file) {
   const path = file.relative_path || file.name;
-  if (!await showConfirm(`Datei löschen`, `„${file.name}" wird unwiderruflich entfernt — inklusive aller Chunks und Embeddings.`)) return;
+  if (!await showConfirm(t('file-delete-title'), tf('file-delete-msg', { name: file.name }))) return;
   try {
     const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Löschen fehlgeschlagen.');
+    if (!res.ok) throw new Error(data.detail || t('delete-failed'));
     // Drop caches for this file.
     delete state.parsedTextCache[path];
     disposePdfFrame(path);
@@ -6950,14 +7222,14 @@ async function deleteModuleFile(file) {
     });
     await refreshModuleFiles();
   } catch (err) {
-    addMsg('agent', `❌ Löschen fehlgeschlagen: ${err.message}`);
+    addMsg('agent', `❌ ${t('delete-failed')}: ${err.message}`);
   }
 }
 
 // ── Actions for generated files (summary / probeklausur / solution) ────────────
 
 function renameSummary(s, row) {
-  renameRowInline(row, s.titel || 'Zusammenfassung', async (newName) => {
+  renameRowInline(row, s.titel || t('summary-label'), async (newName) => {
     try {
       const res = await fetch(`/lecture/summaries/${encodeURIComponent(state.moduleName)}`, {
         method: 'PATCH',
@@ -6965,7 +7237,7 @@ function renameSummary(s, row) {
         body: JSON.stringify({ path: s.path, title: newName }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Umbenennen fehlgeschlagen');
+      if (!res.ok) throw new Error(data.detail || t('rename-failed'));
       const tabPath = `summary:${s.path}`;
       state.panes.forEach(pane => {
         if (!pane) return;
@@ -6984,11 +7256,11 @@ function renameSummary(s, row) {
 }
 
 async function deleteSummary(s) {
-  if (!await showConfirm('Zusammenfassung löschen', `„${s.titel || 'Zusammenfassung'}" wird unwiderruflich entfernt.`)) return;
+  if (!await showConfirm(t('summary-delete-title'), tf('entry-delete-msg', { name: s.titel || t('summary-label') }))) return;
   try {
     const res = await fetch(`/lecture/summaries/${encodeURIComponent(state.moduleName)}?path=${encodeURIComponent(s.path)}`, { method: 'DELETE' });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Löschen fehlgeschlagen');
+    if (!res.ok) throw new Error(data.detail || t('delete-failed'));
     const tabPath = `summary:${s.path}`;
     state.panes.forEach((pane, i) => {
       if (!pane) return;
@@ -7006,10 +7278,10 @@ async function deleteSummary(s) {
 }
 
 async function deleteProbeklausur(exam) {
-  if (!await showConfirm('Probeklausur löschen', `„Probeklausur ${exam.n}" wird unwiderruflich entfernt.`)) return;
+  if (!await showConfirm(t('pk-delete-title'), tf('entry-delete-msg', { name: `${t('pk-name')} ${exam.n}` }))) return;
   try {
     const res = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${exam.n}`, { method: 'DELETE' });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Löschen fehlgeschlagen'); }
+    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || t('delete-failed')); }
     const tabPath = `probeklausur:${exam.n}`;
     state.panes.forEach((pane, i) => {
       if (!pane) return;
@@ -7055,12 +7327,12 @@ function renameSolution(sol, row) {
 }
 
 async function deleteSolution(sol) {
-  if (!await showConfirm('Lösung löschen', `„${sol.name}" wird unwiderruflich entfernt.`)) return;
+  if (!await showConfirm(t('sol-delete-title'), tf('entry-delete-msg', { name: sol.name }))) return;
   // Server delete (best-effort)
   if (sol.storage_path) {
     try {
       const res = await fetch(`/lecture/solutions/${encodeURIComponent(state.moduleName)}?path=${encodeURIComponent(sol.storage_path)}`, { method: 'DELETE' });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Löschen fehlgeschlagen'); }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || t('delete-failed')); }
     } catch (err) {
       addMsg('agent', `❌ ${err.message}`);
       return;
@@ -7179,7 +7451,7 @@ function openSummary(summary, paneIdx) {
     tab = {
       path,
       kind: 'summary',
-      name: summary.titel || 'Zusammenfassung',
+      name: summary.titel || t('summary-label'),
       summaryPath: summary.path,
     };
     pane.tabs.push(tab);
@@ -7319,7 +7591,10 @@ function restoreWorkspace(moduleName) {
       if (t.kind === 'roadmap' || t.kind === 'daily') return false;
       if (t.kind === 'summary') return validSummaryPaths.has(t.path);
       if (t.kind === 'probeklausur') return validProbeklausurPaths.has(t.path);
-      if (t.kind === 'solution') return validSolutionPaths.size ? validSolutionPaths.has(t.path) : validPaths.has(t.path.slice('solution:'.length));
+      if (t.kind === 'solution') {
+        if (!t.solveData) return false;  // mid-solve loading tab persisted — drop it
+        return validSolutionPaths.size ? validSolutionPaths.has(t.path) : validPaths.has(t.path.slice('solution:'.length));
+      }
       return validPaths.has(t.path);
     }
     const restored = [null, null];
@@ -7452,13 +7727,13 @@ function buildViewBar(pane, paneIdx) {
     const lbl = document.createElement('span');
     lbl.className = 'view-toggle active';
     lbl.style.cursor = 'default';
-    lbl.textContent = '✦ Zusammenfassung';
+    lbl.textContent = '✦ ' + t('summary-label');
     bar.appendChild(lbl);
   } else if (activeTab.kind === 'solution') {
     const lbl = document.createElement('span');
     lbl.className = 'view-toggle active';
     lbl.style.cursor = 'default';
-    lbl.textContent = '⚡ Lösung';
+    lbl.textContent = '⚡ ' + t('sol-prefix');
     bar.appendChild(lbl);
   } else if (activeTab.kind === 'roadmap' || activeTab.kind === 'daily') {
     bar.classList.add('hidden');
@@ -7478,7 +7753,7 @@ function buildViewBar(pane, paneIdx) {
   if (paneIdx === 1) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'pane-close-btn';
-    closeBtn.title = 'Pane schließen';
+    closeBtn.title = t('pane-close');
     closeBtn.textContent = '× Pane';
     closeBtn.style.marginLeft = '8px';
     closeBtn.addEventListener('click', () => {
@@ -7592,7 +7867,7 @@ async function renderTextView(vp, tab) {
     if (text == null) {
       const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/text?path=${encodeURIComponent(tab.path)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Fehler');
+      if (!res.ok) throw new Error(data.detail || t('error-generic'));
       text = data.text || '';
       state.parsedTextCache[tab.path] = text;
     }
@@ -7619,7 +7894,7 @@ async function renderSummaryGenView(vp, tab) {
         <span class="empty-icon" style="font-size:2rem;">✦</span>
         <strong>Noch keine Zusammenfassung</strong>
         <p>Lass den Agent eine strukturierte Zusammenfassung dieser Vorlesung erstellen.</p>
-        <button class="primary-btn" id="generate-summary-btn">✦ Jetzt generieren</button>
+        <button class="primary-btn" id="generate-summary-btn">${t('generate-now')}</button>
       </div>`;
     p.querySelector('#generate-summary-btn').addEventListener('click', () => openSummaryFlow(tab.name));
     return;
@@ -7641,6 +7916,22 @@ function renderSolutionView(vp, tab) {
   const p = document.createElement('div');
   p.className = 'view-pane view-solution active';
 
+  if (!d) {
+    if (tab.error) {
+      p.innerHTML = `<div class="summary-cta"><strong>${t('solve-failed')}</strong><p>${escHtml(tab.error)}</p></div>`;
+    } else {
+      p.innerHTML = `
+        <div class="pane-loading">
+          <div style="display:grid;gap:12px;justify-items:center;">
+            <div class="modal-spinner"></div>
+            <div class="proposal-loading-hint">${t('solving-hint')}</div>
+          </div>
+        </div>`;
+    }
+    vp.appendChild(p);
+    return;
+  }
+
   const modelsStr = Object.entries(d.models_used || {})
     .map(([m, n]) => `${m} ×${n}`).join('  ·  ');
 
@@ -7648,7 +7939,7 @@ function renderSolutionView(vp, tab) {
   header.className = 'sol-header';
   header.innerHTML = `
     <h2>${escHtml(tab.name)}</h2>
-    <div class="sol-meta-bar">${d.results.length} Aufgaben · ${(d.total_tokens || 0).toLocaleString()} Tokens · ${escHtml(modelsStr)}</div>
+    <div class="sol-meta-bar">${d.results.length} ${t('task-many')} · ${(d.total_tokens || 0).toLocaleString()} Tokens · ${escHtml(modelsStr)}</div>
   `;
   p.appendChild(header);
 
@@ -7661,7 +7952,7 @@ function renderSolutionView(vp, tab) {
     const badgeClass = r.model_used === 'gpt-4o-mini' ? 'mini' : 'full';
     item.innerHTML = `
       <div class="sol-item-hd">
-        <span class="sol-aufgabe-nr">Aufgabe ${escHtml(r.aufgabe_nr)}</span>
+        <span class="sol-aufgabe-nr">${t('task-label')} ${escHtml(r.aufgabe_nr)}</span>
         <span class="sol-model-badge ${badgeClass}">${escHtml(r.model_used)}</span>
         <span class="sol-route-badge">${escHtml(r.route)}</span>
       </div>
@@ -7689,14 +7980,14 @@ async function fillSummaryContent(paneEl, summaryPath) {
     if (content == null) {
       const res = await fetch(`/lecture/summary?path=${encodeURIComponent(summaryPath)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Fehler');
+      if (!res.ok) throw new Error(data.detail || t('error-generic'));
       content = data.content || '';
       state.summaryContentCache[summaryPath] = content;
     }
     paneEl.innerHTML = `<div class="view-summary-inner">${renderMarkdown(content)}</div>`;
     renderMathIn(paneEl);
   } catch (err) {
-    paneEl.innerHTML = `<div class="summary-cta"><strong>Zusammenfassung konnte nicht geladen werden</strong><p>${escHtml(err.message || '')}</p></div>`;
+    paneEl.innerHTML = `<div class="summary-cta"><strong>${t('summary-load-failed')}</strong><p>${escHtml(err.message || '')}</p></div>`;
   }
 }
 
@@ -8167,7 +8458,7 @@ function renderDashTab(tab) {
   if (!body) return;
 
   if (!_dashData) {
-    body.innerHTML = '<p class="dash-no-plan">Wird geladen…</p>';
+    body.innerHTML = `<p class="dash-no-plan">${t('dash-loading')}</p>`;
     if (strip) strip.hidden = true;
     return;
   }
@@ -8181,7 +8472,7 @@ function renderDashTab(tab) {
         .flatMap(t => t.tasks || []).some(tk => !tk.done)
     );
     if (openPlans.length === 0) {
-      body.innerHTML = '<p class="dash-no-plan">Alle Tasks für heute erledigt.</p>';
+      body.innerHTML = `<p class="dash-no-plan">${t('dash-all-done')}</p>`;
       if (strip) strip.hidden = true;
       return;
     }
@@ -8208,7 +8499,7 @@ function renderDashTab(tab) {
       stripVal.textContent = hh && mm ? `${hh}h ${mm} min` : hh ? `${hh}h` : `${mm} min`;
       strip.hidden = m === 0;
       const stripLabel = strip.querySelector('.dash-total-label');
-      if (stripLabel) stripLabel.textContent = 'Noch zu lernen';
+      if (stripLabel) stripLabel.textContent = t('dash-left-label');
     }
   } else {
     if (strip && stripVal) {
@@ -8220,7 +8511,7 @@ function renderDashTab(tab) {
     }
     const { recent_completed = [] } = _dashData;
     if (recent_completed.length === 0) {
-      body.innerHTML = '<p class="dash-no-plan">Noch keine abgeschlossenen Tasks.</p>';
+      body.innerHTML = `<p class="dash-no-plan">${t('dash-none-done')}</p>`;
       return;
     }
     recent_completed.forEach(item => {
@@ -8317,7 +8608,7 @@ async function _loadModulesImpl() {
 async function loadModuleWorkspace(moduleName) {
   try {
     const res = await fetch(`/modules/${encodeURIComponent(moduleName)}/files`);
-    if (!res.ok) throw new Error('Der Kurs konnte nicht geladen werden.');
+    if (!res.ok) throw new Error(t('course-load-failed'));
     const data = await res.json();
     await syncFolderConfigFromServer(data.module_name);
     openWorkspace(data.module_name, data.files || []);
@@ -8362,14 +8653,14 @@ function clearLocalModuleData(moduleName) {
 }
 
 async function deleteModule(moduleName) {
-  if (!await showConfirm(`Kurs löschen`, `Kurs „${moduleName}" wirklich löschen? Alle Dateien, Zusammenfassungen und Embeddings werden unwiderruflich entfernt.`)) return;
+  if (!await showConfirm(t('course-delete-title'), tf('course-delete-msg', { name: moduleName }))) return;
   try {
     const res = await fetch(`/modules/${encodeURIComponent(moduleName)}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Löschen fehlgeschlagen.');
+    if (!res.ok) throw new Error(t('delete-failed'));
     clearLocalModuleData(moduleName);
     if (state.moduleName === moduleName) showSetup();
     await loadModules();
-    setStatus(`Kurs „${moduleName}" wurde gelöscht.`, 'success');
+    setStatus(tf('course-deleted', { name: moduleName }), 'success');
   } catch (err) {
     setStatus(err.message, 'error');
   }
@@ -8784,7 +9075,7 @@ async function sendQuestion() {
           sources = msg.sources || sources;
         } else if (msg.type === 'error') {
           ensureAgent();
-          rawText += (rawText ? '\n\n' : '') + `❌ ${msg.detail || 'Fehler.'}`;
+          rawText += (rawText ? '\n\n' : '') + `❌ ${msg.detail || t('error-generic') + '.'}`;
           scheduleRender();
         }
       }
@@ -8802,7 +9093,7 @@ async function sendQuestion() {
       chat.scrollTop = chat.scrollHeight;
     } else if (!clientActions.length) {
       thinking.remove();
-      addMsg('agent', 'Ich konnte keine Antwort erzeugen.');
+      addMsg('agent', t('chat-no-answer'));
     } else {
       thinking.remove();
     }
@@ -8820,7 +9111,7 @@ async function sendQuestion() {
     clientActions.forEach(ca => handleClientAction(ca.action, ca.args || {}));
   } catch (err) {
     thinking.remove();
-    addMsg('agent', 'Fehler beim Verbinden mit dem Server.');
+    addMsg('agent', t('chat-conn-error'));
   } finally {
     sendBtn.disabled = false;
     input.focus();
@@ -8830,24 +9121,24 @@ async function sendQuestion() {
 // ── Chat agent: proposal card, inline data lists, client actions ─────────────
 const PROPOSAL_FIELDS = {
   erstelle_klausur: [
-    { key: 'anzahl_aufgaben', label: 'Aufgaben', type: 'number', min: 1, max: 20, step: 1 },
-    { key: 'punkte', label: 'Punkte', type: 'number', min: 1, max: 500, step: 1 },
+    { key: 'anzahl_aufgaben', labelKey: 'pf-tasks', type: 'number', min: 1, max: 20, step: 1 },
+    { key: 'punkte', labelKey: 'pf-points', type: 'number', min: 1, max: 500, step: 1 },
   ],
   erstelle_roadmap: [
-    { key: 'klausur_datum', label: 'Prüfungsdatum (optional)', type: 'date' },
-    { key: 'fokus', label: 'Fokus (optional)', type: 'text' },
+    { key: 'klausur_datum', labelKey: 'exam-date-label', type: 'date' },
+    { key: 'fokus', labelKey: 'pf-focus', type: 'text' },
   ],
   erstelle_zusammenfassung: [
-    { key: 'datei', label: 'Datei', type: 'text' },
+    { key: 'datei', labelKey: 'file-fallback', type: 'text' },
   ],
   erstelle_loesungsblatt: [
-    { key: 'quelle', label: 'Übungsblatt-Datei oder Aufgabentext', type: 'textarea' },
+    { key: 'quelle', labelKey: 'pf-source', type: 'textarea' },
   ],
   erstelle_tagesplan: [
-    { key: 'taegliche_stunden', label: 'Stunden pro Tag', type: 'number', min: 0.5, max: 12, step: 0.5 },
+    { key: 'taegliche_stunden', labelKey: 'hours-per-day', type: 'number', min: 0.5, max: 12, step: 0.5 },
   ],
   erstelle_quiz: [
-    { key: 'thema', label: 'Thema (aus der Roadmap)', type: 'text' },
+    { key: 'thema', labelKey: 'pf-topic', type: 'text' },
   ],
 };
 
@@ -8858,7 +9149,7 @@ function renderProposalCard(extras, action, params, summary) {
     if (acts) {
       acts.remove();
       const st = state.lastProposalCard.querySelector('.chat-proposal-status');
-      if (st && !st.textContent.trim()) st.textContent = '↓ angepasst';
+      if (st && !st.textContent.trim()) st.textContent = t('proposal-adjusted');
     }
   }
 
@@ -8883,7 +9174,7 @@ function renderProposalCard(extras, action, params, summary) {
       if (f.step != null) attrs.push(`step="${f.step}"`);
       control = `<input ${attrs.join(' ')}>`;
     }
-    row.innerHTML = `<label for="${id}">${escHtml(f.label)}</label>${control}`;
+    row.innerHTML = `<label for="${id}">${escHtml(t(f.labelKey))}</label>${control}`;
     fieldWrap.appendChild(row);
   });
   if (fields.length) card.appendChild(fieldWrap);
@@ -8891,9 +9182,9 @@ function renderProposalCard(extras, action, params, summary) {
   const actions = document.createElement('div');
   actions.className = 'chat-proposal-actions';
   const createBtn = document.createElement('button');
-  createBtn.className = 'chat-proposal-btn primary'; createBtn.textContent = '✓ Erstellen';
+  createBtn.className = 'chat-proposal-btn primary'; createBtn.textContent = t('proposal-create');
   const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'chat-proposal-btn ghost'; cancelBtn.textContent = '✗ Abbrechen';
+  cancelBtn.className = 'chat-proposal-btn ghost'; cancelBtn.textContent = t('proposal-cancel');
   actions.append(createBtn, cancelBtn);
   card.appendChild(actions);
 
@@ -8917,7 +9208,7 @@ function renderProposalCard(extras, action, params, summary) {
     state.pendingProposal = null;
     state.lastProposalCard = null;
     fieldWrap.remove(); actions.remove();
-    status.textContent = 'Abgebrochen.';
+    status.textContent = t('proposal-cancelled');
   });
 
   extras.appendChild(card);
@@ -8931,7 +9222,7 @@ async function executeProposal(action, params, card) {
 
   const overlay = document.createElement('div');
   overlay.className = 'proposal-loading-overlay';
-  overlay.innerHTML = '<div class="modal-spinner"></div><div class="proposal-loading-hint">Das kann einen Moment dauern</div>';
+  overlay.innerHTML = `<div class="modal-spinner"></div><div class="proposal-loading-hint">${t('takes-moment')}</div>`;
   card.appendChild(overlay);
 
   try {
@@ -8942,7 +9233,7 @@ async function executeProposal(action, params, card) {
     else if (action === 'erstelle_loesungsblatt')   res = await execSolveProposal(params);
     else if (action === 'erstelle_tagesplan')        res = await execDailyProposal(params);
     else if (action === 'erstelle_quiz')             res = await execQuizProposal(params);
-    else throw new Error('Unbekannte Aktion');
+    else throw new Error(t('unknown-action'));
     overlay.remove();
     renderProposalDone(card, res);
   } catch (err) {
@@ -8950,7 +9241,7 @@ async function executeProposal(action, params, card) {
     status.innerHTML = '';
     const e = document.createElement('div');
     e.style.color = 'var(--danger)'; e.style.fontSize = '0.84rem';
-    e.textContent = (err && err.message) ? err.message : 'Fehlgeschlagen.';
+    e.textContent = (err && err.message) ? err.message : t('failed-generic');
     status.appendChild(e);
     card.querySelectorAll('.chat-proposal-actions button').forEach(b => b.disabled = false);
   }
@@ -8962,19 +9253,19 @@ function renderProposalDone(card, res) {
   const status = card.querySelector('.chat-proposal-status');
   status.innerHTML = '';
   const ok = document.createElement('span');
-  ok.textContent = '✓ Erstellt.'; ok.style.color = 'var(--success)';
+  ok.textContent = t('created-generic'); ok.style.color = 'var(--success)';
   status.appendChild(ok);
   if (res && res.already) return;
   if (res && res.open && res.inActive) {
     const btn = document.createElement('button');
     btn.className = 'chat-proposal-btn ghost'; btn.style.height = '30px';
-    btn.textContent = res.label || 'Öffnen';
+    btn.textContent = res.label || t('open-generic');
     btn.addEventListener('click', res.open);
     status.appendChild(btn);
   } else if (res && !res.inActive) {
     const note = document.createElement('span');
     note.style.color = 'var(--muted)'; note.style.fontSize = '0.8rem';
-    note.textContent = ' (in einem anderen Modul gespeichert)';
+    note.textContent = t('saved-other-module');
     status.appendChild(note);
   }
 }
@@ -8986,10 +9277,10 @@ async function execExamProposal(params) {
     if (msg.type === 'result') result = msg.data;
     else if (msg.type === 'error') throw new Error(msg.detail);
   }
-  if (!result) throw new Error('Keine Antwort vom Server.');
+  if (!result) throw new Error(t('no-server-answer'));
   const inActive = params.modul === state.moduleName;
   if (inActive) { await loadProbeklausuren(state.moduleName); renderWorkspaceFiles(state.moduleFiles); }
-  return { inActive, label: `Probeklausur ${result.n} öffnen`, open: () => {
+  return { inActive, label: tf('open-pk', { n: result.n }), open: () => {
     const ex = (state.probeklausuren || []).find(e => e.n === result.n);
     if (ex) openProbeklausurTab(ex);
   } };
@@ -9002,13 +9293,13 @@ async function execRoadmapProposal(params) {
     if (msg.type === 'result') result = msg.data;
     else if (msg.type === 'error') throw new Error(msg.detail);
   }
-  if (!result) throw new Error('Keine Antwort vom Server.');
+  if (!result) throw new Error(t('no-server-answer'));
   const inActive = params.modul === state.moduleName;
   if (inActive) {
     state.roadmapPending = result;
     if (result.is_first_generation) await acceptPendingRoadmap(null);
   }
-  return { inActive, label: 'Roadmap öffnen', open: () => openRoadmapTab() };
+  return { inActive, label: t('open-roadmap'), open: () => openRoadmapTab() };
 }
 
 async function execSummaryProposal(params) {
@@ -9019,8 +9310,8 @@ async function execSummaryProposal(params) {
     body: JSON.stringify({ filename, module_name: params.modul }),
   });
   const d = await r.json();
-  if (!r.ok) throw new Error(d.detail || 'Fehler bei der Zusammenfassung.');
-  if (d.needs_onboarding) throw new Error('Für dieses Modul fehlt ein Profil. Bitte zuerst über „Zusammenfassen" anlegen.');
+  if (!r.ok) throw new Error(d.detail || t('summary-error'));
+  if (d.needs_onboarding) throw new Error(t('needs-onboarding-error'));
   const inActive = params.modul === state.moduleName;
   let saved = null;
   if (inActive) {
@@ -9032,7 +9323,7 @@ async function execSummaryProposal(params) {
     if (!saved) saved = all[0];
     if (saved) state.summaryContentCache[saved.path] = d.summary;
   }
-  return { inActive: inActive && !!saved, label: 'Zusammenfassung öffnen', open: () => { if (saved) openSummary(saved); } };
+  return { inActive: inActive && !!saved, label: t('open-summary'), open: () => { if (saved) openSummary(saved); } };
 }
 
 async function execSolveProposal(params) {
@@ -9040,7 +9331,9 @@ async function execSolveProposal(params) {
   const inActive = params.modul === state.moduleName;
   const file = fuzzyFindFile(state.moduleFiles, quelle);
   if (file && inActive) {
-    await solveSheet(file);            // fetches text, solves, opens the solution tab itself
+    // fetches text, solves, opens the solution tab itself (incl. loading spinner)
+    const ok = await solveSheet(file);
+    if (!ok) throw new Error(t('solve-failed-details'));
     return { already: true, inActive: true };
   }
   const r = await fetch('/solve-sheet', {
@@ -9048,15 +9341,15 @@ async function execSolveProposal(params) {
     body: JSON.stringify({ sheet_text: quelle, module_id: params.modul }),
   });
   const d = await r.json();
-  if (!r.ok) throw new Error(d.detail || 'Lösen fehlgeschlagen.');
+  if (!r.ok) throw new Error(d.detail || t('solve-failed'));
   let solEntry = null;
   if (inActive) {
-    solEntry = { path: `solution:chat-${Date.now()}`, name: 'Lösung (Chat)', solveData: d };
+    solEntry = { path: `solution:chat-${Date.now()}`, name: `${t('sol-prefix')} (Chat)`, solveData: d };
     state.solvedSheets.push(solEntry);
     try { localStorage.setItem(`studyAgent.solutions.${state.moduleName}`, JSON.stringify(state.solvedSheets)); } catch {}
     renderWorkspaceFiles(state.moduleFiles);
   }
-  return { inActive: inActive && !!solEntry, label: 'Lösung öffnen', open: () => { if (solEntry) openSolution(solEntry); } };
+  return { inActive: inActive && !!solEntry, label: t('open-solution'), open: () => { if (solEntry) openSolution(solEntry); } };
 }
 
 async function execDailyProposal(params) {
@@ -9065,15 +9358,15 @@ async function execDailyProposal(params) {
     body: JSON.stringify({ daily_hours: params.taegliche_stunden }),
   });
   const d = await r.json();
-  if (!r.ok) throw new Error(d.detail || 'Plan-Generierung fehlgeschlagen.');
+  if (!r.ok) throw new Error(d.detail || t('plan-gen-failed'));
   const inActive = params.modul === state.moduleName;
   if (inActive) { state.dailyPlan = d.exists === false ? null : d; refreshDailyView(); }
-  return { inActive, label: 'Tagesplan öffnen', open: () => openDailyTab() };
+  return { inActive, label: t('open-daily'), open: () => openDailyTab() };
 }
 
 async function execQuizProposal(params) {
   const topicName = (params.thema || '').trim();
-  if (!topicName) throw new Error('Kein Thema angegeben.');
+  if (!topicName) throw new Error(t('no-topic-given'));
   const inActive = params.modul === state.moduleName;
 
   // Fuzzy-match the topic name against the current roadmap
@@ -9087,42 +9380,42 @@ async function execQuizProposal(params) {
     }
     if (topicId) break;
   }
-  if (!topicId) throw new Error(`Thema „${topicName}" nicht in der Roadmap gefunden. Bitte einen Themen-Namen aus der Roadmap verwenden.`);
+  if (!topicId) throw new Error(tf('topic-not-in-roadmap', { name: topicName }));
 
   const res = await fetch(`/quiz/topic/${encodeURIComponent(params.modul)}/${encodeURIComponent(topicId)}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || 'Quiz-Generierung fehlgeschlagen.');
+  if (!res.ok) throw new Error(data.detail || t('quiz-gen-failed'));
 
   if (inActive) {
     openTopicQuizTab(topicId, data.topic_name || resolvedName, data);
     await loadTopicQuizzes(state.moduleName);
     renderWorkspaceFiles(state.moduleFiles);
   }
-  return { inActive, label: `Quiz „${resolvedName}" öffnen`, open: () => openTopicQuizTab(topicId, resolvedName, data) };
+  return { inActive, label: tf('open-quiz', { name: resolvedName }), open: () => openTopicQuizTab(topicId, resolvedName, data) };
 }
 
 function renderDataList(extras, kind, items) {
   if (kind === 'lernfortschritt') { renderStatsCard(extras, (items && items[0]) || {}); return; }
   if (!items || !items.length) {
     const e = document.createElement('div'); e.className = 'chat-data-empty';
-    e.textContent = 'Nichts gefunden.'; extras.appendChild(e); return;
+    e.textContent = t('nothing-found'); extras.appendChild(e); return;
   }
   const list = document.createElement('div'); list.className = 'chat-data-list';
   items.forEach(it => {
     const b = document.createElement('button'); b.className = 'chat-data-item';
     let icon = '📄', title = '', meta = '';
     if (kind === 'klausuren') {
-      icon = '📝'; title = `Probeklausur ${it.n}`;
-      meta = `${it.num_tasks || 0} Aufgaben · ${it.total_points || 0} Punkte${it.generated ? ` · ${it.generated}` : ''}`;
+      icon = '📝'; title = `${t('pk-name')} ${it.n}`;
+      meta = `${it.num_tasks || 0} ${t('task-many')} · ${it.total_points || 0} ${t('points-label')}${it.generated ? ` · ${it.generated}` : ''}`;
       b.addEventListener('click', () => openProbeklausurTab(it));
     } else if (kind === 'zusammenfassungen') {
-      icon = '📑'; title = it.titel || 'Zusammenfassung'; meta = it.date || '';
+      icon = '📑'; title = it.titel || t('summary-label'); meta = it.date || '';
       b.addEventListener('click', () => openSummary(it));
     } else if (kind === 'dateien') {
       icon = fileIconFor(it.file_type); title = it.name || '';
-      meta = (it.file_type || '').toUpperCase() + (it.is_exam ? ' · Altklausur' : '');
+      meta = (it.file_type || '').toUpperCase() + (it.is_exam ? ` · ${t('old-exam-label')}` : '');
       b.addEventListener('click', () => openFile(it));
     }
     b.innerHTML = `<span class="cdi-icon">${icon}</span><span class="cdi-main"><span class="cdi-title">${escHtml(title)}</span>${meta ? `<span class="cdi-meta">${escHtml(meta)}</span>` : ''}</span>`;
@@ -9134,7 +9427,7 @@ function renderDataList(extras, kind, items) {
 function renderStatsCard(extras, stats) {
   const c = document.createElement('div'); c.className = 'chat-stats';
   const total = document.createElement('div'); total.className = 'chat-stats-total';
-  total.textContent = `${stats.total_completed || 0} erledigte Aufgaben`;
+  total.textContent = tf('completed-tasks-fmt', { n: stats.total_completed || 0 });
   c.appendChild(total);
   const topics = (stats.per_topic || []).slice(0, 6);
   if (topics.length) {
@@ -9157,7 +9450,7 @@ function handleClientAction(action, args) {
   } else if (action === 'oeffne_datei') {
     const f = fuzzyFindFile(state.moduleFiles, args.datei);
     if (f) openFile(f);
-    else addMsg('agent', `Datei „${args.datei}" wurde nicht gefunden.`);
+    else addMsg('agent', tf('rm-file-not-found', { name: args.datei }));
   }
 }
 
@@ -9666,7 +9959,7 @@ document.getElementById('roadmap-btn').addEventListener('click', async () => {
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.className = 'folder-new-input';
-      inp.placeholder = 'Ordnername …';
+      inp.placeholder = t('folder-name-ph');
       panel.prepend(inp);
       inp.focus();
       const commit = () => {
@@ -9915,10 +10208,10 @@ if (themeToggleBtn) themeToggleBtn.addEventListener('click', () => {
 /* ── File action popup ── */
 const filePopup = (function () {
   const TYPE_LABELS = {
-    klausur:     '🎓 Klausur',
-    übungsblatt: '📝 Übungsblatt',
-    vorlesung:   '📖 Vorlesung',
-    sonstiges:   '📁 Sonstiges',
+    get klausur()       { return t('type-klausur'); },
+    get 'übungsblatt'() { return t('type-uebungsblatt'); },
+    get vorlesung()     { return t('type-vorlesung'); },
+    get sonstiges()     { return t('type-sonstiges'); },
   };
 
   function getCategory(file) {
@@ -9960,7 +10253,7 @@ const filePopup = (function () {
     // "Diese Datei ist..." row
     const typeRow = document.createElement('div');
     typeRow.className = 'fap-type-row';
-    typeRow.innerHTML = `<span class="fap-type-label">Diese Datei ist</span><span class="fap-type-value">${TYPE_LABELS[cat] || '—'}</span><span class="fap-chevron">›</span>`;
+    typeRow.innerHTML = `<span class="fap-type-label">${t('file-type-row')}</span><span class="fap-type-value">${TYPE_LABELS[cat] || '—'}</span><span class="fap-chevron">›</span>`;
     typeRow.addEventListener('click', e => { e.stopPropagation(); renderTypes(file, triggerBtn); });
     el.appendChild(typeRow);
 
@@ -9970,10 +10263,10 @@ const filePopup = (function () {
 
     // Context-sensitive actions
     const actions = [];
-    if (cat === 'übungsblatt') actions.push({ label: '⚡ Lösen', fn: () => { close(); solveSheet(file, null); } });
-    if (cat === 'vorlesung' || cat === 'klausur') actions.push({ label: '≡ Zusammenfassen', fn: () => { close(); openSummaryFlow(file.name); } });
-    actions.push({ label: '✎ Umbenennen', fn: () => { close(); renameFileInline(file, _row); } });
-    actions.push({ label: '🗑 Löschen', danger: true, fn: () => { close(); deleteModuleFile(file); } });
+    if (cat === 'übungsblatt') actions.push({ label: t('menu-solve'), fn: () => { close(); solveSheet(file, null); } });
+    if (cat === 'vorlesung' || cat === 'klausur') actions.push({ label: t('menu-summarize'), fn: () => { close(); openSummaryFlow(file.name); } });
+    actions.push({ label: t('menu-rename'), fn: () => { close(); renameFileInline(file, _row); } });
+    actions.push({ label: t('menu-delete'), danger: true, fn: () => { close(); deleteModuleFile(file); } });
 
     actions.forEach(a => {
       const btn = document.createElement('button');
@@ -9990,7 +10283,7 @@ const filePopup = (function () {
 
     const back = document.createElement('button');
     back.className = 'fap-back-btn';
-    back.textContent = '‹ Zurück';
+    back.textContent = t('back-short');
     back.addEventListener('click', e => { e.stopPropagation(); renderMain(file, triggerBtn); });
     el.appendChild(back);
 
@@ -10010,7 +10303,7 @@ const filePopup = (function () {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: file.relative_path || file.name, file_type: type }),
           });
-          if (!res.ok) throw new Error('Typ-Änderung fehlgeschlagen');
+          if (!res.ok) throw new Error(t('type-change-failed'));
           file.file_category = type;
           file.is_exam = type === 'klausur';
         } catch (err) { addMsg('agent', `❌ ${err.message}`); }
@@ -10093,8 +10386,8 @@ function showConfirm(title, desc) {
         <div class="confirm-title">${title}</div>
         <div class="confirm-desc">${desc}</div>
         <div class="confirm-actions">
-          <button class="confirm-cancel">Abbrechen</button>
-          <button class="confirm-ok">Löschen</button>
+          <button class="confirm-cancel">${t('cancel')}</button>
+          <button class="confirm-ok">${t('delete-btn')}</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);

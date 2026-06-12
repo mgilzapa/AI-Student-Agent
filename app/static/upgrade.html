@@ -256,52 +256,52 @@
     </a>
     <a class="back-link" href="/app">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-      Zurück zur App
+      <span data-i18n="back-to-app">Zurück zur App</span>
     </a>
   </header>
 
   <main class="wrap">
     <div class="head">
-      <span class="section-label">Tarif upgraden</span>
-      <h1 class="section-title">Wähle den Tarif, der zu dir passt</h1>
-      <p class="section-sub">Dein KI-Tutor kennt deine Vorlesungen — ChatGPT nicht. Alle Abos monatlich kündbar.</p>
+      <span class="section-label" data-i18n="head-label">Tarif upgraden</span>
+      <h1 class="section-title" data-i18n="head-title">Wähle den Tarif, der zu dir passt</h1>
+      <p class="section-sub" data-i18n="head-sub">Dein KI-Tutor kennt deine Vorlesungen — ChatGPT nicht. Alle Abos monatlich kündbar.</p>
     </div>
 
     <div class="billing-switch-wrap">
-      <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum">
-        <button class="bs-opt is-active" type="button" data-cycle="monthly" aria-pressed="true">Monatlich</button>
-        <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false">Jährlich <span class="bs-save">−36%</span></button>
+      <div class="billing-switch" role="group" aria-label="Abrechnungszeitraum" data-i18n-aria="billing-aria">
+        <button class="bs-opt is-active" type="button" data-cycle="monthly" aria-pressed="true" data-i18n="monthly">Monatlich</button>
+        <button class="bs-opt" type="button" data-cycle="yearly" aria-pressed="false"><span data-i18n="yearly">Jährlich</span> <span class="bs-save">−36%</span></button>
       </div>
     </div>
 
     <div class="pricing-grid" id="pricing-grid"><!-- gerendert via JS --></div>
 
     <div class="trust">
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Monatlich kündbar</span>
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Sichere Zahlung</span>
-      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Jederzeit wechselbar</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="trust-cancel">Monatlich kündbar</span></span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="trust-secure">Sichere Zahlung</span></span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="trust-switch">Jederzeit wechselbar</span></span>
     </div>
   </main>
 
   <!-- Checkout-Bestätigung -->
   <div class="modal-backdrop" id="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
     <div class="modal">
-      <div class="modal-title" id="checkout-title">Tarif wechseln</div>
-      <div class="modal-sub">Bitte bestätige deinen neuen Tarif.</div>
+      <div class="modal-title" id="checkout-title" data-i18n="checkout-title">Tarif wechseln</div>
+      <div class="modal-sub" data-i18n="checkout-sub">Bitte bestätige deinen neuen Tarif.</div>
       <div class="modal-summary">
         <div class="modal-summary-row">
           <span class="modal-summary-plan" id="co-plan">Student</span>
           <span class="modal-summary-price" id="co-price">4,99€</span>
         </div>
-        <div class="modal-summary-meta" id="co-meta">Monatliche Abrechnung · jederzeit kündbar</div>
+        <div class="modal-summary-meta" id="co-meta" data-i18n="checkout-meta-monthly">Monatliche Abrechnung · jederzeit kündbar</div>
       </div>
       <div class="modal-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>Du wirst zur sicheren Zahlung weitergeleitet. Es werden keine Kosten fällig, bevor du den Kauf abschließt.</span>
+        <span data-i18n="checkout-note">Du wirst zur sicheren Zahlung weitergeleitet. Es werden keine Kosten fällig, bevor du den Kauf abschließt.</span>
       </div>
       <div class="modal-actions">
-        <button class="modal-btn ghost" type="button" id="co-cancel">Abbrechen</button>
-        <button class="modal-btn primary" type="button" id="co-confirm">Weiter zur Zahlung</button>
+        <button class="modal-btn ghost" type="button" id="co-cancel" data-i18n="cancel">Abbrechen</button>
+        <button class="modal-btn primary" type="button" id="co-confirm" data-i18n="continue-payment">Weiter zur Zahlung</button>
       </div>
     </div>
   </div>
@@ -309,56 +309,178 @@
   <div class="toast" id="toast"></div>
 
   <script>
+  // ── i18n ─────────────────────────────────────────────────────────────
+  const TRANSLATIONS = {
+    de: {
+      'page-title':'Veexa · Tarif upgraden','back-to-app':'Zurück zur App',
+      'head-label':'Tarif upgraden','head-title':'Wähle den Tarif, der zu dir passt',
+      'head-sub':'Dein KI-Tutor kennt deine Vorlesungen — ChatGPT nicht. Alle Abos monatlich kündbar.',
+      'billing-aria':'Abrechnungszeitraum','monthly':'Monatlich','yearly':'Jährlich',
+      'trust-cancel':'Monatlich kündbar','trust-secure':'Sichere Zahlung','trust-switch':'Jederzeit wechselbar',
+      'checkout-title':'Tarif wechseln','checkout-sub':'Bitte bestätige deinen neuen Tarif.',
+      'checkout-meta-monthly':'Monatliche Abrechnung · jederzeit kündbar',
+      'checkout-meta-yearly':'Jährliche Abrechnung · jederzeit kündbar',
+      'checkout-note':'Du wirst zur sicheren Zahlung weitergeleitet. Es werden keine Kosten fällig, bevor du den Kauf abschließt.',
+      'cancel':'Abbrechen','continue-payment':'Weiter zur Zahlung','one-moment':'Einen Moment …',
+      'current-plan':'Aktueller Tarif','choose-plan':'{name} wählen',
+      'per-month':'/ Monat','per-year':'/ Jahr','badge-popular':'Beliebteste Wahl',
+      'student-tagline':'Die meisten Studenten kommen damit durchs Semester.',
+      'pro-tagline':'Für intensive Prüfungsphasen mit 3+ Fächern gleichzeitig.',
+      'student-yearly-sub':'= 8,25€ / Monat · spar 57€','pro-yearly-sub':'= 16,58€ / Monat · spar 101€',
+      'toast-not-connected':'Zahlung noch nicht verbunden — Tarif „{name}" gemerkt.',
+      'free-f1':'1 Modul','free-f2':'5 Chat-Fragen / Monat','free-f3':'1 Roadmap / Monat','free-f4':'1 Task-Erstellung / Monat',
+      'st-f1':'Chat-Zugang alle 5h neu (täglich lernbereit)','st-f2':'Task-Erstellung unlimitiert',
+      'st-f3':'3 Roadmaps / Monat','st-f4':'10 Vorlesungs-Zusammenfassungen / Monat',
+      'st-f5':'5 Quizzes / Monat','st-f6':'2 Probeklausuren / Monat',
+      'st-f7':'12 Lösungsblätter / Monat','st-f8':'max. 5 Module · 25 Uploads',
+      'pro-f1':'3× mehr Chat als Student (alle 5h neu)','pro-f2':'Task-Erstellung unlimitiert',
+      'pro-f3':'5 Roadmaps / Monat','pro-f4':'Unlimitierte Zusammenfassungen',
+      'pro-f5':'Unlimitierte Quizzes','pro-f6':'10 Probeklausuren / Monat',
+      'pro-f7':'Unlimitierte Lösungsblätter','pro-f8':'Unlimitierte Module · bis 500 MB',
+      'pro-f9':'Prioritäts-Support < 24h',
+    },
+    en: {
+      'page-title':'Veexa · Upgrade plan','back-to-app':'Back to app',
+      'head-label':'Upgrade plan','head-title':'Choose the plan that fits you',
+      'head-sub':'Your AI tutor knows your lectures — ChatGPT does not. All subscriptions can be cancelled monthly.',
+      'billing-aria':'Billing period','monthly':'Monthly','yearly':'Yearly',
+      'trust-cancel':'Cancel monthly','trust-secure':'Secure payment','trust-switch':'Switch anytime',
+      'checkout-title':'Change plan','checkout-sub':'Please confirm your new plan.',
+      'checkout-meta-monthly':'Monthly billing · cancel anytime',
+      'checkout-meta-yearly':'Yearly billing · cancel anytime',
+      'checkout-note':'You will be redirected to a secure payment page. No charges apply until you complete the purchase.',
+      'cancel':'Cancel','continue-payment':'Continue to payment','one-moment':'One moment …',
+      'current-plan':'Current plan','choose-plan':'Choose {name}',
+      'per-month':'/ month','per-year':'/ year','badge-popular':'Most popular choice',
+      'student-tagline':'Most students get through the semester with this.',
+      'pro-tagline':'For intense exam periods with 3+ subjects at once.',
+      'student-yearly-sub':'= €8.25 / month · save €57','pro-yearly-sub':'= €16.58 / month · save €101',
+      'toast-not-connected':'Payment not connected yet — plan "{name}" noted.',
+      'free-f1':'1 module','free-f2':'5 chat questions / month','free-f3':'1 roadmap / month','free-f4':'1 task generation / month',
+      'st-f1':'Chat access resets every 5h (ready to study daily)','st-f2':'Unlimited task generation',
+      'st-f3':'3 roadmaps / month','st-f4':'10 lecture summaries / month',
+      'st-f5':'5 quizzes / month','st-f6':'2 mock exams / month',
+      'st-f7':'12 solution sheets / month','st-f8':'max. 5 modules · 25 uploads',
+      'pro-f1':'3× more chat than Student (resets every 5h)','pro-f2':'Unlimited task generation',
+      'pro-f3':'5 roadmaps / month','pro-f4':'Unlimited summaries',
+      'pro-f5':'Unlimited quizzes','pro-f6':'10 mock exams / month',
+      'pro-f7':'Unlimited solution sheets','pro-f8':'Unlimited modules · up to 500 MB',
+      'pro-f9':'Priority support < 24h',
+    },
+    es: {
+      'page-title':'Veexa · Mejorar plan','back-to-app':'Volver a la app',
+      'head-label':'Mejorar plan','head-title':'Elige el plan que mejor te convenga',
+      'head-sub':'Tu tutor de IA conoce tus clases — ChatGPT no. Todas las suscripciones se pueden cancelar mensualmente.',
+      'billing-aria':'Período de facturación','monthly':'Mensual','yearly':'Anual',
+      'trust-cancel':'Cancelación mensual','trust-secure':'Pago seguro','trust-switch':'Cambia cuando quieras',
+      'checkout-title':'Cambiar de plan','checkout-sub':'Confirma tu nuevo plan.',
+      'checkout-meta-monthly':'Facturación mensual · cancela cuando quieras',
+      'checkout-meta-yearly':'Facturación anual · cancela cuando quieras',
+      'checkout-note':'Serás redirigido a un pago seguro. No se cobrará nada hasta que completes la compra.',
+      'cancel':'Cancelar','continue-payment':'Continuar al pago','one-moment':'Un momento …',
+      'current-plan':'Plan actual','choose-plan':'Elegir {name}',
+      'per-month':'/ mes','per-year':'/ año','badge-popular':'Opción más popular',
+      'student-tagline':'La mayoría de los estudiantes superan el semestre con esto.',
+      'pro-tagline':'Para épocas de exámenes intensas con 3+ asignaturas a la vez.',
+      'student-yearly-sub':'= 8,25€ / mes · ahorra 57€','pro-yearly-sub':'= 16,58€ / mes · ahorra 101€',
+      'toast-not-connected':'Pago aún no conectado — plan «{name}» anotado.',
+      'free-f1':'1 módulo','free-f2':'5 preguntas de chat / mes','free-f3':'1 hoja de ruta / mes','free-f4':'1 generación de tareas / mes',
+      'st-f1':'Acceso al chat se renueva cada 5h (listo para estudiar a diario)','st-f2':'Generación de tareas ilimitada',
+      'st-f3':'3 hojas de ruta / mes','st-f4':'10 resúmenes de clases / mes',
+      'st-f5':'5 quizzes / mes','st-f6':'2 exámenes de prueba / mes',
+      'st-f7':'12 hojas de soluciones / mes','st-f8':'máx. 5 módulos · 25 subidas',
+      'pro-f1':'3× más chat que Student (se renueva cada 5h)','pro-f2':'Generación de tareas ilimitada',
+      'pro-f3':'5 hojas de ruta / mes','pro-f4':'Resúmenes ilimitados',
+      'pro-f5':'Quizzes ilimitados','pro-f6':'10 exámenes de prueba / mes',
+      'pro-f7':'Hojas de soluciones ilimitadas','pro-f8':'Módulos ilimitados · hasta 500 MB',
+      'pro-f9':'Soporte prioritario < 24h',
+    },
+    fr: {
+      'page-title':'Veexa · Améliorer le plan','back-to-app':'Retour à l\'app',
+      'head-label':'Améliorer le plan','head-title':'Choisis le plan qui te convient',
+      'head-sub':'Ton tuteur IA connaît tes cours — pas ChatGPT. Tous les abonnements sont résiliables chaque mois.',
+      'billing-aria':'Période de facturation','monthly':'Mensuel','yearly':'Annuel',
+      'trust-cancel':'Résiliable chaque mois','trust-secure':'Paiement sécurisé','trust-switch':'Changement à tout moment',
+      'checkout-title':'Changer de plan','checkout-sub':'Confirme ton nouveau plan.',
+      'checkout-meta-monthly':'Facturation mensuelle · résiliable à tout moment',
+      'checkout-meta-yearly':'Facturation annuelle · résiliable à tout moment',
+      'checkout-note':'Tu seras redirigé vers un paiement sécurisé. Aucun frais avant la finalisation de l\'achat.',
+      'cancel':'Annuler','continue-payment':'Continuer vers le paiement','one-moment':'Un instant …',
+      'current-plan':'Plan actuel','choose-plan':'Choisir {name}',
+      'per-month':'/ mois','per-year':'/ an','badge-popular':'Choix le plus populaire',
+      'student-tagline':'La plupart des étudiants passent le semestre avec ce plan.',
+      'pro-tagline':'Pour les périodes d\'examens intenses avec 3+ matières en même temps.',
+      'student-yearly-sub':'= 8,25 € / mois · économise 57 €','pro-yearly-sub':'= 16,58 € / mois · économise 101 €',
+      'toast-not-connected':'Paiement pas encore connecté — plan « {name} » noté.',
+      'free-f1':'1 module','free-f2':'5 questions de chat / mois','free-f3':'1 roadmap / mois','free-f4':'1 génération de tâches / mois',
+      'st-f1':'Accès au chat renouvelé toutes les 5h (prêt à étudier chaque jour)','st-f2':'Génération de tâches illimitée',
+      'st-f3':'3 roadmaps / mois','st-f4':'10 résumés de cours / mois',
+      'st-f5':'5 quiz / mois','st-f6':'2 examens blancs / mois',
+      'st-f7':'12 feuilles de solutions / mois','st-f8':'max. 5 modules · 25 téléversements',
+      'pro-f1':'3× plus de chat que Student (renouvelé toutes les 5h)','pro-f2':'Génération de tâches illimitée',
+      'pro-f3':'5 roadmaps / mois','pro-f4':'Résumés illimités',
+      'pro-f5':'Quiz illimités','pro-f6':'10 examens blancs / mois',
+      'pro-f7':'Feuilles de solutions illimitées','pro-f8':'Modules illimités · jusqu\'à 500 Mo',
+      'pro-f9':'Support prioritaire < 24h',
+    },
+  };
+
+  const _supportedLangs = ['de', 'en', 'es', 'fr'];
+  const _browserLang = (navigator.language || 'en').slice(0, 2).toLowerCase();
+  const currentLang = localStorage.getItem('app-lang') || (_supportedLangs.includes(_browserLang) ? _browserLang : 'en');
+
+  function t(key) {
+    const T = TRANSLATIONS[currentLang] || TRANSLATIONS.de;
+    return T[key] !== undefined ? T[key] : (TRANSLATIONS.de[key] !== undefined ? TRANSLATIONS.de[key] : key);
+  }
+  function tf(key, vars) {
+    let s = t(key);
+    for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
+    return s;
+  }
+
+  (function applyI18n() {
+    document.documentElement.lang = currentLang;
+    document.title = t('page-title');
+    const T = TRANSLATIONS[currentLang] || TRANSLATIONS.de;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+      const v = T[el.dataset.i18nAria];
+      if (v !== undefined) el.setAttribute('aria-label', v);
+    });
+  })();
+  </script>
+
+  <script>
   (function () {
     // ── Tarif-Daten ────────────────────────────────────────────────────
     const PLANS = [
       {
         id: 'free', name: 'Free',
-        tagline: null,
-        monthly: { amount: '0€', period: '/ Monat' },
-        yearly:  { amount: '0€', period: '/ Jahr' },
+        taglineKey: null,
+        monthly: { amount: '0€' },
+        yearly:  { amount: '0€' },
         featured: false,
-        features: [
-          '1 Modul',
-          '5 Chat-Fragen / Monat',
-          '1 Roadmap / Monat',
-          '1 Task-Erstellung / Monat',
-        ],
+        featureKeys: ['free-f1', 'free-f2', 'free-f3', 'free-f4'],
       },
       {
         id: 'student', name: 'Student',
-        tagline: 'Die meisten Studenten kommen damit durchs Semester.',
-        monthly: { amount: '12,99€', period: '/ Monat' },
-        yearly:  { amount: '99€',    period: '/ Jahr',  sub: '= 8,25€ / Monat · spar 57€' },
-        featured: true, badge: 'Beliebteste Wahl',
-        features: [
-          'Chat-Zugang alle 5h neu (täglich lernbereit)',
-          'Task-Erstellung unlimitiert',
-          '3 Roadmaps / Monat',
-          '10 Vorlesungs-Zusammenfassungen / Monat',
-          '5 Quizzes / Monat',
-          '2 Probeklausuren / Monat',
-          '12 Lösungsblätter / Monat',
-          'max. 5 Module · 25 Uploads',
-        ],
+        taglineKey: 'student-tagline',
+        monthly: { amount: '12,99€' },
+        yearly:  { amount: '99€', subKey: 'student-yearly-sub' },
+        featured: true, badgeKey: 'badge-popular',
+        featureKeys: ['st-f1', 'st-f2', 'st-f3', 'st-f4', 'st-f5', 'st-f6', 'st-f7', 'st-f8'],
       },
       {
         id: 'pro', name: 'Pro',
-        tagline: 'Für intensive Prüfungsphasen mit 3+ Fächern gleichzeitig.',
-        monthly: { amount: '24,99€', period: '/ Monat' },
-        yearly:  { amount: '199€',   period: '/ Jahr', sub: '= 16,58€ / Monat · spar 101€' },
+        taglineKey: 'pro-tagline',
+        monthly: { amount: '24,99€' },
+        yearly:  { amount: '199€', subKey: 'pro-yearly-sub' },
         featured: false,
-        features: [
-          '3× mehr Chat als Student (alle 5h neu)',
-          'Task-Erstellung unlimitiert',
-          '5 Roadmaps / Monat',
-          'Unlimitierte Zusammenfassungen',
-          'Unlimitierte Quizzes',
-          '10 Probeklausuren / Monat',
-          'Unlimitierte Lösungsblätter',
-          'Unlimitierte Module · bis 500 MB',
-          'Prioritäts-Support < 24h',
-        ],
+        featureKeys: ['pro-f1', 'pro-f2', 'pro-f3', 'pro-f4', 'pro-f5', 'pro-f6', 'pro-f7', 'pro-f8', 'pro-f9'],
       },
     ];
 
@@ -376,43 +498,44 @@
       PLANS.forEach(p => {
         const isCurrent = p.id === CURRENT;
         const price = p[cycle];
+        const period = cycle === 'yearly' ? t('per-year') : t('per-month');
 
         const card = document.createElement('div');
         card.className = 'price-card' + (p.featured ? ' featured' : '') + (isCurrent ? ' current' : '');
 
         let html = '';
         if (isCurrent) {
-          html += '<div class="price-badge current-badge">Aktueller Tarif</div>';
-        } else if (p.badge) {
-          html += '<div class="price-badge">' + p.badge + '</div>';
+          html += '<div class="price-badge current-badge">' + t('current-plan') + '</div>';
+        } else if (p.badgeKey) {
+          html += '<div class="price-badge">' + t(p.badgeKey) + '</div>';
         }
 
         html += '<div class="price-plan">' + p.name + '</div>';
-        if (p.tagline) {
-          html += '<div class="price-tagline">' + p.tagline + '</div>';
+        if (p.taglineKey) {
+          html += '<div class="price-tagline">' + t(p.taglineKey) + '</div>';
         }
 
         html += '<div class="price-amount-wrap">';
         html += '<span class="price-amount">' + price.amount + '</span>';
-        html += '<span class="price-period">' + price.period + '</span>';
+        html += '<span class="price-period">' + period + '</span>';
         if (price.perDay) {
           html += '<div class="price-per-day">' + price.perDay + '</div>';
         }
-        if (price.sub) {
-          html += '<div class="price-yearly-sub">' + price.sub + '</div>';
+        if (price.subKey) {
+          html += '<div class="price-yearly-sub">' + t(price.subKey) + '</div>';
         }
         html += '</div>';
 
         html += '<ul class="price-list">' +
-          p.features.map(f => '<li><span class="chk">' + checkSvg + '</span> <span>' + f + '</span></li>').join('') +
+          p.featureKeys.map(k => '<li><span class="chk">' + checkSvg + '</span> <span>' + t(k) + '</span></li>').join('') +
           '</ul>';
 
         if (isCurrent) {
-          html += '<button class="price-btn is-current" type="button" disabled>Aktueller Tarif</button>';
+          html += '<button class="price-btn is-current" type="button" disabled>' + t('current-plan') + '</button>';
         } else {
           const cls = p.featured ? 'solid' : 'outline';
           html += '<button class="price-btn ' + cls + '" type="button" data-plan="' + p.id + '">' +
-                  p.name + ' wählen</button>';
+                  tf('choose-plan', { name: p.name }) + '</button>';
         }
         card.innerHTML = html;
         grid.appendChild(card);
@@ -446,9 +569,9 @@
       selected = p;
       const price = p[cycle];
       document.getElementById('co-plan').textContent = p.name;
-      document.getElementById('co-price').textContent = price.amount + ' ' + price.period;
+      document.getElementById('co-price').textContent = price.amount + ' ' + (cycle === 'yearly' ? t('per-year') : t('per-month'));
       document.getElementById('co-meta').textContent =
-        (cycle === 'yearly' ? 'Jährliche' : 'Monatliche') + ' Abrechnung · jederzeit kündbar';
+        cycle === 'yearly' ? t('checkout-meta-yearly') : t('checkout-meta-monthly');
       modal.classList.add('open');
       confirmBtn.focus();
     }
@@ -479,7 +602,7 @@
     //
     async function startCheckout(plan, billingCycle) {
       confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Einen Moment …';
+      confirmBtn.textContent = t('one-moment');
       try {
         const res = await fetch('/billing/checkout', {
           method: 'POST',
@@ -493,10 +616,10 @@
         throw new Error('no-checkout-endpoint');
       } catch (_) {
         closeCheckout();
-        toast('Zahlung noch nicht verbunden — Tarif „' + planName(plan) + '" gemerkt.');
+        toast(tf('toast-not-connected', { name: planName(plan) }));
       } finally {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Weiter zur Zahlung';
+        confirmBtn.textContent = t('continue-payment');
       }
     }
 
