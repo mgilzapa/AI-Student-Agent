@@ -296,6 +296,22 @@
     color: var(--text);
   }
   .processing-text { color: var(--muted); line-height: 1.7; font-size: 0.875rem; }
+
+  /* Lightweight global busy overlay (quick ops: delete, save, …) */
+  .global-busy {
+    position: fixed; inset: 0; z-index: 70;
+    display: none; align-items: center; justify-content: center; padding: 24px;
+    background: rgba(250,250,248,0.55); backdrop-filter: blur(4px);
+  }
+  [data-theme="dark"] .global-busy { background: rgba(22,18,16,0.55); }
+  .global-busy.active { display: flex; animation: fadeIn 0.2s var(--ease-out); }
+  .global-busy-card {
+    display: grid; gap: 12px; justify-items: center;
+    padding: 22px 30px; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--panel); box-shadow: var(--shadow);
+  }
+  .global-busy-spinner { width: 32px; height: 32px; margin: 0; }
+  .global-busy-text { font-size: 0.85rem; color: var(--muted); }
   .processing-steps { display: grid; gap: 10px; text-align: left; }
   .processing-step { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 0.875rem; }
   .processing-step-dot {
@@ -3073,26 +3089,35 @@
 <div class="bg-noise"></div>
 <div class="fw-layer" id="fw-layer"></div>
 
+<!-- Processing overlay (fixed, full-screen) — lives at body level so it is
+     visible from every screen, not just the setup screen. -->
+<div class="processing-overlay" id="processing-overlay" aria-live="polite">
+  <div class="processing-card">
+    <div class="processing-spinner"></div>
+    <div class="processing-title" id="processing-title" data-i18n="proc-title">Dein Kurs wird vorbereitet</div>
+    <div class="processing-text"  id="processing-text" data-i18n="proc-text">Das kann einen Moment dauern.</div>
+    <div class="processing-steps">
+      <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step1">Dateien werden hochgeladen</span></div>
+      <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step2">Texte werden eingelesen und in Abschnitte zerlegt</span></div>
+      <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step3">Inhalte werden für den Chat durchsuchbar gemacht</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightweight global busy overlay for quick operations (delete, save, …) -->
+<div class="global-busy" id="global-busy" aria-live="polite">
+  <div class="global-busy-card">
+    <div class="modal-spinner global-busy-spinner"></div>
+    <div class="global-busy-text" id="global-busy-text"></div>
+  </div>
+</div>
+
 <div class="app-shell">
 
 
   <main>
     <!-- ── Setup Screen ── -->
     <section class="screen active" id="setup-screen">
-
-      <!-- Processing overlay (fixed, full-screen) -->
-      <div class="processing-overlay" id="processing-overlay" aria-live="polite">
-        <div class="processing-card">
-          <div class="processing-spinner"></div>
-          <div class="processing-title" id="processing-title" data-i18n="proc-title">Dein Kurs wird vorbereitet</div>
-          <div class="processing-text"  id="processing-text" data-i18n="proc-text">Das kann einen Moment dauern.</div>
-          <div class="processing-steps">
-            <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step1">Dateien werden hochgeladen</span></div>
-            <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step2">Texte werden eingelesen und in Abschnitte zerlegt</span></div>
-            <div class="processing-step"><span class="processing-step-dot"></span><span data-i18n="proc-step3">Inhalte werden für den Chat durchsuchbar gemacht</span></div>
-          </div>
-        </div>
-      </div>
 
       <!-- Full-width greeting above the two-column grid -->
       <header class="setup-header setup-header-outer">
@@ -4084,6 +4109,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Deine Dateien werden vorbereitet …',
     'upload-finishing-title':'Fast geschafft','upload-finishing-sub':'Abschlussarbeiten…',
     'upload-adding-title':'Dateien werden hinzugefügt','upload-adding-sub':'Upload + Verarbeitung läuft …',
+    'busy-working':'Einen Moment …','busy-deleting':'Wird gelöscht …','busy-saving':'Wird gespeichert …',
     'upload-failed':'Upload fehlgeschlagen.','rate-limit':'Zu viele Anfragen – bitte warte {n} Sekunden und versuche es erneut.','upload-saved':'{n} Datei(en) hinzugefügt.','upload-skipped':'{n} schon vorhanden.',
     'text-not-loaded':'Text konnte nicht geladen werden',
     'rm-prio-must':'Pflicht','rm-prio-good':'Wichtig','rm-prio-nice':'Optional',
@@ -4270,6 +4296,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Preparing your files …',
     'upload-finishing-title':'Almost done','upload-finishing-sub':'Finishing up…',
     'upload-adding-title':'Adding files','upload-adding-sub':'Upload + processing in progress …',
+    'busy-working':'One moment …','busy-deleting':'Deleting …','busy-saving':'Saving …',
     'upload-failed':'Upload failed.','rate-limit':'Too many requests — please wait {n} seconds and try again.','upload-saved':'{n} file(s) added.','upload-skipped':'{n} already present.',
     'text-not-loaded':'Text could not be loaded',
     'rm-prio-must':'Required','rm-prio-good':'Important','rm-prio-nice':'Optional',
@@ -4456,6 +4483,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Preparando tus archivos …',
     'upload-finishing-title':'Casi listo','upload-finishing-sub':'Finalizando…',
     'upload-adding-title':'Añadiendo archivos','upload-adding-sub':'Subida + procesamiento en curso …',
+    'busy-working':'Un momento …','busy-deleting':'Eliminando …','busy-saving':'Guardando …',
     'upload-failed':'Error en la subida.','rate-limit':'Demasiadas solicitudes: espera {n} segundos e inténtalo de nuevo.','upload-saved':'{n} archivo(s) añadido(s).','upload-skipped':'{n} ya presentes.',
     'text-not-loaded':'No se pudo cargar el texto',
     'rm-prio-must':'Obligatorio','rm-prio-good':'Importante','rm-prio-nice':'Opcional',
@@ -4642,6 +4670,7 @@ const TRANSLATIONS = {
     'upload-preparing':'Préparation de tes fichiers …',
     'upload-finishing-title':'Presque terminé','upload-finishing-sub':'Finitions en cours…',
     'upload-adding-title':'Ajout de fichiers','upload-adding-sub':'Upload + traitement en cours …',
+    'busy-working':'Un instant …','busy-deleting':'Suppression …','busy-saving':'Enregistrement …',
     'upload-failed':'Échec de l\'upload.','rate-limit':'Trop de requêtes — patiente {n} secondes puis réessaie.','upload-saved':'{n} fichier(s) ajouté(s).','upload-skipped':'{n} déjà présent(s).',
     'text-not-loaded':'Le texte n\'a pas pu être chargé',
     'rm-prio-must':'Obligatoire','rm-prio-good':'Important','rm-prio-nice':'Optionnel',
@@ -5089,6 +5118,15 @@ function setProcessingState(active, title = '', text = '') {
   if (text) processingText.textContent = text;
 }
 
+// Lightweight full-screen busy indicator for quick operations (delete, save, …).
+function setGlobalBusy(active, text = '') {
+  const el = document.getElementById('global-busy');
+  if (!el) return;
+  el.classList.toggle('active', !!active);
+  const txt = document.getElementById('global-busy-text');
+  if (txt) txt.textContent = text || t('busy-working');
+}
+
 function renderSelectedFiles() {
   selectedFilesEl.innerHTML = '';
   // Group by top-level folder (first component of relativePath)
@@ -5381,9 +5419,14 @@ function createFolderConfig(module, name) {
   renderWorkspaceFiles(state.moduleFiles);
 }
 function renameFolder(module, oldName, newName) {
-  if (!newName.trim() || oldName === newName) return;
+  newName = newName.trim();
+  if (!newName || oldName === newName) { renderWorkspaceFiles(state.moduleFiles); return; }
   const config = loadFolderConfig(module);
-  config[newName] = config[oldName] || [];
+  // Old folder already gone (e.g. duplicate commit) → never wipe the new list.
+  if (!Array.isArray(config[oldName])) { renderWorkspaceFiles(state.moduleFiles); return; }
+  // Merge if the target folder already exists.
+  const existing = Array.isArray(config[newName]) ? config[newName] : [];
+  config[newName] = Array.from(new Set([...existing, ...config[oldName]]));
   delete config[oldName];
   const col = config['__collapsed__'] || [];
   const ci = col.indexOf(oldName);
@@ -5407,6 +5450,7 @@ async function deleteFolder(module, folderName) {
     ? tf('folder-delete-many', { name: folderName, n: filePaths.length })
     : tf('folder-delete-one', { name: folderName });
   if (!await showConfirm(t('folder-delete-title'), confirmMsg)) return;
+  setGlobalBusy(true, t('busy-deleting'));
 
   // Delete each file from the server
   for (const filePath of filePaths) {
@@ -5430,7 +5474,7 @@ async function deleteFolder(module, folderName) {
   if (fresh['__collapsed__']) fresh['__collapsed__'] = fresh['__collapsed__'].filter(f => f !== folderName);
   saveFolderConfig(module, fresh);
 
-  await refreshModuleFiles();
+  try { await refreshModuleFiles(); } finally { setGlobalBusy(false); }
 }
 function moveFileToFolder(module, filePath, targetFolder) {
   const config = loadFolderConfig(module);
@@ -5580,10 +5624,15 @@ function renderWorkspaceFiles(files) {
             input.value = folderName;
             nameSpan.replaceWith(input);
             input.focus(); input.select();
-            const commit = () => { renameFolder(module, folderName, input.value); };
+            let committed = false;
+            const commit = () => {
+              if (committed) return;
+              committed = true;
+              renameFolder(module, folderName, input.value);
+            };
             input.addEventListener('keydown', e2 => {
               if (e2.key === 'Enter') commit();
-              if (e2.key === 'Escape') renderWorkspaceFiles(state.moduleFiles);
+              if (e2.key === 'Escape') { committed = true; renderWorkspaceFiles(state.moduleFiles); }
             });
             input.addEventListener('blur', commit);
             return;
@@ -5786,13 +5835,16 @@ async function loadTopicQuizzes(moduleName) {
 
 async function deleteTopicQuiz(quiz) {
   if (!state.moduleName) return;
+  setGlobalBusy(true, t('busy-deleting'));
   try {
     const res = await fetch(`/quiz/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(quiz.topic_id)}`, { method: 'DELETE' });
     if (res.ok) {
       state.topicQuizzes = state.topicQuizzes.filter(q => q.topic_id !== quiz.topic_id);
       renderWorkspaceFiles(state.moduleFiles);
     }
-  } catch {}
+  } catch {} finally {
+    setGlobalBusy(false);
+  }
 }
 
 function highlightActiveFileRow() {
@@ -6450,6 +6502,7 @@ async function clearDailyHistory() {
   if (!confirm(t('daily-confirm-clear'))) return;
   const btn = document.getElementById('tp-clear-history');
   if (btn) btn.disabled = true;
+  setGlobalBusy(true, t('busy-deleting'));
   try {
     const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/history`, {
       method: 'DELETE',
@@ -6463,6 +6516,7 @@ async function clearDailyHistory() {
     addMsg('agent', `${t('daily-net-error')} ${err.message}`);
   } finally {
     if (btn) btn.disabled = false;
+    setGlobalBusy(false);
   }
 }
 
@@ -7068,12 +7122,15 @@ async function rejectPendingRoadmap(_tab) {
 
 async function toggleExamFlag(file) {
   const path = file.relative_path || file.name;
+  setGlobalBusy(true, t('busy-saving'));
   try {
     const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file/exam-flag?path=${encodeURIComponent(path)}`, { method: 'POST' });
     if (!res.ok) throw new Error(t('action-failed'));
     await refreshModuleFiles();
   } catch (err) {
     addMsg('agent', `❌ ${err.message}`);
+  } finally {
+    setGlobalBusy(false);
   }
 }
 
@@ -7093,6 +7150,7 @@ async function renameFileInline(file, row) {
     committed = true;
     const newName = input.value.trim();
     if (!newName || newName === oldName) { await refreshModuleFiles(); return; }
+    setGlobalBusy(true, t('busy-saving'));
     try {
       const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file/rename`, {
         method: 'POST',
@@ -7105,6 +7163,8 @@ async function renameFileInline(file, row) {
     } catch (err) {
       addMsg('agent', `❌ ${err.message}`);
       await refreshModuleFiles();
+    } finally {
+      setGlobalBusy(false);
     }
   };
   input.addEventListener('keydown', e => {
@@ -7203,6 +7263,7 @@ async function addFilesToCurrentModule(input) {
 async function deleteModuleFile(file) {
   const path = file.relative_path || file.name;
   if (!await showConfirm(t('file-delete-title'), tf('file-delete-msg', { name: file.name }))) return;
+  setGlobalBusy(true, t('busy-deleting'));
   try {
     const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
     const data = await res.json();
@@ -7223,6 +7284,8 @@ async function deleteModuleFile(file) {
     await refreshModuleFiles();
   } catch (err) {
     addMsg('agent', `❌ ${t('delete-failed')}: ${err.message}`);
+  } finally {
+    setGlobalBusy(false);
   }
 }
 
@@ -7230,6 +7293,7 @@ async function deleteModuleFile(file) {
 
 function renameSummary(s, row) {
   renameRowInline(row, s.titel || t('summary-label'), async (newName) => {
+    setGlobalBusy(true, t('busy-saving'));
     try {
       const res = await fetch(`/lecture/summaries/${encodeURIComponent(state.moduleName)}`, {
         method: 'PATCH',
@@ -7251,12 +7315,15 @@ function renameSummary(s, row) {
       addMsg('agent', `❌ ${err.message}`);
       await loadSummaries(state.moduleName, true);
       renderWorkspaceFiles(state.moduleFiles);
+    } finally {
+      setGlobalBusy(false);
     }
   });
 }
 
 async function deleteSummary(s) {
   if (!await showConfirm(t('summary-delete-title'), tf('entry-delete-msg', { name: s.titel || t('summary-label') }))) return;
+  setGlobalBusy(true, t('busy-deleting'));
   try {
     const res = await fetch(`/lecture/summaries/${encodeURIComponent(state.moduleName)}?path=${encodeURIComponent(s.path)}`, { method: 'DELETE' });
     const data = await res.json();
@@ -7274,11 +7341,14 @@ async function deleteSummary(s) {
     persistWorkspace();
   } catch (err) {
     addMsg('agent', `❌ ${err.message}`);
+  } finally {
+    setGlobalBusy(false);
   }
 }
 
 async function deleteProbeklausur(exam) {
   if (!await showConfirm(t('pk-delete-title'), tf('entry-delete-msg', { name: `${t('pk-name')} ${exam.n}` }))) return;
+  setGlobalBusy(true, t('busy-deleting'));
   try {
     const res = await fetch(`/exam/${encodeURIComponent(state.moduleName)}/${exam.n}`, { method: 'DELETE' });
     if (!res.ok) { const d = await res.json(); throw new Error(d.detail || t('delete-failed')); }
@@ -7295,6 +7365,8 @@ async function deleteProbeklausur(exam) {
     persistWorkspace();
   } catch (err) {
     addMsg('agent', `❌ ${err.message}`);
+  } finally {
+    setGlobalBusy(false);
   }
 }
 
@@ -7328,6 +7400,7 @@ function renameSolution(sol, row) {
 
 async function deleteSolution(sol) {
   if (!await showConfirm(t('sol-delete-title'), tf('entry-delete-msg', { name: sol.name }))) return;
+  setGlobalBusy(true, t('busy-deleting'));
   // Server delete (best-effort)
   if (sol.storage_path) {
     try {
@@ -7335,6 +7408,7 @@ async function deleteSolution(sol) {
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail || t('delete-failed')); }
     } catch (err) {
       addMsg('agent', `❌ ${err.message}`);
+      setGlobalBusy(false);
       return;
     }
   }
@@ -7356,6 +7430,7 @@ async function deleteSolution(sol) {
   renderWorkspaceFiles(state.moduleFiles);
   renderPanes();
   persistWorkspace();
+  setGlobalBusy(false);
 }
 
 // ── Summaries (cached per module — used by Summary tab) ────────────────────────
@@ -8654,6 +8729,7 @@ function clearLocalModuleData(moduleName) {
 
 async function deleteModule(moduleName) {
   if (!await showConfirm(t('course-delete-title'), tf('course-delete-msg', { name: moduleName }))) return;
+  setGlobalBusy(true, t('busy-deleting'));
   try {
     const res = await fetch(`/modules/${encodeURIComponent(moduleName)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(t('delete-failed'));
@@ -8663,6 +8739,8 @@ async function deleteModule(moduleName) {
     setStatus(tf('course-deleted', { name: moduleName }), 'success');
   } catch (err) {
     setStatus(err.message, 'error');
+  } finally {
+    setGlobalBusy(false);
   }
 }
 
@@ -10265,7 +10343,7 @@ const filePopup = (function () {
     const actions = [];
     if (cat === 'übungsblatt') actions.push({ label: t('menu-solve'), fn: () => { close(); solveSheet(file, null); } });
     if (cat === 'vorlesung' || cat === 'klausur') actions.push({ label: t('menu-summarize'), fn: () => { close(); openSummaryFlow(file.name); } });
-    actions.push({ label: t('menu-rename'), fn: () => { close(); renameFileInline(file, _row); } });
+    actions.push({ label: t('menu-rename'), fn: () => { const row = _row; close(); renameFileInline(file, row); } });
     actions.push({ label: t('menu-delete'), danger: true, fn: () => { close(); deleteModuleFile(file); } });
 
     actions.forEach(a => {
@@ -10297,6 +10375,7 @@ const filePopup = (function () {
       btn.textContent = TYPE_LABELS[type];
       btn.addEventListener('click', async e => {
         e.stopPropagation();
+        setGlobalBusy(true, t('busy-saving'));
         try {
           const res = await fetch(`/modules/${encodeURIComponent(state.moduleName)}/file/type`, {
             method: 'PATCH',
@@ -10308,7 +10387,7 @@ const filePopup = (function () {
           file.is_exam = type === 'klausur';
         } catch (err) { addMsg('agent', `❌ ${err.message}`); }
         close();
-        await refreshModuleFiles();
+        try { await refreshModuleFiles(); } finally { setGlobalBusy(false); }
       });
       el.appendChild(btn);
     });
