@@ -1317,12 +1317,44 @@ def set_file_type(module_name: str, body: FileTypeRequest):
 
 @app.post("/modules/{module_name}/file/rename")
 def rename_module_file(module_name: str, body: FileRenameRequest):
-    """Rename a file within its module directory and update profile references."""
-    target = _resolve_module_file(module_name, body.path)
+    """Rename a file's display name. For Supabase-backed modules only
+    ``files.file_name`` changes — storage_path/relative_path (and with them the
+    search index) stay untouched. Legacy disk modules rename on disk."""
     new_name = body.new_name.strip()
     if not new_name or "/" in new_name or "\\" in new_name or ".." in new_name:
         raise HTTPException(status_code=400, detail="Ungültiger Dateiname.")
 
+    rel = body.path.replace("\\", "/")
+    profile = mp.load(module_name) or {}
+    if profile.get("id"):
+        try:
+            supa = _supa_client()
+            res = (
+                supa.table("files")
+                .update({"file_name": new_name})
+                .eq("module_id", profile["id"])
+                .eq("relative_path", rel)
+                .execute()
+            )
+            if not res.data:
+                # Legacy rows without relative_path are identified by file_name.
+                res = (
+                    supa.table("files")
+                    .update({"file_name": new_name})
+                    .eq("module_id", profile["id"])
+                    .eq("file_name", rel)
+                    .execute()
+                )
+            if res.data:
+                return {"success": True, "old_path": rel, "new_path": rel, "new_name": new_name}
+            raise HTTPException(status_code=404, detail="Datei nicht gefunden.")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=500, detail="Umbenennen fehlgeschlagen.")
+
+    # ── Legacy local-disk fallback ──
+    target = _resolve_module_file(module_name, body.path)
     new_path = target.parent / new_name
     if new_path.exists():
         raise HTTPException(status_code=409, detail="Eine Datei mit diesem Namen existiert bereits.")
