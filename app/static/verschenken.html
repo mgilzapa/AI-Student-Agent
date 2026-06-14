@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow" />
+  <title>Veexa verschenken — Veexa</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #F5F1EB; --panel: #EDE7DC; --border: #C4BAB0;
+      --text: #1A1614; --muted: #5C5450; --accent: #C2410C;
+    }
+    [data-theme="dark"] {
+      --bg: #161210; --panel: #1F1A16; --border: #3A3028;
+      --text: #F0EDE8; --muted: #A8A29E; --accent: #F97316;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; transition: background 0.25s ease, color 0.25s ease; }
+    .legal-nav {
+      position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    }
+    .legal-nav a.brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+    .legal-nav a.brand span { color: var(--accent); }
+    .legal-nav a.back { font-size: 0.875rem; color: var(--muted); text-decoration: none; }
+    .legal-nav a.back:hover { color: var(--accent); }
+    main { max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+    .legal-kicker { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+    h1 { font-family: 'Lora', serif; font-size: 2.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 600; margin: 2.25rem 0 0.75rem; }
+    p, li { font-size: 0.95rem; color: var(--text); margin-bottom: 0.6rem; }
+    .muted { color: var(--muted); }
+    ol { padding-left: 1.25rem; margin-bottom: 0.6rem; }
+    ol li { margin-bottom: 0.5rem; }
+    a { color: var(--accent); }
+    .gift-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin: 1.75rem 0; text-align: center; }
+    .gift-emoji { font-size: 2.4rem; }
+    .cta { display: inline-block; margin-top: 1rem; background: var(--accent); color: #fff; text-decoration: none; font-weight: 600; font-size: 0.95rem; padding: 0.75rem 1.5rem; border-radius: 10px; }
+    .legal-footer { border-top: 1px solid var(--border); margin-top: 3rem; padding: 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--muted); }
+    .legal-footer a { margin: 0 0.5rem; color: var(--muted); text-decoration: none; }
+    .legal-footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='dark')document.body.setAttribute('data-theme','dark');})();
+  </script>
+  <nav class="legal-nav">
+    <a class="brand" href="/">Vee<span>xa</span></a>
+    <a class="back" href="/app" data-i18n="back-app">← Zurück zur App</a>
+  </nav>
+
+  <main>
+    <div class="legal-kicker" data-i18n="kicker">Verschenken</div>
+    <h1 data-i18n="title">Veexa verschenken</h1>
+    <p class="muted" data-i18n="subtitle">Schenk jemandem einen entspannteren Lernalltag — der perfekte Begleiter für die nächste Klausurphase.</p>
+
+    <div class="gift-card">
+      <div class="gift-emoji">🎁</div>
+      <p style="margin-top:0.5rem;" data-i18n="card-text">Verschenke Veexa an Kommilitoninnen, Freunde oder Geschwister im Studium. Wir richten das Geschenk persönlich für dich ein.</p>
+      <a class="cta" href="mailto:hallo@veexa.app?subject=Veexa%20verschenken" data-i18n="card-cta">Geschenk anfragen</a>
+    </div>
+
+    <h2 data-i18n="h-how">So funktioniert's</h2>
+    <ol>
+      <li data-i18n="step1">Schreib uns über den Button oben, wie viele Zugänge du verschenken möchtest und für welchen Zeitraum.</li>
+      <li data-i18n="step2">Du erhältst von uns einen persönlichen Geschenk-Link oder Gutscheincode.</li>
+      <li data-i18n="step3">Die beschenkte Person löst ihn ein und kann sofort loslegen — mit allen Funktionen.</li>
+    </ol>
+
+    <h2 data-i18n="h-why">Warum Veexa?</h2>
+    <ul style="padding-left:1.25rem;">
+      <li data-i18n="why1">Vorlesungsmaterialien werden zu einer durchsuchbaren Wissensbasis.</li>
+      <li data-i18n="why2">Zusammenfassungen, Lernpläne und Probeklausuren auf Knopfdruck.</li>
+      <li data-i18n="why3">Tägliche Lernaufgaben, die sich am Prüfungstermin orientieren.</li>
+    </ul>
+
+    <p class="muted" style="margin-top:2rem;" data-i18n-html="note">Hinweis: Geschenke werden derzeit persönlich per E-Mail abgewickelt. Bei Fragen melde dich jederzeit unter <a href="mailto:hallo@veexa.app">hallo@veexa.app</a>.</p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/impressum" data-i18n="f-impressum">Impressum</a> ·
+    <a href="/datenschutz" data-i18n="f-privacy">Datenschutz</a> ·
+    <a href="/agb" data-i18n="f-terms">AGB</a> ·
+    <a href="/app" data-i18n="f-app">Zur App</a>
+    <div style="margin-top:0.5rem;">© 2026 Veexa</div>
+  </footer>
+
+  <script>
+  const TRANSLATIONS = {
+    en: {
+      'page-title':'Gift Veexa — Veexa',
+      'back-app':'← Back to the app',
+      'kicker':'Gifting',
+      'title':'Gift Veexa',
+      'subtitle':'Give someone a calmer study routine — the perfect companion for the next exam season.',
+      'card-text':'Gift Veexa to classmates, friends or siblings at university. We set up the gift personally for you.',
+      'card-cta':'Request a gift',
+      'h-how':'How it works',
+      'step1':'Message us via the button above with how many access passes you want to gift and for how long.',
+      'step2':'We send you a personal gift link or voucher code.',
+      'step3':'The recipient redeems it and can start right away — with all features.',
+      'h-why':'Why Veexa?',
+      'why1':'Lecture materials become a searchable knowledge base.',
+      'why2':'Summaries, study plans and practice exams at the click of a button.',
+      'why3':'Daily study tasks that align with the exam date.',
+      'note':'Note: gifts are currently handled personally by email. If you have any questions, reach out any time at <a href="mailto:hallo@veexa.app">hallo@veexa.app</a>.',
+      'f-impressum':'Imprint','f-privacy':'Privacy','f-terms':'Terms','f-app':'To the app',
+    },
+    es: {
+      'page-title':'Regala Veexa — Veexa',
+      'back-app':'← Volver a la app',
+      'kicker':'Regalar',
+      'title':'Regala Veexa',
+      'subtitle':'Regala una etapa de estudio más tranquila: el compañero perfecto para la próxima época de exámenes.',
+      'card-text':'Regala Veexa a compañeros, amigos o hermanos que estudian. Preparamos el regalo personalmente para ti.',
+      'card-cta':'Solicitar un regalo',
+      'h-how':'Cómo funciona',
+      'step1':'Escríbenos con el botón de arriba indicando cuántos accesos quieres regalar y por cuánto tiempo.',
+      'step2':'Te enviamos un enlace de regalo personal o un código de descuento.',
+      'step3':'La persona lo canjea y puede empezar de inmediato, con todas las funciones.',
+      'h-why':'¿Por qué Veexa?',
+      'why1':'Los materiales de clase se convierten en una base de conocimiento consultable.',
+      'why2':'Resúmenes, planes de estudio y exámenes de práctica con un clic.',
+      'why3':'Tareas de estudio diarias que se ajustan a la fecha del examen.',
+      'note':'Nota: los regalos se gestionan actualmente de forma personal por correo electrónico. Si tienes dudas, escríbenos cuando quieras a <a href="mailto:hallo@veexa.app">hallo@veexa.app</a>.',
+      'f-impressum':'Aviso legal','f-privacy':'Privacidad','f-terms':'Términos','f-app':'A la app',
+    },
+    fr: {
+      'page-title':'Offrir Veexa — Veexa',
+      'back-app':'← Retour à l\'application',
+      'kicker':'Offrir',
+      'title':'Offrir Veexa',
+      'subtitle':'Offre un quotidien d\'étude plus serein — le compagnon idéal pour la prochaine période d\'examens.',
+      'card-text':'Offre Veexa à des camarades, des amis ou des frères et sœurs étudiants. Nous préparons le cadeau personnellement pour toi.',
+      'card-cta':'Demander un cadeau',
+      'h-how':'Comment ça marche',
+      'step1':'Écris-nous via le bouton ci-dessus en indiquant combien d\'accès tu souhaites offrir et pour quelle durée.',
+      'step2':'Nous t\'envoyons un lien cadeau personnel ou un code de réduction.',
+      'step3':'Le ou la bénéficiaire l\'active et peut démarrer immédiatement — avec toutes les fonctionnalités.',
+      'h-why':'Pourquoi Veexa ?',
+      'why1':'Les supports de cours deviennent une base de connaissances consultable.',
+      'why2':'Résumés, plans de révision et examens blancs en un clic.',
+      'why3':'Des tâches d\'étude quotidiennes alignées sur la date de l\'examen.',
+      'note':'Remarque : les cadeaux sont actuellement gérés personnellement par e-mail. Pour toute question, contacte-nous à tout moment à <a href="mailto:hallo@veexa.app">hallo@veexa.app</a>.',
+      'f-impressum':'Mentions légales','f-privacy':'Confidentialité','f-terms':'CGU','f-app':'Vers l\'application',
+    },
+  };
+
+  (function () {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const browser = (navigator.language || 'de').slice(0, 2).toLowerCase();
+    const lang = localStorage.getItem('app-lang') || (supported.includes(browser) ? browser : 'de');
+    document.documentElement.lang = lang;
+    if (lang === 'de') return;
+    const T = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    if (T['page-title']) document.title = T['page-title'];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const v = T[el.dataset.i18nHtml];
+      if (v !== undefined) el.innerHTML = v;
+    });
+  })();
+  </script>
+</body>
+</html>

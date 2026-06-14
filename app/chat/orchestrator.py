@@ -20,13 +20,12 @@ from app.chat import tools as T
 
 logger = logging.getLogger(__name__)
 
-MAX_ITERS = 4          # agentic loop ceiling (read-tool round trips)
+MAX_ITERS = 4
 ROUTING_MAX_TOKENS = 1000
 
 
 def _blocks_to_params(content: List[Any]) -> List[dict]:
-    """Convert response content blocks to plain dicts so the assistant turn is
-    JSON-serializable and safe to send back to the API on the next iteration."""
+    """Convert response content blocks to plain dicts for the next API turn."""
     out: List[dict] = []
     for b in content:
         btype = getattr(b, "type", None)
@@ -53,8 +52,6 @@ def _build_messages(chat_history: List[dict], message: str,
 
     user_text = message
     if pending_proposal:
-        # The frontend holds the open proposal; on a text tweak it is sent back so
-        # Claude can revise it. Surface it as context appended to the user's message.
         try:
             ctx = json.dumps(pending_proposal, ensure_ascii=False)
         except (TypeError, ValueError):
@@ -105,7 +102,7 @@ async def run_chat(
                     async for ev in rag_streamer(message, module_name, chat_history):
                         yield ev
                     return
-                # (b) follow-up after read tools → stream Claude's short intro.
+                # (b) follow-up after read tools → stream Haiku's short intro.
                 intro = "".join(texts).strip()
                 if intro:
                     yield {"type": "token", "content": intro}
@@ -135,7 +132,7 @@ async def run_chat(
                 if cls == T.READ:
                     try:
                         data = read_executor(b.name, b.input or {}, module_name)
-                    except Exception as exc:                       # noqa: BLE001
+                    except Exception as exc:  # noqa: BLE001
                         logger.warning("read_executor failed for %s: %s", b.name, exc)
                         tool_results.append({"type": "tool_result", "tool_use_id": b.id,
                                              "content": "Daten konnten nicht geladen werden.",
@@ -154,10 +151,9 @@ async def run_chat(
                                          "content": "Unbekanntes Tool.", "is_error": True})
             messages.append({"role": "user", "content": tool_results})
 
-        # Loop ceiling reached without a terminal answer.
         yield {"type": "done"}
 
-    except Exception as exc:                                       # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         logger.exception("chat orchestrator failed")
         yield {"type": "error", "detail": str(exc)}
         yield {"type": "done"}

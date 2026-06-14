@@ -33,7 +33,6 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 
 from app.embeddings.embedder import Embedder
-from app.llm_clients import make_deepseek_client
 from app.ingestion.file_scanner import is_supported
 from app.main import (
     index_chunks,
@@ -88,9 +87,8 @@ RL_HEAVY_DAILY = os.getenv("RATELIMIT_HEAVY_DAILY", "50/day")  # shared per-user
 RL_UPLOAD = os.getenv("RATELIMIT_UPLOAD", "10/minute")         # uploads: parsing + paid embeddings
 _RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", "no")
 
-# Chat orchestrator model. Defaults to DeepSeek via Anthropic-compatible endpoint.
-# Override via env: CHAT_MODEL=claude-haiku-4-5 to fall back to Anthropic Haiku.
-CHAT_MODEL = os.getenv("CHAT_MODEL", "deepseek-v4-flash")
+# Chat orchestrator model: Claude Haiku for reliable tool-calling routing.
+CHAT_MODEL = os.getenv("CHAT_MODEL", "claude-haiku-4-5-20251001")
 
 # ── Payload size limits ──────────────────────────────────────────────────────
 # Guards against memory-exhaustion DoS (huge uploads) and runaway LLM cost
@@ -140,7 +138,6 @@ _heavy_daily = limiter.shared_limit(RL_HEAVY_DAILY, scope="llm_heavy_daily")
 
 client = OpenAI()
 anthropic_client = Anthropic()                 # real Claude: file generation, router, solver
-deepseek_client = make_deepseek_client()       # DeepSeek (Anthropic-compatible): chat orchestrator
 config = load_config()
 # RAW_DIR kept for legacy compatibility; uploads now go to Supabase Storage
 RAW_DIR = config["raw_path"]
@@ -722,6 +719,24 @@ def serve_agb():
     return _serve_static_html("agb.html")
 
 
+@app.get("/hilfe", response_class=HTMLResponse)
+def serve_hilfe():
+    """Hilfe & Support — public, no auth required."""
+    return _serve_static_html("hilfe.html")
+
+
+@app.get("/verschenken", response_class=HTMLResponse)
+def serve_verschenken():
+    """Veexa verschenken — public, no auth required."""
+    return _serve_static_html("verschenken.html")
+
+
+@app.get("/mehr-erfahren", response_class=HTMLResponse)
+def serve_mehr_erfahren():
+    """Funktionsüberblick — public, no auth required."""
+    return _serve_static_html("mehr-erfahren.html")
+
+
 @app.get("/logo.png")
 def serve_logo():
     return FileResponse(Path(__file__).parent / "static" / "logo.png", media_type="image/png")
@@ -906,7 +921,7 @@ async def chat_stream(request: Request, body: ChatRequest):
             module_name=active,
             chat_history=body.chat_history,
             pending_proposal=body.pending_proposal,
-            client=deepseek_client,
+            client=anthropic_client,
             model=CHAT_MODEL,
             system_prompt=system_prompt,
             read_executor=_chat_read_executor,
@@ -2076,6 +2091,23 @@ def delete_lecture_summary(module_name: str, path: str):
 
 # ─────────────────────── Solutions endpoints ──────────────────────────────────
 
+def _sanitize_solve_data(data):
+    """Entfernt interne Metadaten (verwendetes Modell, Token-Verbrauch, Routing)
+    aus solve_data, bevor es an den Client ausgeliefert wird. Nutzer sollen diese
+    Informationen nicht sehen können."""
+    if not isinstance(data, dict):
+        return data
+    clean = {k: v for k, v in data.items() if k not in ("total_tokens", "models_used")}
+    results = clean.get("results")
+    if isinstance(results, list):
+        clean["results"] = [
+            {k: v for k, v in r.items() if k not in ("model_used", "tokens_used", "route")}
+            if isinstance(r, dict) else r
+            for r in results
+        ]
+    return clean
+
+
 @app.get("/lecture/solutions/{module_name}")
 def get_lecture_solutions(module_name: str):
     """Listet alle gespeicherten Lösungen eines Moduls."""
@@ -2095,7 +2127,7 @@ def get_lecture_solutions(module_name: str):
                     "name":         r.get("name") or "Lösung",
                     "sheet_path":   r.get("sheet_path", ""),
                     "storage_path": r.get("storage_path", ""),
-                    "solve_data":   r.get("solve_data"),
+                    "solve_data":   _sanitize_solve_data(r.get("solve_data")),
                     "date":         str(r.get("created_at", ""))[:10],
                 }
                 for r in rows
@@ -2204,12 +2236,13 @@ async def solve_sheet(request: Request, body: SolveSheetRequest):
     except Exception as exc:
         print(f"[solve_sheet] Speichern/Indizieren fehlgeschlagen (nicht fatal): {exc}")
 
-    return {
+    response = _sanitize_solve_data({
         "results": results_dicts,
         "total_tokens": total_tokens,
         "models_used": models_used,
-        "storage_path": storage_path,
-    }
+    })
+    response["storage_path"] = storage_path
+    return response
 
 
 def _list_storage_prefix_recursive(supa, bucket: str, prefix: str, _depth: int = 0) -> list:

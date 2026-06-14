@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow" />
+  <title>Hilfe &amp; Support — Veexa</title>
+  <link rel="icon" href="/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #F5F1EB; --panel: #EDE7DC; --border: #C4BAB0;
+      --text: #1A1614; --muted: #5C5450; --accent: #C2410C;
+    }
+    [data-theme="dark"] {
+      --bg: #161210; --panel: #1F1A16; --border: #3A3028;
+      --text: #F0EDE8; --muted: #A8A29E; --accent: #F97316;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.7; -webkit-font-smoothing: antialiased; transition: background 0.25s ease, color 0.25s ease; }
+    .legal-nav {
+      position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+    }
+    .legal-nav a.brand { font-family: 'Lora', serif; font-weight: 700; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+    .legal-nav a.brand span { color: var(--accent); }
+    .legal-nav a.back { font-size: 0.875rem; color: var(--muted); text-decoration: none; }
+    .legal-nav a.back:hover { color: var(--accent); }
+    main { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+    .legal-kicker { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+    h1 { font-family: 'Lora', serif; font-size: 2.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 600; margin: 2.25rem 0 0.75rem; }
+    p, li { font-size: 0.95rem; color: var(--text); margin-bottom: 0.6rem; }
+    .muted { color: var(--muted); }
+    ul { padding-left: 1.25rem; margin-bottom: 0.6rem; }
+    a { color: var(--accent); }
+    .faq { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; margin-bottom: 0.9rem; }
+    .faq h2 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+    .faq p { margin-bottom: 0; color: var(--muted); }
+    .cta { display: inline-block; margin-top: 0.5rem; background: var(--accent); color: #fff; text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 0.65rem 1.25rem; border-radius: 10px; }
+    .legal-footer { border-top: 1px solid var(--border); margin-top: 3rem; padding: 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--muted); }
+    .legal-footer a { margin: 0 0.5rem; color: var(--muted); text-decoration: none; }
+    .legal-footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <script>
+    (function(){var t=localStorage.getItem('theme');if(t==='dark')document.body.setAttribute('data-theme','dark');})();
+  </script>
+  <nav class="legal-nav">
+    <a class="brand" href="/">Vee<span>xa</span></a>
+    <a class="back" href="/app" data-i18n="back-app">← Zurück zur App</a>
+  </nav>
+
+  <main>
+    <div class="legal-kicker" data-i18n="kicker">Support</div>
+    <h1 data-i18n="title">Hilfe &amp; Support</h1>
+    <p class="muted" data-i18n="subtitle">Antworten auf die häufigsten Fragen — und wie du uns erreichst.</p>
+
+    <h2 style="margin-top:2.5rem;" data-i18n="h-faq">Häufige Fragen</h2>
+
+    <div class="faq">
+      <h2 data-i18n="q1">Wie lege ich einen Kurs an?</h2>
+      <p data-i18n="a1">Klicke im Dashboard auf „Ersten Kurs anlegen", gib einen Namen ein und lade deine Materialien hoch — einzelne Dateien oder ganze Ordner. Veexa liest sie ein und macht sie durchsuchbar.</p>
+    </div>
+    <div class="faq">
+      <h2 data-i18n="q2">Welche Dateiformate werden unterstützt?</h2>
+      <p data-i18n="a2">PDF, PowerPoint (PPTX), Markdown (MD) und Textdateien (TXT). Gescannte PDFs werden automatisch per Texterkennung gelesen. Nicht unterstützte Formate werden beim Upload einfach übersprungen.</p>
+    </div>
+    <div class="faq">
+      <h2 data-i18n="q3">Worauf basieren die Antworten im Chat?</h2>
+      <p data-i18n="a3">Ausschließlich auf den Materialien, die du in den jeweiligen Kurs hochgeladen hast. Zu jeder Antwort werden die verwendeten Quellen angezeigt. KI-Antworten können Fehler enthalten — prüfe wichtige Inhalte selbst.</p>
+    </div>
+    <div class="faq">
+      <h2 data-i18n="q4">Wie lange dauert das Vorbereiten eines Kurses?</h2>
+      <p data-i18n="a4">Je nach Umfang der Materialien einige Sekunden bis wenige Minuten. Der Fortschritt wird dir während des Uploads angezeigt. Bei gescannten PDFs dauert die Texterkennung etwas länger.</p>
+    </div>
+    <div class="faq">
+      <h2 data-i18n="q5">Kann ich Kurse oder Dateien wieder löschen?</h2>
+      <p data-i18n="a5">Ja. Du kannst einzelne Dateien oder ganze Kurse jederzeit löschen — alle zugehörigen Daten werden dabei vollständig entfernt.</p>
+    </div>
+
+    <h2 data-i18n="h-contact">Noch Fragen?</h2>
+    <p class="muted" data-i18n="contact-text">Wir helfen gerne weiter. Schreib uns einfach eine E-Mail, wir antworten so schnell wie möglich.</p>
+    <a class="cta" href="mailto:support@veexa.app" data-i18n="contact-cta">E-Mail an den Support</a>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/impressum" data-i18n="f-impressum">Impressum</a> ·
+    <a href="/datenschutz" data-i18n="f-privacy">Datenschutz</a> ·
+    <a href="/agb" data-i18n="f-terms">AGB</a> ·
+    <a href="/app" data-i18n="f-app">Zur App</a>
+    <div style="margin-top:0.5rem;">© 2026 Veexa</div>
+  </footer>
+
+  <script>
+  const TRANSLATIONS = {
+    en: {
+      'page-title':'Help & Support — Veexa',
+      'back-app':'← Back to the app',
+      'kicker':'Support',
+      'title':'Help & Support',
+      'subtitle':'Answers to the most common questions — and how to reach us.',
+      'h-faq':'Frequently asked questions',
+      'q1':'How do I create a course?',
+      'a1':'On the dashboard, click “Create your first course”, enter a name and upload your materials — individual files or entire folders. Veexa reads them and makes them searchable.',
+      'q2':'Which file formats are supported?',
+      'a2':'PDF, PowerPoint (PPTX), Markdown (MD) and text files (TXT). Scanned PDFs are read automatically via text recognition. Unsupported formats are simply skipped during upload.',
+      'q3':'What are the chat answers based on?',
+      'a3':'Solely on the materials you uploaded to the respective course. Every answer shows the sources used. AI answers can contain errors — always double-check important content yourself.',
+      'q4':'How long does preparing a course take?',
+      'a4':'Depending on the amount of material, a few seconds to a few minutes. Progress is shown to you during the upload. For scanned PDFs, text recognition takes a little longer.',
+      'q5':'Can I delete courses or files again?',
+      'a5':'Yes. You can delete individual files or entire courses at any time — all associated data is fully removed.',
+      'h-contact':'Still have questions?',
+      'contact-text':'We are happy to help. Just send us an email and we will reply as soon as possible.',
+      'contact-cta':'Email support',
+      'f-impressum':'Imprint','f-privacy':'Privacy','f-terms':'Terms','f-app':'To the app',
+    },
+    es: {
+      'page-title':'Ayuda y soporte — Veexa',
+      'back-app':'← Volver a la app',
+      'kicker':'Soporte',
+      'title':'Ayuda y soporte',
+      'subtitle':'Respuestas a las preguntas más frecuentes y cómo contactarnos.',
+      'h-faq':'Preguntas frecuentes',
+      'q1':'¿Cómo creo un curso?',
+      'a1':'En el panel, haz clic en «Crear tu primer curso», escribe un nombre y sube tus materiales: archivos sueltos o carpetas enteras. Veexa los lee y los hace buscables.',
+      'q2':'¿Qué formatos de archivo se admiten?',
+      'a2':'PDF, PowerPoint (PPTX), Markdown (MD) y archivos de texto (TXT). Los PDF escaneados se leen automáticamente mediante reconocimiento de texto. Los formatos no admitidos se omiten al subir.',
+      'q3':'¿En qué se basan las respuestas del chat?',
+      'a3':'Únicamente en los materiales que has subido al curso correspondiente. Cada respuesta muestra las fuentes utilizadas. Las respuestas de IA pueden contener errores: verifica tú mismo el contenido importante.',
+      'q4':'¿Cuánto tarda en prepararse un curso?',
+      'a4':'Según la cantidad de material, de unos segundos a unos minutos. El progreso se muestra durante la subida. En los PDF escaneados, el reconocimiento de texto tarda un poco más.',
+      'q5':'¿Puedo borrar cursos o archivos?',
+      'a5':'Sí. Puedes borrar archivos individuales o cursos completos en cualquier momento: todos los datos asociados se eliminan por completo.',
+      'h-contact':'¿Aún tienes preguntas?',
+      'contact-text':'Estaremos encantados de ayudarte. Envíanos un correo y te responderemos lo antes posible.',
+      'contact-cta':'Escribir al soporte',
+      'f-impressum':'Aviso legal','f-privacy':'Privacidad','f-terms':'Términos','f-app':'A la app',
+    },
+    fr: {
+      'page-title':'Aide et assistance — Veexa',
+      'back-app':'← Retour à l\'application',
+      'kicker':'Assistance',
+      'title':'Aide et assistance',
+      'subtitle':'Réponses aux questions les plus fréquentes et comment nous contacter.',
+      'h-faq':'Questions fréquentes',
+      'q1':'Comment créer un cours ?',
+      'a1':'Sur le tableau de bord, clique sur « Créer ton premier cours », saisis un nom et téléverse tes documents — fichiers isolés ou dossiers entiers. Veexa les lit et les rend consultables.',
+      'q2':'Quels formats de fichiers sont pris en charge ?',
+      'a2':'PDF, PowerPoint (PPTX), Markdown (MD) et fichiers texte (TXT). Les PDF numérisés sont lus automatiquement par reconnaissance de texte. Les formats non pris en charge sont simplement ignorés au téléversement.',
+      'q3':'Sur quoi reposent les réponses du chat ?',
+      'a3':'Uniquement sur les documents que tu as téléversés dans le cours concerné. Chaque réponse affiche les sources utilisées. Les réponses de l\'IA peuvent comporter des erreurs — vérifie toujours toi-même les contenus importants.',
+      'q4':'Combien de temps dure la préparation d\'un cours ?',
+      'a4':'Selon le volume de documents, de quelques secondes à quelques minutes. La progression s\'affiche pendant le téléversement. Pour les PDF numérisés, la reconnaissance de texte prend un peu plus de temps.',
+      'q5':'Puis-je supprimer des cours ou des fichiers ?',
+      'a5':'Oui. Tu peux supprimer des fichiers individuels ou des cours entiers à tout moment — toutes les données associées sont entièrement supprimées.',
+      'h-contact':'Encore des questions ?',
+      'contact-text':'Nous sommes là pour t\'aider. Envoie-nous un e-mail et nous te répondrons dès que possible.',
+      'contact-cta':'Écrire au support',
+      'f-impressum':'Mentions légales','f-privacy':'Confidentialité','f-terms':'CGU','f-app':'Vers l\'application',
+    },
+  };
+
+  (function () {
+    const supported = ['de', 'en', 'es', 'fr'];
+    const browser = (navigator.language || 'de').slice(0, 2).toLowerCase();
+    const lang = localStorage.getItem('app-lang') || (supported.includes(browser) ? browser : 'de');
+    document.documentElement.lang = lang;
+    if (lang === 'de') return;
+    const T = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    if (T['page-title']) document.title = T['page-title'];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[el.dataset.i18n];
+      if (v !== undefined) el.textContent = v;
+    });
+  })();
+  </script>
+</body>
+</html>

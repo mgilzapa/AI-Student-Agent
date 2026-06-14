@@ -5,28 +5,43 @@ import os
 from pathlib import Path
 from typing import AsyncIterator
 
-from anthropic import AsyncAnthropic
+import openai
 
-from app.llm_clients import make_async_deepseek_client
+from app.llm_clients import make_async_gemini_client
 from app.rag.reranker import rerank
 
 logger = logging.getLogger(__name__)
 
-_anthropic: AsyncAnthropic | None = None
+_gemini: openai.AsyncOpenAI | None = None
+
+# Separate env var so RAG synthesis can use a cheaper model than the orchestrator.
+_RAG_MODEL = os.getenv("RAG_MODEL", "gemini-2.5-flash-lite")
 
 _SYNTH_SYSTEM_PROMPT = """Du bist ein Lernassistent. Dir werden Textausschnitte aus Studienunterlagen gegeben.
 Beantworte die Frage des Studenten basierend auf diesen Ausschnitten.
 Du darfst Zusammenhänge ableiten, wenn sie logisch folgen. Erfinde keine Fakten.
 Schreibe auf Deutsch.
 
-LÄNGE: Standardmäßig kurz und präzise (2–4 Sätze oder eine kompakte Liste).
-Nur bei expliziter Anfrage nach Details/Überblick ausführlich antworten.
+OBERSTES ZIEL: Maximale Übersichtlichkeit. Der Student soll die Antwort auf einen Blick erfassen können.
 
-FORMATIERUNG:
-- Trenne Abschnitte mit einer Leerzeile.
+VERBOTEN — keine Ausnahmen:
+- Kein einleitender Füllsatz. Beginne sofort mit dem Inhalt.
+- Kein Fließtext wenn mehr als ein Punkt erklärt wird. Dann immer Aufzählungsliste.
+- Keine Wiederholung der Frage.
+- Nicht mehr erklären als nötig.
+
+STRUKTUR — strikte Regeln:
+- 1 klarer Punkt → 1-2 Sätze Fließtext.
+- 2+ Punkte / Merkmale / Schritte / Eigenschaften → Aufzählungsliste (- ...).
+- Mehrteilige Antworten → ## Überschrift pro Abschnitt.
+- Vergleiche → Markdown-Tabelle.
 - **Fettschrift** für Fachbegriffe beim ersten Auftreten.
-- Aufzählungslisten (- ...) für Merkmale, Schritte, Eigenschaften.
-- ## Überschriften nur bei mehreren Abschnitten.
+
+LÖSUNGEN & ERGEBNISSE — besonders hervorheben:
+- Endergebnis / finale Antwort immer in einer eigenen Zeile, abgesetzt und fett: **Ergebnis: ...**
+- Rechenschritte als nummerierte Liste (1. 2. 3. ...), nicht als Fließtext.
+- Jede Formel abgesetzt als Display-Math: $$...$$
+- Nach der Herleitung das Ergebnis nochmal explizit wiederholen: **→ Ergebnis: $$...$$**
 
 MATHEMATIK — strikte Regeln, keine Ausnahmen:
 - Jede Formel, jede Variable, jedes Symbol wird AUSSCHLIESSLICH in LaTeX geschrieben.
@@ -44,12 +59,11 @@ _DISTANCE_THRESHOLD = 0.6
 _TOP_RERANK = 8
 
 
-def _get_anthropic() -> AsyncAnthropic:
-    # RAG synthesis runs on CHAT_MODEL (DeepSeek by default) → DeepSeek client.
-    global _anthropic
-    if _anthropic is None:
-        _anthropic = make_async_deepseek_client()
-    return _anthropic
+def _get_gemini() -> openai.AsyncOpenAI:
+    global _gemini
+    if _gemini is None:
+        _gemini = make_async_gemini_client()
+    return _gemini
 
 
 def _dist_to_score(dist: float | None) -> float:
@@ -82,15 +96,21 @@ async def run_simple(
         for h in top_chunks
     ]
 
-    messages = [*(chat_history or []), {"role": "user", "content": user_message}]
+    messages = [
+        {"role": "system", "content": _SYNTH_SYSTEM_PROMPT},
+        *(chat_history or []),
+        {"role": "user", "content": user_message},
+    ]
 
-    async with _get_anthropic().messages.stream(
-        model=os.getenv("CHAT_MODEL", "deepseek-v4-flash"),
+    stream = await _get_gemini().chat.completions.create(
+        model=_RAG_MODEL,
         max_tokens=8192,
-        system=_SYNTH_SYSTEM_PROMPT,
         messages=messages,
-    ) as stream:
-        async for text in stream.text_stream:
+        stream=True,
+    )
+    async for chunk in stream:
+        text = chunk.choices[0].delta.content or ""
+        if text:
             yield json.dumps({"type": "token", "content": text})
 
     yield json.dumps({"type": "done", "sources": sources, "path": "simple"})
@@ -145,15 +165,21 @@ async def run(
         for h in top_chunks
     ]
 
-    messages = [*(chat_history or []), {"role": "user", "content": user_message}]
+    messages = [
+        {"role": "system", "content": _SYNTH_SYSTEM_PROMPT},
+        *(chat_history or []),
+        {"role": "user", "content": user_message},
+    ]
 
-    async with _get_anthropic().messages.stream(
-        model=os.getenv("CHAT_MODEL", "deepseek-v4-flash"),
+    stream = await _get_gemini().chat.completions.create(
+        model=_RAG_MODEL,
         max_tokens=8192,
-        system=_SYNTH_SYSTEM_PROMPT,
         messages=messages,
-    ) as stream:
-        async for text in stream.text_stream:
+        stream=True,
+    )
+    async for chunk in stream:
+        text = chunk.choices[0].delta.content or ""
+        if text:
             yield json.dumps({"type": "token", "content": text})
 
     yield json.dumps({"type": "done", "sources": sources, "path": "complex"})
