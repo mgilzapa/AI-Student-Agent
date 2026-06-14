@@ -2626,8 +2626,14 @@
       display: none;
     }
     .ws-grid[data-mobile-pane="left"]   .ws-left   { display: flex; }
-    .ws-grid[data-mobile-pane="center"] .ws-center { display: block; overflow: auto; }
-    .ws-grid[data-mobile-pane="right"]  .ws-right  { display: flex; }
+    /* Center must stay a column flexbox so the pane stretches to full height —
+       a plain `block` collapses the viewport row (absolute children) to 0px,
+       leaving PDFs and generated files invisible. */
+    .ws-grid[data-mobile-pane="center"] .ws-center { display: flex; flex-direction: column; overflow: hidden; }
+    .ws-grid[data-mobile-pane="center"] .ws-center .pane { flex: 1 1 auto; min-height: 0; }
+    /* Keep the chat's 3-row grid (topbar / messages / footer); `flex` would
+       lay them out side-by-side and break the layout. */
+    .ws-grid[data-mobile-pane="right"]  .ws-right  { display: grid; }
     .ws-grid:not([data-mobile-pane])    .ws-left   { display: flex; }
 
     /* Fixed bottom navigation */
@@ -10280,6 +10286,9 @@ function initMobileWorkspace() {
     grid.dataset.mobilePane = pane;
     if (pane === 'right') toggleRightPanel(false);   // make sure chat content is "open"
     highlight(pane);
+    // Re-place the fixed PDF overlays over the now-visible center slot, or hide
+    // them (zero-sized) when another pane is up so they don't float over chat.
+    requestAnimationFrame(syncPdfFramePositions);
   };
 
   nav.querySelectorAll('button').forEach(btn => {
