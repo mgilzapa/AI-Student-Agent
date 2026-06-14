@@ -4125,13 +4125,14 @@
     (el.closest('button') || el).addEventListener('click', _goUpgrade);
   });
 
-  // Hilfe / Verschenken / Mehr erfahren → eigene Info-Seiten (neuer Tab, App-State bleibt erhalten)
+  // Hilfe / Verschenken / Mehr erfahren → eigene Info-Seiten (gleiches Fenster;
+  // die Seiten sind öffentlich und haben einen "Zurück"-Link zur App).
   const _infoPages = { 'help': '/hilfe', 'gift': '/verschenken', 'learn-more': '/mehr-erfahren' };
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const url = _infoPages[el.dataset.i18n];
     if (!url) return;
     const btn = el.closest('button');
-    if (btn) btn.addEventListener('click', () => window.open(url, '_blank', 'noopener'));
+    if (btn) btn.addEventListener('click', () => { window.location.href = url; });
   });
 })();
 

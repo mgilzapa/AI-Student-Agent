@@ -230,6 +230,7 @@ async def _auth_middleware(request: Request, call_next):
     if request.url.path in (
         "/", "/app", "/upgrade", "/logo.png", "/logo_white.png",
         "/impressum", "/datenschutz", "/agb",
+        "/hilfe", "/verschenken", "/mehr-erfahren",
     ) or request.url.path.startswith("/fonts/"):
         return await call_next(request)
 
