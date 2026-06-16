@@ -67,8 +67,8 @@ def test_has_open_tasks_no_plan(tmp_path, monkeypatch):
 def test_toggle_task_marks_done(tmp_path, monkeypatch):
     cp = tmp_path / "current_plan.md"
     cp.write_text(SAMPLE_MD, encoding="utf-8")
-    monkeypatch.setattr(dt, "load_plan", lambda m: cp.read_text(encoding="utf-8"))
-    monkeypatch.setattr(dt, "save_plan", lambda m, md: cp.write_text(md, encoding="utf-8"))
+    monkeypatch.setattr(dt, "load_plan", lambda m, slug=None: cp.read_text(encoding="utf-8"))
+    monkeypatch.setattr(dt, "save_plan", lambda m, md, slug=None: cp.write_text(md, encoding="utf-8"))
     dt.toggle_task("Analysis", "t1", 1, True)
     updated = dt.parse_plan(cp.read_text(encoding="utf-8"))
     assert updated["topics"][0]["tasks"][1]["done"] is True
@@ -77,8 +77,8 @@ def test_toggle_task_marks_done(tmp_path, monkeypatch):
 def test_toggle_task_marks_undone(tmp_path, monkeypatch):
     cp = tmp_path / "current_plan.md"
     cp.write_text(SAMPLE_MD, encoding="utf-8")
-    monkeypatch.setattr(dt, "load_plan", lambda m: cp.read_text(encoding="utf-8"))
-    monkeypatch.setattr(dt, "save_plan", lambda m, md: cp.write_text(md, encoding="utf-8"))
+    monkeypatch.setattr(dt, "load_plan", lambda m, slug=None: cp.read_text(encoding="utf-8"))
+    monkeypatch.setattr(dt, "save_plan", lambda m, md, slug=None: cp.write_text(md, encoding="utf-8"))
     dt.toggle_task("Analysis", "t1", 0, False)
     updated = dt.parse_plan(cp.read_text(encoding="utf-8"))
     assert updated["topics"][0]["tasks"][0]["done"] is False
@@ -87,8 +87,8 @@ def test_toggle_task_marks_undone(tmp_path, monkeypatch):
 def test_toggle_task_refreshes_progress(tmp_path, monkeypatch):
     cp = tmp_path / "current_plan.md"
     cp.write_text(SAMPLE_MD, encoding="utf-8")
-    monkeypatch.setattr(dt, "load_plan", lambda m: cp.read_text(encoding="utf-8"))
-    monkeypatch.setattr(dt, "save_plan", lambda m, md: cp.write_text(md, encoding="utf-8"))
+    monkeypatch.setattr(dt, "load_plan", lambda m, slug=None: cp.read_text(encoding="utf-8"))
+    monkeypatch.setattr(dt, "save_plan", lambda m, md, slug=None: cp.write_text(md, encoding="utf-8"))
     dt.toggle_task("Analysis", "t1", 1, True)
     updated = dt.parse_plan(cp.read_text(encoding="utf-8"))
     assert updated["progress"]["done"] == 2
@@ -96,7 +96,7 @@ def test_toggle_task_refreshes_progress(tmp_path, monkeypatch):
 
 
 def test_toggle_task_no_plan_raises(monkeypatch):
-    monkeypatch.setattr(dt, "load_plan", lambda m: None)
+    monkeypatch.setattr(dt, "load_plan", lambda m, slug=None: None)
     with pytest.raises(ValueError, match="Kein aktiver Plan"):
         dt.toggle_task("Analysis", "t1", 0, True)
 

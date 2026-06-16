@@ -24,23 +24,26 @@ Storage: ``{slug}/topic_quiz_{topic_id}.json``
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from anthropic import Anthropic
+import openai
 
 from . import module_profile as mp
+from ..llm_clients import make_gemini_client
 
-MODEL = "claude-sonnet-4-6"
+# Gemini 2.5 Flash Lite via the OpenAI-compatible endpoint (see app/llm_clients.py).
+MODEL = os.getenv("QUIZ_MODEL", "gemini-2.5-flash-lite")
 
-_client: Optional[Anthropic] = None
+_client: Optional[openai.OpenAI] = None
 
 
-def _get_client() -> Anthropic:
+def _get_client() -> openai.OpenAI:
     global _client
     if _client is None:
-        _client = Anthropic()
+        _client = make_gemini_client()
     return _client
 
 
@@ -81,6 +84,7 @@ def list_quizzes(module_name: str) -> List[Dict[str, Any]]:
                 "topic_name": q.get("topic_name", ""),
                 "generated_at": q.get("generated_at", ""),
                 "num_questions": len(q.get("questions", [])),
+                "completed": bool(q.get("completed_at")),
             })
         except Exception:
             continue
@@ -110,6 +114,20 @@ def save_quiz(module_name: str, topic_id: str, quiz: Dict[str, Any]) -> None:
         _quiz_path(module_name, topic_id),
         json.dumps(quiz, ensure_ascii=False, indent=2),
     )
+
+
+def mark_completed(module_name: str, topic_id: str) -> bool:
+    """Record that the user finished this topic's quiz (gates worksheet unlock).
+
+    Stamps ``completed_at`` into the saved quiz JSON. Returns False if no quiz
+    file exists for the topic.
+    """
+    quiz = load_quiz(module_name, topic_id)
+    if not quiz:
+        return False
+    quiz["completed_at"] = date.today().isoformat()
+    save_quiz(module_name, topic_id, quiz)
+    return True
 
 
 # ─────────────────────────── Response parsing ───────────────────────────────
@@ -186,7 +204,8 @@ def _parse_quiz(raw_text: str) -> List[Dict[str, Any]]:
         return []
 
     if isinstance(data, dict):
-        items = data.get("questions") or []
+        # "questions" (quiz) or "exercises" (worksheet) — same item schema.
+        items = data.get("questions") or data.get("exercises") or []
     elif isinstance(data, list):
         items = data
     else:
@@ -287,13 +306,12 @@ def generate(
         rag_section=rag_section,
     )
 
-    resp = _get_client().messages.create(
+    resp = _get_client().chat.completions.create(
         model=MODEL,
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
-    text_block = next((b for b in resp.content if getattr(b, "type", None) == "text"), None)
-    raw = (text_block.text if text_block else "").strip()
+    raw = (resp.choices[0].message.content or "").strip()
     questions = _parse_quiz(raw)
 
     if not questions:

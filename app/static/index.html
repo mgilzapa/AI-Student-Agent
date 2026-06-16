@@ -4311,6 +4311,9 @@ const TRANSLATIONS = {
     'quiz-finish':'Quiz abschließen','quiz-finishing':'Wird abgeschlossen…','quiz-mastered':'Karte als gemeistert markiert.',
     'quiz-skipped':'Übersprungen. Du kannst die Karte jederzeit manuell als erledigt markieren.',
     'quiz-locked-hint':'Erledige alle Aufgaben dieses Themas zum Freischalten','quiz-gen-failed':'Quiz-Generierung fehlgeschlagen.',
+    'worksheet-create':'Übungsblatt erstellen','worksheet-creating':'Übungsblatt wird erstellt…','worksheet-created':'✓ Übungsblatt erstellt.',
+    'worksheet-locked-hint':'Schließe zuerst das Quiz dieses Themas ab','worksheet-section-title':'Übungsblätter','worksheets-sidebar-title':'Übungsblätter',
+    'worksheet-gen-failed':'Übungsblatt-Generierung fehlgeschlagen.','worksheet-exercises-label':'Aufgaben','worksheet-busy':'Es läuft bereits eine Generierung.',
     'topic-complete-html':'🎉 <strong>{topic}</strong> abgeschlossen! Du hast alle Aufgaben zu diesem Thema erledigt. Teste dein Wissen mit einem kurzen Quiz, um die Karte als gemeistert zu markieren.',
     'course-load-failed':'Der Kurs konnte nicht geladen werden.','course-delete-title':'Kurs löschen',
     'course-delete-msg':'Kurs „{name}" wirklich löschen? Alle Dateien, Zusammenfassungen und Embeddings werden unwiderruflich entfernt.',
@@ -4499,6 +4502,9 @@ const TRANSLATIONS = {
     'quiz-finish':'Finish quiz','quiz-finishing':'Finishing…','quiz-mastered':'Card marked as mastered.',
     'quiz-skipped':'Skipped. You can manually mark the card as done at any time.',
     'quiz-locked-hint':'Complete all tasks of this topic to unlock','quiz-gen-failed':'Quiz generation failed.',
+    'worksheet-create':'Create worksheet','worksheet-creating':'Creating worksheet…','worksheet-created':'✓ Worksheet created.',
+    'worksheet-locked-hint':'Complete this topic’s quiz first','worksheet-section-title':'Worksheets','worksheets-sidebar-title':'Worksheets',
+    'worksheet-gen-failed':'Worksheet generation failed.','worksheet-exercises-label':'exercises','worksheet-busy':'A generation is already running.',
     'topic-complete-html':'🎉 <strong>{topic}</strong> completed! You have finished all tasks for this topic. Test your knowledge with a short quiz to mark the card as mastered.',
     'course-load-failed':'The course could not be loaded.','course-delete-title':'Delete course',
     'course-delete-msg':'Really delete course "{name}"? All files, summaries and embeddings will be permanently removed.',
@@ -4687,6 +4693,9 @@ const TRANSLATIONS = {
     'quiz-finish':'Terminar quiz','quiz-finishing':'Finalizando…','quiz-mastered':'Tarjeta marcada como dominada.',
     'quiz-skipped':'Omitido. Puedes marcar la tarjeta como completada manualmente en cualquier momento.',
     'quiz-locked-hint':'Completa todas las tareas de este tema para desbloquear','quiz-gen-failed':'La generación del quiz falló.',
+    'worksheet-create':'Crear hoja de ejercicios','worksheet-creating':'Creando hoja de ejercicios…','worksheet-created':'✓ Hoja de ejercicios creada.',
+    'worksheet-locked-hint':'Completa primero el quiz de este tema','worksheet-section-title':'Hojas de ejercicios','worksheets-sidebar-title':'Hojas de ejercicios',
+    'worksheet-gen-failed':'La generación de la hoja de ejercicios falló.','worksheet-exercises-label':'ejercicios','worksheet-busy':'Ya hay una generación en curso.',
     'topic-complete-html':'🎉 ¡<strong>{topic}</strong> completado! Has terminado todas las tareas de este tema. Pon a prueba tus conocimientos con un quiz corto para marcar la tarjeta como dominada.',
     'course-load-failed':'No se pudo cargar el curso.','course-delete-title':'Eliminar curso',
     'course-delete-msg':'¿Eliminar el curso «{name}»? Todos los archivos, resúmenes y embeddings se eliminarán de forma permanente.',
@@ -4875,6 +4884,9 @@ const TRANSLATIONS = {
     'quiz-finish':'Terminer le quiz','quiz-finishing':'Finalisation…','quiz-mastered':'Carte marquée comme maîtrisée.',
     'quiz-skipped':'Ignoré. Tu peux marquer la carte comme terminée manuellement à tout moment.',
     'quiz-locked-hint':'Termine tous les exercices de ce sujet pour déverrouiller','quiz-gen-failed':'Échec de la génération du quiz.',
+    'worksheet-create':'Créer une feuille d\'exercices','worksheet-creating':'Création de la feuille…','worksheet-created':'✓ Feuille d\'exercices créée.',
+    'worksheet-locked-hint':'Termine d\'abord le quiz de ce sujet','worksheet-section-title':'Feuilles d\'exercices','worksheets-sidebar-title':'Feuilles d\'exercices',
+    'worksheet-gen-failed':'Échec de la génération de la feuille.','worksheet-exercises-label':'exercices','worksheet-busy':'Une génération est déjà en cours.',
     'topic-complete-html':'🎉 <strong>{topic}</strong> terminé ! Tu as fini tous les exercices de ce sujet. Teste tes connaissances avec un petit quiz pour marquer la carte comme maîtrisée.',
     'course-load-failed':'Le cours n\'a pas pu être chargé.','course-delete-title':'Supprimer le cours',
     'course-delete-msg':'Vraiment supprimer le cours « {name} » ? Tous les fichiers, résumés et embeddings seront supprimés définitivement.',
@@ -5120,7 +5132,8 @@ function isExerciseSheet(filename) {
 // ── Solved sheets (in-memory per session) ─────────────────────────────────────
 state.solvedSheets = [];   // [{path, name, solveData}]
 state.probeklausuren = [];  // [{n, generated, num_tasks, total_points}] — loaded from server
-state.topicQuizzes = [];    // [{topic_id, topic_name, generated_at, num_questions}] — loaded from server
+state.topicQuizzes = [];    // [{topic_id, topic_name, generated_at, num_questions, completed}] — loaded from server
+state.topicWorksheets = []; // [{worksheet_id, topic_id, topic_name, title, generated_at, num_exercises}] — from server
 
 function openSolution(sol) {
   const paneIdx = state.focusedPane;
@@ -5509,6 +5522,7 @@ function openWorkspace(moduleName, files) {
     disposeAllPdfFrames();
     state.solvedSheets = [];
     state.topicQuizzes = [];
+    state.topicWorksheets = [];
   }
   state.moduleName = moduleName;
   state.moduleFiles = files || [];
@@ -5530,7 +5544,7 @@ function openWorkspace(moduleName, files) {
 
   // Pre-load summaries + roadmap before restoring so saved tabs validate
   // and the left-panel sections (Roadmap + Zusammenfassungen) paint correctly.
-  Promise.all([loadSummaries(moduleName), loadSolutions(moduleName), loadRoadmapForCurrentModule(), loadProbeklausuren(moduleName), loadTopicQuizzes(moduleName)]).then(() => {
+  Promise.all([loadSummaries(moduleName), loadSolutions(moduleName), loadRoadmapForCurrentModule(), loadProbeklausuren(moduleName), loadTopicQuizzes(moduleName), loadTopicWorksheets(moduleName)]).then(() => {
     restoreWorkspace(moduleName);
     renderWorkspaceFiles(state.moduleFiles);
     renderPanes();
@@ -6023,7 +6037,78 @@ function renderWorkspaceFiles(files) {
     });
   }
 
+  // Worksheets ("Übungsblätter") section
+  if (state.topicWorksheets.length) {
+    const wsCollapsed = collapsedSections.includes('worksheets');
+    const wsHeader = document.createElement('div');
+    wsHeader.className = 'files-section-header' + (wsCollapsed ? ' collapsed' : '');
+    wsHeader.innerHTML = `<span>${escHtml(t('worksheets-sidebar-title'))}</span><span class="section-chevron">▼</span>`;
+    wsHeader.addEventListener('click', () => toggleSectionCollapse(state.moduleName, 'worksheets'));
+    filesPanel.appendChild(wsHeader);
+
+    if (!wsCollapsed) state.topicWorksheets.forEach(ws => {
+      const row = document.createElement('div');
+      row.className = 'file-row is-quiz';
+      row.dataset.path = `worksheet:${ws.worksheet_id}`;
+      row.innerHTML = `
+        <span class="file-icon">📝</span>
+        <div class="file-meta">
+          <div class="file-name" title="${escHtml(ws.title || ws.topic_name)}">${escHtml(ws.title || ws.topic_name)}</div>
+          <div class="file-sub">${ws.num_exercises} ${escHtml(t('worksheet-exercises-label'))} · ${escHtml(ws.generated_at || '—')}</div>
+        </div>
+        <div class="file-actions">
+          <button class="file-action-btn" data-action="menu" title="Optionen" style="font-size:1rem;letter-spacing:0.05em;">···</button>
+        </div>
+      `;
+      row.addEventListener('click', async e => {
+        const actionBtn = e.target.closest('.file-action-btn');
+        if (actionBtn) {
+          e.stopPropagation();
+          genFilePopup.open([
+            { label: t('menu-delete'), danger: true, fn: () => deleteTopicWorksheet(ws) },
+          ], actionBtn);
+          return;
+        }
+        try {
+          const res = await fetch(`/worksheet/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(ws.worksheet_id)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          openTopicWorksheetTab(ws.worksheet_id, data.title || ws.title, data);
+        } catch {}
+      });
+      filesPanel.appendChild(row);
+    });
+  }
+
   highlightActiveFileRow();
+}
+
+async function loadTopicWorksheets(moduleName) {
+  if (!moduleName) { state.topicWorksheets = []; return []; }
+  try {
+    const res = await fetch(`/worksheet/topic/${encodeURIComponent(moduleName)}`);
+    if (!res.ok) { state.topicWorksheets = []; return []; }
+    const data = await res.json();
+    state.topicWorksheets = data.worksheets || [];
+    return state.topicWorksheets;
+  } catch {
+    state.topicWorksheets = [];
+    return [];
+  }
+}
+
+async function deleteTopicWorksheet(ws) {
+  if (!state.moduleName) return;
+  setGlobalBusy(true, t('busy-deleting'));
+  try {
+    const res = await fetch(`/worksheet/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(ws.worksheet_id)}`, { method: 'DELETE' });
+    if (res.ok) {
+      state.topicWorksheets = state.topicWorksheets.filter(w => w.worksheet_id !== ws.worksheet_id);
+      renderWorkspaceFiles(state.moduleFiles);
+    }
+  } catch {} finally {
+    setGlobalBusy(false);
+  }
 }
 
 async function loadTopicQuizzes(moduleName) {
@@ -6727,52 +6812,83 @@ async function clearDailyHistory() {
   }
 }
 
-async function toggleDailyTask(topicId, taskIndex, done) {
-  if (!state.moduleName) return;
-  try {
-    const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/task`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic_id: topicId, task_index: taskIndex, done }),
-    });
-    if (!res.ok) { console.warn('[daily] toggle failed'); return; }
-    const toggleData = await res.json().catch(() => ({}));
-    if (state.dailyPlan) {
-      const t = (state.dailyPlan.topics || []).find(t => t.id === topicId);
-      if (t && t.tasks[taskIndex] !== undefined) t.tasks[taskIndex].done = done;
-      let doneCnt = 0, totalCnt = 0;
-      for (const topic of state.dailyPlan.topics || []) {
-        if (topic.id.endsWith('_review')) continue;
-        for (const task of topic.tasks || []) { totalCnt++; if (task.done) doneCnt++; }
-      }
-      state.dailyPlan.progress = { done: doneCnt, total: totalCnt };
+// Serializes daily-task PATCHes so two quick toggles can't race on the shared
+// plan markdown (the backend does a read-modify-write of one file per toggle).
+let _dailyPatchChain = Promise.resolve();
 
-      // Live-update the Wiederholung panel
-      const taskText = t?.tasks[taskIndex]?.text || '';
-      if (done) {
-        const newEntry = {
-          topic_id: topicId,
-          topic_name: t?.name || topicId,
-          task_text: taskText,
-          completed_date: new Date().toLocaleDateString('de-DE'),
-          isNew: true,
-        };
-        state.dailyReview = [newEntry, ...state.dailyReview.filter(e => e.task_text !== taskText)].slice(0, 3);
-      } else {
-        state.dailyReview = state.dailyReview.filter(e => e.task_text !== taskText);
-      }
-      const panel = document.getElementById('daily-review-panel');
-      if (panel) _renderDailyReview(panel);
-    }
-    refreshDailyView();
-
-    // Pool exhausted → congratulate and offer the completion quiz.
-    if (toggleData.card_completed) {
-      showCardCompletionPrompt(toggleData.topic_id || topicId, toggleData.topic_name || '');
-    }
-  } catch (err) {
-    console.warn('[daily] toggle error:', err);
+function _recalcDailyProgress() {
+  if (!state.dailyPlan) return;
+  let doneCnt = 0, totalCnt = 0;
+  for (const topic of state.dailyPlan.topics || []) {
+    if (topic.id.endsWith('_review')) continue;
+    for (const task of topic.tasks || []) { totalCnt++; if (task.done) doneCnt++; }
   }
+  state.dailyPlan.progress = { done: doneCnt, total: totalCnt };
+}
+
+function toggleDailyTask(topicId, taskIndex, done) {
+  if (!state.moduleName) return;
+
+  const plan = state.dailyPlan;
+  const topic = plan ? (plan.topics || []).find(t => t.id === topicId) : null;
+  const task = topic && topic.tasks[taskIndex] !== undefined ? topic.tasks[taskIndex] : null;
+  const prevDone = task ? task.done : null;
+  const prevReview = state.dailyReview;
+
+  // ── Optimistic update: reflect completion in the UI immediately, instead of
+  //    waiting for the backend write (several Supabase round-trips). ──
+  if (plan && task) {
+    task.done = done;
+    _recalcDailyProgress();
+
+    // Live-update the Wiederholung panel
+    const taskText = task.text || '';
+    if (done) {
+      const newEntry = {
+        topic_id: topicId,
+        topic_name: topic.name || topicId,
+        task_text: taskText,
+        completed_date: new Date().toLocaleDateString('de-DE'),
+        isNew: true,
+      };
+      state.dailyReview = [newEntry, ...state.dailyReview.filter(e => e.task_text !== taskText)].slice(0, 3);
+    } else {
+      state.dailyReview = state.dailyReview.filter(e => e.task_text !== taskText);
+    }
+    const panel = document.getElementById('daily-review-panel');
+    if (panel) _renderDailyReview(panel);
+  }
+  refreshDailyView();
+
+  // ── Persist in the background, serialized so concurrent toggles don't clobber
+  //    each other. The chain always resolves (errors are caught) so it can't stall. ──
+  _dailyPatchChain = _dailyPatchChain.then(async () => {
+    try {
+      const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/task`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic_id: topicId, task_index: taskIndex, done }),
+      });
+      if (!res.ok) throw new Error('toggle failed: ' + res.status);
+      const toggleData = await res.json().catch(() => ({}));
+
+      // Pool exhausted → congratulate and offer the completion quiz.
+      if (toggleData.card_completed) {
+        showCardCompletionPrompt(toggleData.topic_id || topicId, toggleData.topic_name || '');
+      }
+    } catch (err) {
+      console.warn('[daily] toggle failed, rolling back:', err);
+      // Server write failed → revert the optimistic change so UI matches truth.
+      if (plan && task && prevDone !== null) {
+        task.done = prevDone;
+        state.dailyReview = prevReview;
+        _recalcDailyProgress();
+        const panel = document.getElementById('daily-review-panel');
+        if (panel) _renderDailyReview(panel);
+        refreshDailyView();
+      }
+    }
+  });
 }
 
 // ── Topic completion quiz flow ──────────────────────────────────────────────
@@ -6856,6 +6972,122 @@ async function createTopicQuiz(topicId, topicName, card) {
     card.querySelectorAll('button').forEach(b => b.disabled = false);
     if (status) status.textContent = `${t('error-generic')}: ${err.message}`;
   }
+}
+
+// Generation is unlimited but strictly sequential: the button disables itself for the
+// duration, and the backend rejects a second concurrent request with 409.
+let _worksheetGenerating = false;
+
+async function createTopicWorksheet(topicId, topicName, card) {
+  if (_worksheetGenerating) return;
+  _worksheetGenerating = true;
+  const actions = card.querySelector('.chat-proposal-actions');
+  const status = card.querySelector('.chat-proposal-status');
+  card.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  if (status) status.textContent = '';
+  card.classList.add('quiz-loading');
+  const overlay = document.createElement('div');
+  overlay.className = 'quiz-loading-overlay';
+  overlay.innerHTML = `<div class="modal-spinner"></div><div class="quiz-loading-text">${t('worksheet-creating')}</div>`;
+  card.appendChild(overlay);
+
+  try {
+    const res = await fetch(`/worksheet/topic/${encodeURIComponent(state.moduleName)}/${encodeURIComponent(topicId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || t('worksheet-gen-failed'));
+    overlay.remove();
+    card.classList.remove('quiz-loading');
+    if (status) status.textContent = t('worksheet-created');
+    // Re-enable the button: the user may generate another worksheet straight away.
+    card.querySelectorAll('button').forEach(b => b.disabled = false);
+    openTopicWorksheetTab(data.worksheet_id, data.title || topicName, data);
+    await loadTopicWorksheets(state.moduleName);
+    renderWorkspaceFiles(state.moduleFiles);
+  } catch (err) {
+    overlay.remove();
+    card.classList.remove('quiz-loading');
+    card.querySelectorAll('button').forEach(b => b.disabled = false);
+    if (status) status.textContent = `${t('error-generic')}: ${err.message}`;
+  } finally {
+    _worksheetGenerating = false;
+  }
+}
+
+function openTopicWorksheetTab(worksheetId, title, worksheetData, paneIdx) {
+  if (paneIdx == null) paneIdx = state.focusedPane;
+  if (!state.panes[paneIdx]) state.panes[paneIdx] = { tabs: [], activeTab: '' };
+  const pane = state.panes[paneIdx];
+  const path = `worksheet:${worksheetId}`;
+  let tab = pane.tabs.find(t => t.path === path);
+  if (!tab) {
+    tab = { path, kind: 'worksheet', name: `Blatt: ${title}`, worksheetId, title, worksheetData };
+    pane.tabs.push(tab);
+  } else {
+    tab.worksheetData = worksheetData;
+    tab.title = title;
+  }
+  pane.activeTab = path;
+  state.focusedPane = paneIdx;
+  renderPanes();
+  highlightActiveFileRow();
+}
+
+function renderTopicWorksheetView(vp, tab) {
+  const p = document.createElement('div');
+  p.className = 'view-pane view-probeklausur active';
+  vp.appendChild(p);
+
+  const ws = tab.worksheetData || {};
+  const exercises = ws.exercises || [];
+
+  const header = document.createElement('div');
+  header.className = 'pk-header';
+  header.innerHTML = `
+    <div>
+      <h2>${escHtml(tab.title || ws.title || ws.topic_name || '')}</h2>
+      <div class="pk-meta-bar">${exercises.length} ${t('worksheet-exercises-label')} · ${escHtml(ws.topic_name || '')} · ${t('created-label')}: ${escHtml(ws.generated_at || '—')}</div>
+    </div>
+  `;
+  p.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = 'pk-body';
+
+  if (!exercises.length) {
+    body.innerHTML = `<div class="summary-cta"><strong>${t('worksheet-gen-failed')}</strong></div>`;
+    p.appendChild(body);
+    return;
+  }
+
+  exercises.forEach((q, i) => {
+    const qEl = document.createElement('div');
+    qEl.className = 'tq-question';
+    qEl.style.cssText = 'margin-bottom:22px;';
+    let optionsHtml = '';
+    if (q.type === 'multiple_choice' && Array.isArray(q.options)) {
+      optionsHtml = '<div class="tq-options" style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">' +
+        q.options.map((opt, oi) => `<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
+          <input type="radio" name="ws-q${i}" value="${oi}" style="margin-top:3px;flex:0 0 auto;">
+          <span>${escHtml(String(opt))}</span>
+        </label>`).join('') +
+      '</div>';
+    }
+    qEl.innerHTML = `
+      <div class="tq-question-text"><strong>${i + 1}.</strong> ${renderMarkdown(q.question || '')}</div>
+      ${optionsHtml}
+      <details class="pk-solution"><summary>${t('show-solution')}</summary>
+        <div class="pk-solution-body">${renderMarkdown(q.solution || '')}</div>
+      </details>
+    `;
+    body.appendChild(qEl);
+  });
+
+  p.appendChild(body);
+  requestAnimationFrame(() => renderMathIn(p));
 }
 
 function openTopicQuizTab(topicId, topicName, quizData, paneIdx) {
@@ -6959,9 +7191,11 @@ async function completeTopicQuiz(tab, btn, statusEl) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || t('error-generic'));
     tab.completed = true;
-    // Refresh the roadmap so the card turns green wherever it is shown.
+    // Refresh the roadmap so the card turns green wherever it is shown, and reload
+    // the quiz list so its `completed` flag flips — this unlocks the worksheet button
+    // in the card detail view without needing a full reload.
     state.roadmapLoadedFor = null;
-    await loadRoadmapForCurrentModule();
+    await Promise.all([loadRoadmapForCurrentModule(), loadTopicQuizzes(state.moduleName)]);
     renderPanes();
   } catch (err) {
     if (btn) btn.disabled = false;
@@ -7171,6 +7405,39 @@ function paintRoadmapDetail() {
   }
 
   detail.appendChild(quizSection);
+
+  // Practice-worksheet section — directly under the quiz section. Unlocks only when
+  // the card is done AND this topic's completion quiz has been completed.
+  const topicQuiz = (state.topicQuizzes || []).find(q => q.topic_id === t.id);
+  const worksheetUnlocked = t.status === 'done' && !!(topicQuiz && topicQuiz.completed);
+
+  const wsSection = document.createElement('div');
+  wsSection.className = 'rm-quiz-section';
+
+  const wsActions = document.createElement('div');
+  wsActions.className = 'chat-proposal-actions';
+  const wsBtn = document.createElement('button');
+  wsBtn.className = 'rm-quiz-btn' + (worksheetUnlocked ? '' : ' locked');
+  wsBtn.disabled = !worksheetUnlocked;
+  wsBtn.textContent = (worksheetUnlocked ? '✦ ' : '🔒 ') + _tr('worksheet-create');
+  wsActions.appendChild(wsBtn);
+
+  const wsStatusEl = document.createElement('div');
+  wsStatusEl.className = 'chat-proposal-status rm-quiz-status';
+
+  wsSection.appendChild(wsActions);
+  wsSection.appendChild(wsStatusEl);
+
+  if (!worksheetUnlocked) {
+    const lockMsg = document.createElement('div');
+    lockMsg.className = 'rm-quiz-lock-msg';
+    lockMsg.textContent = _tr('worksheet-locked-hint');
+    wsSection.appendChild(lockMsg);
+  } else {
+    wsBtn.addEventListener('click', () => createTopicWorksheet(t.id, t.name, wsSection));
+  }
+
+  detail.appendChild(wsSection);
 }
 
 function labelPrio(p) {
@@ -8092,6 +8359,8 @@ function buildViewport(pane, paneIdx) {
     renderProbeklausurView(vp, tab);
   } else if (tab.kind === 'quiz') {
     renderTopicQuizView(vp, tab);
+  } else if (tab.kind === 'worksheet') {
+    renderTopicWorksheetView(vp, tab);
   } else if (tab.kind === 'summary') {
     renderSummaryFileView(vp, tab);
   } else if (tab.kind === 'solution') {

@@ -50,15 +50,15 @@ def task_history_path(module_name: str):
     return _slug_for(module_name) + "/task_history.json"
 
 
-def load_plan(module_name: str) -> Optional[str]:
+def load_plan(module_name: str, slug: Optional[str] = None) -> Optional[str]:
     from app.storage import storage_backend as sb
-    slug = _slug_for(module_name)
+    slug = slug or _slug_for(module_name)
     return sb.read_text(f"{slug}/daily_plan.md")
 
 
-def save_plan(module_name: str, md: str) -> str:
+def save_plan(module_name: str, md: str, slug: Optional[str] = None) -> str:
     from app.storage import storage_backend as sb
-    slug = _slug_for(module_name)
+    slug = slug or _slug_for(module_name)
     path = f"{slug}/daily_plan.md"
     sb.write_text(path, md)
     return path
@@ -66,10 +66,10 @@ def save_plan(module_name: str, md: str) -> str:
 
 # ─────────────────────────── Task history ───────────────────────────────────
 
-def load_task_history(module_name: str) -> List[Dict[str, Any]]:
+def load_task_history(module_name: str, slug: Optional[str] = None) -> List[Dict[str, Any]]:
     """Load completed-task history."""
     from app.storage import storage_backend as sb
-    slug = _slug_for(module_name)
+    slug = slug or _slug_for(module_name)
     raw = sb.read_text(f"{slug}/task_history.json")
     if not raw:
         return []
@@ -79,9 +79,9 @@ def load_task_history(module_name: str) -> List[Dict[str, Any]]:
         return []
 
 
-def _save_task_history(module_name: str, history: List[Dict[str, Any]]) -> None:
+def _save_task_history(module_name: str, history: List[Dict[str, Any]], slug: Optional[str] = None) -> None:
     from app.storage import storage_backend as sb
-    slug = _slug_for(module_name)
+    slug = slug or _slug_for(module_name)
     sb.write_text(f"{slug}/task_history.json", json.dumps(history, ensure_ascii=False, indent=2))
 
 
@@ -111,10 +111,10 @@ def load_dashboard_bundle(module_name: str, slug: Optional[str] = None):
 
 
 def record_completed_task(
-    module_name: str, topic_id: str, topic_name: str, task_text: str
+    module_name: str, topic_id: str, topic_name: str, task_text: str, slug: Optional[str] = None
 ) -> None:
     """Append a completed task to history (idempotent — skips if already recorded today)."""
-    history = load_task_history(module_name)
+    history = load_task_history(module_name, slug)
     today = date.today().isoformat()
     already = any(
         e["topic_id"] == topic_id and e["task_text"] == task_text
@@ -127,17 +127,17 @@ def record_completed_task(
             "task_text": task_text,
             "completed_date": today,
         })
-        _save_task_history(module_name, history)
+        _save_task_history(module_name, history, slug)
 
 
-def remove_completed_task(module_name: str, topic_id: str, task_text: str) -> None:
+def remove_completed_task(module_name: str, topic_id: str, task_text: str, slug: Optional[str] = None) -> None:
     """Remove a task from history (used when user un-checks a task)."""
-    history = load_task_history(module_name)
+    history = load_task_history(module_name, slug)
     history = [
         e for e in history
         if not (e["topic_id"] == topic_id and e["task_text"] == task_text)
     ]
-    _save_task_history(module_name, history)
+    _save_task_history(module_name, history, slug)
 
 
 def get_completed_texts_for_topic(module_name: str, topic_id: str) -> List[str]:
@@ -306,7 +306,12 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
     """
     from . import topic_pool as tp
 
-    md = load_plan(module_name)
+    # Resolve the storage slug ONCE and thread it through every read/write below.
+    # Otherwise each helper re-resolves it via _slug_for → mp.load (a DB round-trip),
+    # turning a single toggle into ~7 redundant profile lookups.
+    slug = _slug_for(module_name)
+
+    md = load_plan(module_name, slug)
     if not md:
         raise ValueError("Kein aktiver Plan vorhanden.")
 
@@ -331,9 +336,9 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
                     lines[i] = f"- [{mark}] {tk.group('text')}"
                     task_text = _MIN_RE.sub("", tk.group("text")).strip()
                     if done:
-                        record_completed_task(module_name, topic_id, current_topic_name, task_text)
+                        record_completed_task(module_name, topic_id, current_topic_name, task_text, slug)
                     else:
-                        remove_completed_task(module_name, topic_id, task_text)
+                        remove_completed_task(module_name, topic_id, task_text, slug)
                     break
                 task_count += 1
 
@@ -341,16 +346,16 @@ def toggle_task(module_name: str, topic_id: str, task_index: int, done: bool) ->
     if not updated.endswith("\n"):
         updated += "\n"
     updated = _refresh_progress(updated)
-    save_plan(module_name, updated)
+    save_plan(module_name, updated, slug)
 
     # Mirror the toggle into the topic pool. Review cards (`tX_review`) have no pool.
     card_completed = False
     if task_text and not topic_id.endswith("_review"):
         if done:
-            tp.mark_task_done(module_name, topic_id, task_text)
-            card_completed = tp.is_pool_complete(module_name, topic_id)
+            tp.mark_task_done(module_name, topic_id, task_text, slug)
+            card_completed = tp.is_pool_complete(module_name, topic_id, slug)
         else:
-            tp.unmark_task(module_name, topic_id, task_text)
+            tp.unmark_task(module_name, topic_id, task_text, slug)
 
     return {
         "md": updated,

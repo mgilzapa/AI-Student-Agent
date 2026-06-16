@@ -40,7 +40,7 @@ SAMPLE_POOL = {
 
 
 def _patch_load(monkeypatch, pool):
-    monkeypatch.setattr(tp, "load_pool", lambda m, tid: pool)
+    monkeypatch.setattr(tp, "load_pool", lambda m, tid, slug=None: pool)
 
 
 # ─────────────────────────── get_next_tasks ─────────────────────────────────
@@ -68,8 +68,8 @@ def test_get_next_tasks_no_pool_returns_empty(monkeypatch):
 def test_mark_task_done_sets_flag_and_saves(monkeypatch):
     pool = copy.deepcopy(SAMPLE_POOL)
     saved = {}
-    monkeypatch.setattr(tp, "load_pool", lambda m, tid: pool)
-    monkeypatch.setattr(tp, "save_pool", lambda m, tid, p: saved.update({"pool": p}))
+    monkeypatch.setattr(tp, "load_pool", lambda m, tid, slug=None: pool)
+    monkeypatch.setattr(tp, "save_pool", lambda m, tid, p, slug=None: saved.update({"pool": p}))
     tp.mark_task_done("M", "t3", "Task B")
     assert pool["tasks"][1]["done"] is True
     assert saved["pool"]["tasks"][1]["done"] is True
@@ -78,8 +78,8 @@ def test_mark_task_done_sets_flag_and_saves(monkeypatch):
 def test_mark_task_done_unknown_text_does_not_save(monkeypatch):
     pool = copy.deepcopy(SAMPLE_POOL)
     calls = []
-    monkeypatch.setattr(tp, "load_pool", lambda m, tid: pool)
-    monkeypatch.setattr(tp, "save_pool", lambda m, tid, p: calls.append(p))
+    monkeypatch.setattr(tp, "load_pool", lambda m, tid, slug=None: pool)
+    monkeypatch.setattr(tp, "save_pool", lambda m, tid, p, slug=None: calls.append(p))
     tp.mark_task_done("M", "t3", "Does not exist")
     assert calls == []
 
@@ -87,8 +87,8 @@ def test_mark_task_done_unknown_text_does_not_save(monkeypatch):
 def test_unmark_task_clears_flag_and_saves(monkeypatch):
     pool = {"tasks": [{"text": "A", "done": True}]}
     saved = {}
-    monkeypatch.setattr(tp, "load_pool", lambda m, tid: pool)
-    monkeypatch.setattr(tp, "save_pool", lambda m, tid, p: saved.update({"pool": p}))
+    monkeypatch.setattr(tp, "load_pool", lambda m, tid, slug=None: pool)
+    monkeypatch.setattr(tp, "save_pool", lambda m, tid, p, slug=None: saved.update({"pool": p}))
     tp.unmark_task("M", "t3", "A")
     assert pool["tasks"][0]["done"] is False
     assert saved["pool"]["tasks"][0]["done"] is False

@@ -18,9 +18,16 @@ SAMPLE_MD = """\
 """
 
 
-def _wire(monkeypatch, md_box):
-    monkeypatch.setattr(dt, "load_plan", lambda m: md_box["md"])
-    monkeypatch.setattr(dt, "save_plan", lambda m, md: md_box.update({"md": md}))
+def _wire(monkeypatch, md_box, slug_calls=None):
+    # toggle_task resolves the slug once and threads it through; mock _slug_for so
+    # the test never touches Supabase, and (optionally) count the resolutions.
+    def _slug(m):
+        if slug_calls is not None:
+            slug_calls.append(m)
+        return "analysis"
+    monkeypatch.setattr(dt, "_slug_for", _slug)
+    monkeypatch.setattr(dt, "load_plan", lambda m, slug=None: md_box["md"])
+    monkeypatch.setattr(dt, "save_plan", lambda m, md, slug=None: md_box.update({"md": md}))
     monkeypatch.setattr(dt, "record_completed_task", lambda *a, **k: None)
     monkeypatch.setattr(dt, "remove_completed_task", lambda *a, **k: None)
 
@@ -29,8 +36,8 @@ def test_toggle_task_returns_md_and_marks_pool(monkeypatch):
     md_box = {"md": SAMPLE_MD}
     _wire(monkeypatch, md_box)
     marked = []
-    monkeypatch.setattr(tp, "mark_task_done", lambda m, tid, txt: marked.append((tid, txt)))
-    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid: False)
+    monkeypatch.setattr(tp, "mark_task_done", lambda m, tid, txt, slug=None: marked.append((tid, txt)))
+    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid, slug=None: False)
 
     result = dt.toggle_task("Analysis", "t1", 0, True)
 
@@ -42,8 +49,8 @@ def test_toggle_task_returns_md_and_marks_pool(monkeypatch):
 def test_toggle_task_card_completed_when_pool_done(monkeypatch):
     md_box = {"md": SAMPLE_MD}
     _wire(monkeypatch, md_box)
-    monkeypatch.setattr(tp, "mark_task_done", lambda m, tid, txt: None)
-    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid: True)
+    monkeypatch.setattr(tp, "mark_task_done", lambda m, tid, txt, slug=None: None)
+    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid, slug=None: True)
 
     result = dt.toggle_task("Analysis", "t1", 1, True)
 
@@ -56,14 +63,28 @@ def test_toggle_task_uncheck_unmarks_pool_and_not_completed(monkeypatch):
     md_box = {"md": SAMPLE_MD.replace("- [ ] Task B", "- [x] Task B")}
     _wire(monkeypatch, md_box)
     unmarked = []
-    monkeypatch.setattr(tp, "unmark_task", lambda m, tid, txt: unmarked.append((tid, txt)))
+    monkeypatch.setattr(tp, "unmark_task", lambda m, tid, txt, slug=None: unmarked.append((tid, txt)))
     # Even if the pool reports complete, un-checking must not signal completion.
-    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid: True)
+    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid, slug=None: True)
 
     result = dt.toggle_task("Analysis", "t1", 0, False)
 
     assert result["card_completed"] is False
     assert unmarked == [("t1", "Task B")]
+
+
+def test_toggle_task_resolves_slug_once(monkeypatch):
+    """A single toggle must resolve the slug exactly once — every storage helper
+    receives the cached slug instead of re-querying the module profile."""
+    md_box = {"md": SAMPLE_MD}
+    slug_calls = []
+    _wire(monkeypatch, md_box, slug_calls)
+    monkeypatch.setattr(tp, "mark_task_done", lambda m, tid, txt, slug=None: None)
+    monkeypatch.setattr(tp, "is_pool_complete", lambda m, tid, slug=None: False)
+
+    dt.toggle_task("Analysis", "t1", 0, True)
+
+    assert slug_calls == ["Analysis"]
 
 
 def test_generate_uses_existing_pool(monkeypatch):

@@ -55,6 +55,7 @@ from app.lecture.summarizer import summarize
 from app.lecture import exam_generator as eg
 from app.lecture import daily_tasks as dt
 from app.lecture import topic_quiz as tq
+from app.lecture import topic_worksheet as tw
 from app.chat import orchestrator as chat_orchestrator
 from app.chat import tools as chat_tools
 
@@ -85,6 +86,7 @@ RL_CHAT = os.getenv("RATELIMIT_CHAT", "15/minute")             # light: /ask, /a
 RL_HEAVY = os.getenv("RATELIMIT_HEAVY", "5/minute")            # heavy: generation endpoints
 RL_HEAVY_DAILY = os.getenv("RATELIMIT_HEAVY_DAILY", "50/day")  # shared per-user daily budget
 RL_UPLOAD = os.getenv("RATELIMIT_UPLOAD", "10/minute")         # uploads: parsing + paid embeddings
+RL_WORKSHEET = os.getenv("RATELIMIT_WORKSHEET", "10/minute")   # worksheet gen: unlimited/day, only throttled per-minute
 _RL_ENABLED = os.getenv("RATELIMIT_ENABLED", "1").lower() not in ("0", "false", "no")
 
 # Chat orchestrator model: Claude Haiku for reliable tool-calling routing.
@@ -135,6 +137,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
 # Shared daily budget: every heavy LLM endpoint draws from ONE per-user/day bucket.
 _heavy_daily = limiter.shared_limit(RL_HEAVY_DAILY, scope="llm_heavy_daily")
+
+# Per-user "only one at a time" guard for unlimited worksheet generation. In-process
+# set of user-ids with a generation in flight — single-worker uvicorn, same assumption
+# as the in-memory rate-limit storage above. A second concurrent request → 409.
+_worksheet_inflight: set = set()
 
 client = OpenAI()
 anthropic_client = Anthropic()                 # real Claude: file generation, router, solver
@@ -2779,7 +2786,93 @@ def topic_quiz_complete(module_name: str, topic_id: str):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     rm.save_roadmap_md(clean, md)
+    # Stamp the quiz as completed so the practice-worksheet feature can unlock
+    # (requires both: card done AND quiz completed).
+    tq.mark_completed(clean, topic_id)
     return {"success": True}
+
+
+# ─────────────────────── Topic practice worksheet endpoints ───────────────────
+# A worksheet ("Übungsblatt") is a topic-scoped sheet of fresh practice exercises in
+# the style of the course materials. Unlike the quiz it does NOT gate completion and
+# is unlimited per day — only throttled per-minute and serialized per user.
+
+@app.get("/worksheet/topic/{module_name}")
+def topic_worksheet_list(module_name: str):
+    """List metadata of all saved practice worksheets for a module."""
+    clean = sanitize_module_name(module_name)
+    return {"worksheets": tw.list_worksheets(clean)}
+
+
+@app.get("/worksheet/topic/{module_name}/{worksheet_id}")
+def topic_worksheet_get(module_name: str, worksheet_id: str):
+    """Load a saved worksheet without regenerating it."""
+    clean = sanitize_module_name(module_name)
+    worksheet = tw.load_worksheet(clean, worksheet_id)
+    if not worksheet:
+        raise HTTPException(status_code=404, detail="Übungsblatt nicht gefunden.")
+    return {"success": True, **worksheet}
+
+
+@app.delete("/worksheet/topic/{module_name}/{worksheet_id}")
+def topic_worksheet_delete(module_name: str, worksheet_id: str):
+    """Delete a saved worksheet."""
+    clean = sanitize_module_name(module_name)
+    deleted = tw.delete_worksheet(clean, worksheet_id)
+    return {"success": deleted}
+
+
+@app.post("/worksheet/topic/{module_name}/{topic_id}")
+@limiter.limit(RL_WORKSHEET)
+async def topic_worksheet_generate(request: Request, module_name: str, topic_id: str):
+    """Generate (and persist) a new practice worksheet for a roadmap topic.
+
+    Unlimited per day; throttled per-minute by RL_WORKSHEET and serialized per user
+    via an in-flight guard so only one generation runs at a time.
+    """
+    uid = _supa_uid()
+    if uid in _worksheet_inflight:
+        raise HTTPException(
+            status_code=409,
+            detail="Es läuft bereits eine Generierung. Bitte warte, bis sie fertig ist.",
+        )
+
+    clean = sanitize_module_name(module_name)
+    roadmap_md = rm.load_roadmap_md(clean)
+    if not roadmap_md:
+        raise HTTPException(status_code=404, detail="Keine Roadmap gefunden.")
+    roadmap_data = rm.parse_md(roadmap_md)
+    topic = _find_roadmap_topic(roadmap_data, topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail=f"Thema {topic_id} nicht gefunden.")
+
+    # Unlock gate (defense in depth — the frontend already hides the button): the
+    # card must be done AND its quiz completed.
+    if topic.get("status") != "done":
+        raise HTTPException(status_code=403, detail="Schließe zuerst dieses Thema ab.")
+    topic_quiz = tq.load_quiz(clean, topic_id)
+    if not topic_quiz or not topic_quiz.get("completed_at"):
+        raise HTTPException(status_code=403, detail="Schließe zuerst das Quiz dieses Themas ab.")
+
+    name = topic.get("name", "")
+    subtopics = topic.get("subtopics") or []
+    rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
+
+    _worksheet_inflight.add(uid)
+    try:
+        rag_context = await asyncio.to_thread(
+            _course_context_excluding_generated,
+            clean,
+            rag_query or "Wichtige Konzepte, Aufgaben und Methoden.",
+            10,
+        )
+        worksheet = await asyncio.to_thread(tw.generate, clean, topic, rag_context)
+    except Exception as exc:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Übungsblatt-Generierung fehlgeschlagen: {exc}")
+    finally:
+        _worksheet_inflight.discard(uid)
+    return {"success": True, **worksheet}
 
 
 # ─────────────────────── Account: Datenexport & -löschung (DSGVO) ─────────────

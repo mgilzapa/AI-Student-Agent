@@ -17,13 +17,13 @@ def _slug_for(module_name: str) -> str:
     return profile["slug"] if profile else mp._slugify(module_name)
 
 
-def _pool_path(module_name: str, topic_id: str) -> str:
-    return f"{_slug_for(module_name)}/topic_pool_{topic_id}.json"
+def _pool_path(module_name: str, topic_id: str, slug: Optional[str] = None) -> str:
+    return f"{slug or _slug_for(module_name)}/topic_pool_{topic_id}.json"
 
 
-def load_pool(module_name: str, topic_id: str) -> Optional[Dict[str, Any]]:
+def load_pool(module_name: str, topic_id: str, slug: Optional[str] = None) -> Optional[Dict[str, Any]]:
     from app.storage import storage_backend as sb
-    raw = sb.read_text(_pool_path(module_name, topic_id))
+    raw = sb.read_text(_pool_path(module_name, topic_id, slug))
     if not raw:
         return None
     try:
@@ -32,10 +32,10 @@ def load_pool(module_name: str, topic_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def save_pool(module_name: str, topic_id: str, pool: Dict[str, Any]) -> None:
+def save_pool(module_name: str, topic_id: str, pool: Dict[str, Any], slug: Optional[str] = None) -> None:
     from app.storage import storage_backend as sb
     sb.write_text(
-        _pool_path(module_name, topic_id),
+        _pool_path(module_name, topic_id, slug),
         json.dumps(pool, ensure_ascii=False, indent=2),
     )
 
@@ -76,33 +76,33 @@ def get_tasks_for_hours(module_name: str, topic_id: str, hours: float) -> List[D
     return result
 
 
-def mark_task_done(module_name: str, topic_id: str, task_text: str) -> None:
+def mark_task_done(module_name: str, topic_id: str, task_text: str, slug: Optional[str] = None) -> None:
     """Mark the first matching open task done in the pool and persist."""
-    pool = load_pool(module_name, topic_id)
+    pool = load_pool(module_name, topic_id, slug)
     if not pool:
         return
     for t in pool.get("tasks") or []:
         if t.get("text") == task_text and not t.get("done"):
             t["done"] = True
-            save_pool(module_name, topic_id, pool)
+            save_pool(module_name, topic_id, pool, slug)
             return
 
 
-def unmark_task(module_name: str, topic_id: str, task_text: str) -> None:
+def unmark_task(module_name: str, topic_id: str, task_text: str, slug: Optional[str] = None) -> None:
     """Re-open a pool task (used when the user un-checks it in the daily plan)."""
-    pool = load_pool(module_name, topic_id)
+    pool = load_pool(module_name, topic_id, slug)
     if not pool:
         return
     for t in pool.get("tasks") or []:
         if t.get("text") == task_text and t.get("done"):
             t["done"] = False
-            save_pool(module_name, topic_id, pool)
+            save_pool(module_name, topic_id, pool, slug)
             return
 
 
-def is_pool_complete(module_name: str, topic_id: str) -> bool:
+def is_pool_complete(module_name: str, topic_id: str, slug: Optional[str] = None) -> bool:
     """True only if the pool exists, has tasks, and every task is done."""
-    pool = load_pool(module_name, topic_id)
+    pool = load_pool(module_name, topic_id, slug)
     tasks = (pool.get("tasks") if pool else None) or []
     if not tasks:
         return False
