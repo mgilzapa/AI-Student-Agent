@@ -2200,6 +2200,38 @@
   }
   .rm-quiz-status { font-size: 0.78rem; color: var(--muted); }
 
+  /* Read-only task list mirrored from the topic's pre-generated pool */
+  .rm-tasks-section {
+    margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .rm-tasks-header {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .rm-tasks-count { font-size: 0.7rem; letter-spacing: 0.02em; }
+  .rm-tasks-list { display: flex; flex-direction: column; gap: 5px; }
+  .rm-tasks-empty {
+    font-size: 0.72rem; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+  }
+  .rm-task-row {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 8px 11px; border-radius: 8px;
+    background: var(--panel-soft); border: 1px solid var(--border);
+    font-size: 0.82rem; line-height: 1.45; color: var(--text);
+  }
+  .rm-task-check { color: var(--muted); flex-shrink: 0; line-height: 1.45; }
+  .rm-task-text { flex: 1; min-width: 0; }
+  .rm-task-min {
+    flex-shrink: 0; color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; line-height: 1.45;
+  }
+  .rm-task-row.done { opacity: 0.5; }
+  .rm-task-row.done .rm-task-text { text-decoration: line-through; }
+  .rm-task-row.done .rm-task-check { color: var(--accent); }
+
   /* Quiz creation loading: blur the card content, center a spinner + sentence over it */
   .quiz-loading > :not(.quiz-loading-overlay) {
     filter: blur(3px); opacity: 0.45; pointer-events: none;
@@ -4291,6 +4323,8 @@ const TRANSLATIONS = {
     'error-generic':'Fehler','failed-generic':'Fehlgeschlagen.','created-generic':'✓ Erstellt.','open-generic':'Öffnen',
     'delete-failed':'Löschen fehlgeschlagen','rename-failed':'Umbenennen fehlgeschlagen','add-failed':'Hinzufügen fehlgeschlagen',
     'accept-failed':'Übernehmen fehlgeschlagen','action-failed':'Aktion fehlgeschlagen','unknown-action':'Unbekannte Aktion',
+    'pool-gen-start':'Aufgaben-Pools werden erstellt …','pool-extend-progress':'Thema „{topic}" erweitert (+{added} Aufgaben) …','pool-extend-summary':'✅ {topics} Thema/Themen um {added} neue Aufgaben aus dem Upload erweitert.','pool-gen-progress':'Aufgaben-Pools werden erstellt … {done}/{total} Themen','pool-gen-incomplete':'Roadmap gespeichert, aber nicht alle Aufgaben-Pools konnten erstellt werden. „Tasks generieren" ergänzt den Rest.',
+    'rm-tasks-header':'Aufgaben','rm-tasks-empty':'Noch keine Aufgaben — Roadmap neu generieren oder „Tasks generieren".',
     'takes-moment':'Das kann einen Moment dauern','no-server-answer':'Keine Antwort vom Server.','nothing-found':'Nichts gefunden.',
     'saved-other-module':' (in einem anderen Modul gespeichert)',
     'chat-no-answer':'Ich konnte keine Antwort erzeugen.','chat-conn-error':'Fehler beim Verbinden mit dem Server.',
@@ -4482,6 +4516,8 @@ const TRANSLATIONS = {
     'error-generic':'Error','failed-generic':'Failed.','created-generic':'✓ Created.','open-generic':'Open',
     'delete-failed':'Delete failed','rename-failed':'Rename failed','add-failed':'Adding failed',
     'accept-failed':'Accept failed','action-failed':'Action failed','unknown-action':'Unknown action',
+    'pool-gen-start':'Generating task pools …','pool-extend-progress':'Extended topic "{topic}" (+{added} tasks) …','pool-extend-summary':'✅ Extended {topics} topic(s) with {added} new tasks from your upload.','pool-gen-progress':'Generating task pools … {done}/{total} topics','pool-gen-incomplete':'Roadmap saved, but some task pools could not be generated. "Generate tasks" will fill in the rest.',
+    'rm-tasks-header':'Tasks','rm-tasks-empty':'No tasks yet — regenerate the roadmap or use "Generate tasks".',
     'takes-moment':'This may take a moment','no-server-answer':'No response from the server.','nothing-found':'Nothing found.',
     'saved-other-module':' (saved in another module)',
     'chat-no-answer':'I could not generate a response.','chat-conn-error':'Error connecting to the server.',
@@ -4673,6 +4709,8 @@ const TRANSLATIONS = {
     'error-generic':'Error','failed-generic':'Falló.','created-generic':'✓ Creado.','open-generic':'Abrir',
     'delete-failed':'Error al eliminar','rename-failed':'Error al renombrar','add-failed':'Error al añadir',
     'accept-failed':'Error al aceptar','action-failed':'La acción falló','unknown-action':'Acción desconocida',
+    'pool-gen-start':'Generando listas de tareas …','pool-extend-progress':'Tema «{topic}» ampliado (+{added} tareas) …','pool-extend-summary':'✅ {topics} tema(s) ampliados con {added} nuevas tareas de tu carga.','pool-gen-progress':'Generando listas de tareas … {done}/{total} temas','pool-gen-incomplete':'Hoja de ruta guardada, pero algunas listas de tareas no se pudieron generar. «Generar tareas» completará el resto.',
+    'rm-tasks-header':'Tareas','rm-tasks-empty':'Aún no hay tareas — vuelve a generar la hoja de ruta o usa «Generar tareas».',
     'takes-moment':'Esto puede tardar un momento','no-server-answer':'Sin respuesta del servidor.','nothing-found':'No se encontró nada.',
     'saved-other-module':' (guardado en otro módulo)',
     'chat-no-answer':'No pude generar una respuesta.','chat-conn-error':'Error al conectar con el servidor.',
@@ -4864,6 +4902,8 @@ const TRANSLATIONS = {
     'error-generic':'Erreur','failed-generic':'Échec.','created-generic':'✓ Créé.','open-generic':'Ouvrir',
     'delete-failed':'Échec de la suppression','rename-failed':'Échec du renommage','add-failed':'Échec de l\'ajout',
     'accept-failed':'Échec de l\'acceptation','action-failed':'Échec de l\'action','unknown-action':'Action inconnue',
+    'pool-gen-start':'Génération des listes de tâches …','pool-extend-progress':'Thème « {topic} » enrichi (+{added} tâches) …','pool-extend-summary':'✅ {topics} thème(s) enrichi(s) de {added} nouvelles tâches issues de votre import.','pool-gen-progress':'Génération des listes de tâches … {done}/{total} thèmes','pool-gen-incomplete':'Feuille de route enregistrée, mais certaines listes de tâches n\'ont pas pu être générées. « Générer les tâches » complétera le reste.',
+    'rm-tasks-header':'Tâches','rm-tasks-empty':'Pas encore de tâches — régénérez la feuille de route ou utilisez « Générer les tâches ».',
     'takes-moment':'Cela peut prendre un instant','no-server-answer':'Pas de réponse du serveur.','nothing-found':'Rien trouvé.',
     'saved-other-module':' (enregistré dans un autre module)',
     'chat-no-answer':'Je n\'ai pas pu générer de réponse.','chat-conn-error':'Erreur de connexion au serveur.',
@@ -5506,6 +5546,8 @@ async function uploadModule() {
     autoPopulateFolderConfig(data.module_name, data.files || []);
     openWorkspace(data.module_name, data.files || []);
     resetUploadForm();
+    // Newly uploaded files may extend existing topic pools (no-op without a roadmap).
+    extendPoolsAfterUpload(data.module_name, data.saved_files || []);
   } catch (err) {
     setStatus(err.message || t('upload-failed'), 'error');
   } finally {
@@ -7438,6 +7480,46 @@ function paintRoadmapDetail() {
   }
 
   detail.appendChild(wsSection);
+
+  // Read-only task list for this topic, drawn from the pre-generated pool.
+  // Checking off happens only in the Tasks board; here it mirrors pool.done.
+  const tasksSection = document.createElement('div');
+  tasksSection.className = 'rm-tasks-section';
+  tasksSection.innerHTML =
+    `<div class="rm-tasks-header"><span>${_tr('rm-tasks-header')}</span>` +
+    `<span class="rm-tasks-count"></span></div>` +
+    `<div class="rm-tasks-list"><div class="rm-tasks-empty">…</div></div>`;
+  detail.appendChild(tasksSection);
+  loadTopicTasksReadonly(t.id, tasksSection);
+}
+
+async function loadTopicTasksReadonly(topicId, sectionEl) {
+  const _tr = (key) => (TRANSLATIONS[currentLang] || TRANSLATIONS.de)[key] || key;
+  const listEl = sectionEl.querySelector('.rm-tasks-list');
+  const countEl = sectionEl.querySelector('.rm-tasks-count');
+  try {
+    const res = await fetch(`/daily/${encodeURIComponent(state.moduleName)}/pool/${encodeURIComponent(topicId)}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    // The user may have clicked another topic while this was in flight.
+    if (state.roadmapTopicId !== topicId || !document.body.contains(sectionEl)) return;
+    if (!data.exists || !(data.tasks || []).length) {
+      listEl.innerHTML = `<div class="rm-tasks-empty">${_tr('rm-tasks-empty')}</div>`;
+      return;
+    }
+    if (countEl && data.progress) countEl.textContent = `${data.progress.done}/${data.progress.total}`;
+    // Open tasks first; completed ones sink to the bottom.
+    const tasks = data.tasks.slice().sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1));
+    listEl.innerHTML = tasks.map(tk =>
+      `<div class="rm-task-row${tk.done ? ' done' : ''}">` +
+        `<span class="rm-task-check">${tk.done ? '✓' : '○'}</span>` +
+        `<span class="rm-task-text">${escHtml(tk.text)}</span>` +
+        `<span class="rm-task-min">${tk.minutes}m</span>` +
+      `</div>`).join('');
+  } catch {
+    if (state.roadmapTopicId !== topicId || !document.body.contains(sectionEl)) return;
+    listEl.innerHTML = `<div class="rm-tasks-empty">${_tr('rm-tasks-empty')}</div>`;
+  }
 }
 
 function labelPrio(p) {
@@ -7585,15 +7667,60 @@ async function runRoadmapGenerate() {
 
 async function acceptPendingRoadmap(_tab) {
   if (!state.moduleName) return;
+  setGlobalBusy(true, t('pool-gen-start'));
   try {
-    const res = await fetch(`/roadmap/${encodeURIComponent(state.moduleName)}/accept`, { method: 'POST' });
-    if (!res.ok) throw new Error(t('accept-failed'));
+    // The stream endpoint saves the roadmap server-side immediately, then
+    // pre-generates every topic's task pool and reports X/Y progress.
+    for await (const msg of streamSteps(`/roadmap/${encodeURIComponent(state.moduleName)}/accept/stream`, {})) {
+      if (msg.type === 'progress') {
+        setGlobalBusy(true, tf('pool-gen-progress', { done: msg.done, total: msg.total }));
+      } else if (msg.type === 'error') {
+        // Roadmap is already saved; some pools may be missing. The lazy path and
+        // "Tasks generieren" backfill the rest — just warn, don't fail the accept.
+        addMsg('agent', `⚠️ ${t('pool-gen-incomplete')}`);
+        break;
+      } else if (msg.type === 'done') {
+        break;
+      }
+    }
     state.roadmapPending = null;
     await loadRoadmapForCurrentModule();
     await refreshModuleFiles();  // updates the Roadmap entry in the left files panel
     renderPanes();
   } catch (err) {
     addMsg('agent', `❌ ${t('accept-failed')}: ${err.message}`);
+  } finally {
+    setGlobalBusy(false);
+  }
+}
+
+// After an upload, extend existing topic pools with the new files (SSE). Runs in
+// the background — silent when no roadmap exists or nothing matches the new files.
+async function extendPoolsAfterUpload(moduleName, files) {
+  if (!moduleName || !Array.isArray(files) || !files.length) return;
+  let tasksAdded = 0, topicsExtended = 0;
+  try {
+    for await (const msg of streamSteps(`/modules/${encodeURIComponent(moduleName)}/extend-pools`, { files })) {
+      if (msg.type === 'progress') {
+        if (msg.added > 0) setGlobalBusy(true, tf('pool-extend-progress', { topic: msg.topic, added: msg.added }));
+      } else if (msg.type === 'done') {
+        tasksAdded = msg.tasks_added || 0;
+        topicsExtended = msg.topics_extended || 0;
+        break;
+      } else if (msg.type === 'error') {
+        break;
+      }
+    }
+  } catch (_) {
+    // Background enhancement — never surface as an upload-blocking error.
+  } finally {
+    setGlobalBusy(false);
+  }
+  if (tasksAdded > 0) {
+    addMsg('agent', tf('pool-extend-summary', { topics: topicsExtended, added: tasksAdded }));
+    if (state.moduleName === moduleName) {
+      try { await loadRoadmapForCurrentModule(); } catch (_) {}
+    }
   }
 }
 

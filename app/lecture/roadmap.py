@@ -16,6 +16,7 @@ import json
 import logging
 import re
 from datetime import date
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
@@ -200,58 +201,53 @@ def generate(
         old_roadmap_section=old_section,
     )
 
-    response = _get_client().messages.create(
+    # Stream the response: roadmap JSON can be large, and a non-streaming call
+    # capped at a low max_tokens silently truncates the JSON mid-string (the LLM
+    # hits the cap, the array is never closed, and json.loads raises
+    # "Unterminated string"). Streaming also avoids SDK HTTP timeouts at high
+    # max_tokens. 32000 gives ample headroom for the biggest roadmaps
+    # (Sonnet 4.6 caps at 64K output).
+    with _get_client().messages.stream(
         model=MODEL,
-        max_tokens=8000,
+        max_tokens=32000,
         messages=[{"role": "user", "content": prompt}],
-    )
-    text = response.content[0].text.strip()
+    ) as stream:
+        response = stream.get_final_message()
+
+    if response.stop_reason == "max_tokens":
+        raise ValueError(
+            "Roadmap-Antwort wurde abgeschnitten (max_tokens erreicht). "
+            "Bitte erneut versuchen oder den Umfang reduzieren."
+        )
+
+    text = next((b.text for b in response.content if b.type == "text"), "").strip()
     # Strip markdown code fences if the LLM wraps the JSON
     text = re.sub(r'^```(?:json)?\s*\n?', '', text)
     text = re.sub(r'\n?```\s*$', '', text).strip()
     return json.loads(text)
 
 
-# ─────────────────────── Hour scaling ──────────────────────────────────────
+# ─────────────────────── Hour clamping ─────────────────────────────────────
 
-def scale_hours_to_exam_date(
-    data: Dict[str, Any],
-    exam_date: str,
-    daily_study_hours: float = 8.0,
-) -> Dict[str, Any]:
+_MIN_TOPIC_HOURS = 1
+_MAX_TOPIC_HOURS = 8
+
+
+def _clamp_hours(raw: Any) -> int:
+    """Clamp an LLM hour estimate to a sane whole-hour range [1, 8].
+
+    The LLM estimates intrinsic effort per topic (simple definitions 1–2h,
+    complex/proof-heavy topics up to 8h). We keep that estimate as-is and only
+    guard against outliers — we intentionally do NOT rescale hours to fit the
+    exam date, which would flatten every topic to 1h when time is tight (and
+    balloon them when it isn't). Exam-date awareness lives in the roadmap
+    content and the daily-plan pacing, not in the per-topic effort estimate.
     """
-    Rescale topic hours so they sum to (remaining_days × daily_study_hours).
-
-    Uses the LLM's raw hours as proportional weights and distributes the
-    total available study time (days × 8h) across topics as whole hours.
-    """
-    if not exam_date:
-        return data
-
     try:
-        exam_dt = date.fromisoformat(exam_date.strip())
-    except ValueError:
-        return data
-
-    remaining_days = max(1, (exam_dt - date.today()).days)
-    total_available = remaining_days * daily_study_hours
-
-    all_topics = [
-        topic
-        for phase in (data.get("phases") or [])
-        for topic in (phase.get("topics") or [])
-    ]
-    if not all_topics:
-        return data
-
-    total_raw = sum(max(float(t.get("hours") or 1.0), 0.1) for t in all_topics)
-
-    for topic in all_topics:
-        raw = max(float(topic.get("hours") or 1.0), 0.1)
-        scaled = max(1, round(raw / total_raw * total_available))
-        topic["hours"] = scaled
-
-    return data
+        h = round(float(raw))
+    except (TypeError, ValueError):
+        return _MIN_TOPIC_HOURS
+    return max(_MIN_TOPIC_HOURS, min(_MAX_TOPIC_HOURS, h))
 
 
 # ──────────────────────────── Markdown render ───────────────────────────────
@@ -319,10 +315,7 @@ def render_md(module_name: str, data: Dict[str, Any]) -> str:
             name = str(topic.get("name") or "").strip() or "(unbenannt)"
             # LLM returns 'relevance'; fall back to German key for old data
             prio = str(topic.get("relevance") or topic.get("pruefungsrelevanz") or "medium").strip()
-            try:
-                hours = max(1, round(float(topic.get("hours") or 1.0)))
-            except (TypeError, ValueError):
-                hours = 1
+            hours = _clamp_hours(topic.get("hours") or 1.0)
             out.append(f"### {name} <!-- id:{tid} status:todo prio:{prio} h:{hours} -->")
             # LLM returns 'summary'; fall back to 'bedeutung' for old data
             bedeutung = (topic.get("summary") or topic.get("bedeutung") or "").strip()
@@ -409,10 +402,7 @@ def parse_md(md: str) -> Dict[str, Any]:
 
         tm = _TOPIC_HEADING_RE.match(line)
         if tm and current_phase is not None:
-            try:
-                hours = max(1, round(float(tm.group("h"))))
-            except ValueError:
-                hours = 1
+            hours = _clamp_hours(tm.group("h"))
             current_topic = {
                 "id": tm.group("id"),
                 "name": tm.group("name").strip(),
@@ -480,6 +470,82 @@ def update_topic_status(md: str, topic_id: str, new_status: str) -> str:
 
     # 3) Aggregate progress
     return _refresh_progress_line(md)
+
+
+# ──────────────────────── Assignment updates (uploads) ──────────────────────
+
+_FIELD_KEY_RE = re.compile(r"^\*\*[\wäöüÄÖÜ ]+:\*\*")
+
+
+def _merge_field(
+    block: List[str], key: str, new_values: List[str]
+) -> Tuple[List[str], bool]:
+    """Add ``new_values`` to a ``**key:**`` field line within a topic block.
+
+    Updates the existing field line (appending values not already present, matched
+    by basename) or inserts a new field line after the last existing field line.
+    Returns ``(block, changed)``.
+    """
+    if not new_values:
+        return block, False
+    field_re = re.compile(rf"^\*\*{re.escape(key)}:\*\*\s*(.*)$")
+    for i, line in enumerate(block):
+        m = field_re.match(line)
+        if not m:
+            continue
+        existing = [v.strip() for v in m.group(1).split(",") if v.strip()]
+        existing_names = {Path(v).name for v in existing}
+        added = [
+            v for v in new_values
+            if Path(v).name not in existing_names and v not in existing
+        ]
+        if not added:
+            return block, False
+        block = list(block)
+        block[i] = f"**{key}:** " + ", ".join(existing + added)
+        return block, True
+    # No existing field line → insert after the last field line (or after heading).
+    insert_at = 1
+    for i in range(1, len(block)):
+        if _FIELD_KEY_RE.match(block[i]):
+            insert_at = i + 1
+    block = list(block)
+    block.insert(insert_at, f"**{key}:** " + ", ".join(new_values))
+    return block, True
+
+
+def add_files_to_topic(
+    md: str, topic_id: str, lecture_files: List[str], exercise_files: List[str]
+) -> Tuple[str, bool]:
+    """Add lecture files to the topic's **Dateien:** line and exercise files to its
+    **Aufgaben:** line in the rendered roadmap markdown. Returns ``(md, changed)``."""
+    if not lecture_files and not exercise_files:
+        return md, False
+    lines = md.splitlines()
+    start: Optional[int] = None
+    for i, line in enumerate(lines):
+        m = _TOPIC_HEADING_RE.match(line)
+        if m and m.group("id") == topic_id:
+            start = i
+            break
+    if start is None:
+        return md, False
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if lines[j].startswith("### ") or lines[j].startswith("## "):
+            end = j
+            break
+    block = lines[start:end]
+
+    block, c1 = _merge_field(block, "Dateien", lecture_files)
+    block, c2 = _merge_field(block, "Aufgaben", exercise_files)
+    if not (c1 or c2):
+        return md, False
+
+    out = "\n".join(lines[:start] + block + lines[end:])
+    if not out.endswith("\n"):
+        out += "\n"
+    return out, True
 
 
 # ──────────────────────────────── Smart merge ───────────────────────────────

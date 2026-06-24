@@ -18,7 +18,7 @@ import zipfile
 from datetime import date as _date
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
@@ -54,6 +54,7 @@ from app.lecture import exam_analyzer as ea
 from app.lecture.summarizer import summarize
 from app.lecture import exam_generator as eg
 from app.lecture import daily_tasks as dt
+from app.lecture import topic_pool as tp
 from app.lecture import topic_quiz as tq
 from app.lecture import topic_worksheet as tw
 from app.chat import orchestrator as chat_orchestrator
@@ -230,6 +231,13 @@ async def _auth_middleware(request: Request, call_next):
         get_admin_client,
         close_request_client,
     )
+
+    # CORS preflight: browsers send OPTIONS without credentials, so let the CORS
+    # middleware answer it. Otherwise a cross-origin deploy (FRONTEND_ORIGIN set
+    # to a different host) would get 401s on every preflight and break all
+    # non-simple requests. Preflights carry no token and perform no action.
+    if request.method == "OPTIONS":
+        return await call_next(request)
 
     # Landing page, app shell, upgrade page, legal pages and logo are always
     # public (serve without a token — legal pages MUST be reachable pre-login).
@@ -1143,7 +1151,11 @@ async def get_module_raw(module_name: str, path: str):
 
     uid = _supa_uid()
     slug = _slug(sanitize_module_name(module_name))
-    rel = path.replace("\\", "/")
+    # `path` is client-controlled — sanitize it the same way uploads do so a
+    # `../`/absolute path can never be concatenated into the storage key. RLS
+    # already pins the first key segment to {uid}; this is defence-in-depth and
+    # keeps the storage branch consistent with the local-fs guard below.
+    rel = str(_safe_rel_path(path)).replace("\\", "/")
     storage_path = f"{uid}/{slug}/{rel}"
     suffix = Path(rel).suffix.lower()
     media_type = _MEDIA_TYPES.get(suffix, "application/octet-stream")
@@ -1430,6 +1442,10 @@ class RoadmapStatusRequest(BaseModel):
     status: str  # "todo" | "doing" | "done"
 
 
+class ExtendPoolsRequest(BaseModel):
+    files: List[str] = Field(default_factory=list)
+
+
 # In-memory pending-roadmap cache: {module_name: pending_md}
 _PENDING_ROADMAPS: dict = {}
 
@@ -1605,10 +1621,6 @@ async def roadmap_generate(request: Request, body: RoadmapGenerateRequest):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Roadmap-Generation fehlgeschlagen: {exc}")
 
-    # Scale topic hours to reflect the available study time before the exam.
-    if body.exam_date:
-        rm.scale_hours_to_exam_date(data, body.exam_date)
-
     new_md = rm.render_md(body.module_name, data)
     _PENDING_ROADMAPS[body.module_name] = new_md
     return {
@@ -1662,9 +1674,6 @@ async def roadmap_generate_stream(request: Request, body: RoadmapGenerateRequest
                 exam_files=exam_file_names,
             )
 
-            if body.exam_date:
-                rm.scale_hours_to_exam_date(data, body.exam_date)
-
             new_md = rm.render_md(module_name, data)
             _PENDING_ROADMAPS[module_name] = new_md
 
@@ -1682,16 +1691,153 @@ async def roadmap_generate_stream(request: Request, body: RoadmapGenerateRequest
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
-@app.post("/roadmap/{module_name}/accept")
-def roadmap_accept(module_name: str):
-    from app.lecture import topic_pool as tp
-    pending = _PENDING_ROADMAPS.pop(module_name, None)
-    if not pending:
-        raise HTTPException(status_code=404, detail="Keine ausstehende Generation gefunden.")
+def _pool_rag_fn(clean_module: str) -> Callable[[str, str, int], str]:
+    """Build the RAG retrieval closure used during pool generation.
+
+    Identical shape to the one in ``daily_generate`` — returns formatted course
+    chunks for a query, or "" when nothing is retrieved.
+    """
+    from pathlib import Path as _Path
+
+    def rag_fn(question: str, module: str = clean_module, top_k: int = 6) -> str:
+        hits = rag.retrieve(question, top_k=top_k, module_name=module)
+        if not hits:
+            return ""
+        return "\n\n".join(
+            f"[{_Path(h['source']).name}]\n{h['text'].strip()}" for h in hits
+        )
+
+    return rag_fn
+
+
+def _save_accepted_roadmap(module_name: str, pending: str):
+    """Persist an accepted roadmap and reset the derived task state.
+
+    Returns the parsed roadmap data so the caller can (re)generate pools.
+    """
     rm.save_roadmap_md(module_name, pending)
     dt.delete_plan_and_history(module_name)
     tp.delete_all_pools(module_name)
+    return rm.parse_md(pending)
+
+
+@app.post("/roadmap/{module_name}/accept")
+def roadmap_accept(module_name: str):
+    pending = _PENDING_ROADMAPS.pop(module_name, None)
+    if not pending:
+        raise HTTPException(status_code=404, detail="Keine ausstehende Generation gefunden.")
+    roadmap_data = _save_accepted_roadmap(module_name, pending)
+    # Pre-generate all task pools synchronously (no progress reporting on this path).
+    try:
+        dt.generate_all_pools(module_name, roadmap_data, rag_fn=_pool_rag_fn(module_name))
+    except Exception as exc:
+        traceback.print_exc()
+        print(f"[roadmap] pool pre-generation failed for {module_name}: {exc}")
     return {"success": True}
+
+
+@app.post("/roadmap/{module_name}/accept/stream")
+def roadmap_accept_stream(module_name: str):
+    """SSE version of /accept — saves the roadmap then pre-generates all task pools
+    in a background thread, emitting per-topic progress events."""
+    pending = _PENDING_ROADMAPS.pop(module_name, None)
+    if not pending:
+        raise HTTPException(status_code=404, detail="Keine ausstehende Generation gefunden.")
+
+    roadmap_data = _save_accepted_roadmap(module_name, pending)
+    rag_fn = _pool_rag_fn(module_name)
+
+    import contextvars as _contextvars
+    import queue as _queue
+    import threading as _threading
+
+    events: "_queue.Queue" = _queue.Queue()
+
+    def _progress(done: int, total: int, topic: str):
+        events.put({"type": "progress", "done": done, "total": total, "topic": topic})
+
+    def _run():
+        try:
+            dt.generate_all_pools(module_name, roadmap_data, rag_fn=rag_fn, progress_cb=_progress)
+            events.put({"type": "done"})
+        except Exception as exc:
+            traceback.print_exc()
+            events.put({"type": "error", "detail": str(exc)})
+
+    # Snapshot the request context (Supabase user JWT / user_id live in ContextVars)
+    # so the background thread — and the pool workers it spawns — stay scoped to
+    # this user and storage RLS still applies.
+    _ctx = _contextvars.copy_context()
+
+    def event_gen():
+        yield f"data: {json.dumps({'type': 'step', 'key': 'save', 'label': 'Roadmap gespeichert', 'done': True})}\n\n"
+        worker = _threading.Thread(target=_ctx.run, args=(_run,), daemon=True)
+        worker.start()
+        while True:
+            evt = events.get()
+            yield f"data: {json.dumps(evt)}\n\n"
+            if evt.get("type") in ("done", "error"):
+                break
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
+
+
+@app.post("/modules/{module_name}/extend-pools")
+def extend_pools_stream(module_name: str, body: ExtendPoolsRequest):
+    """SSE: extend existing topic pools using newly uploaded files.
+
+    Emits ``progress`` events per affected topic and a final ``done`` event with
+    ``topics_extended``/``tasks_added``. No-op (immediate ``done`` with zeros) when
+    no roadmap exists yet or no new files were given."""
+    clean_module = sanitize_module_name(module_name)
+    new_files = [f for f in (body.files or []) if f]
+
+    md = rm.load_roadmap_md(clean_module)
+    if not md or not new_files:
+        def _noop_gen():
+            yield f"data: {json.dumps({'type': 'done', 'topics_extended': 0, 'tasks_added': 0})}\n\n"
+        return StreamingResponse(_noop_gen(), media_type="text/event-stream")
+
+    roadmap_data = rm.parse_md(md)
+    rag_fn = _pool_rag_fn(clean_module)
+
+    import contextvars as _contextvars
+    import queue as _queue
+    import threading as _threading
+
+    events: "_queue.Queue" = _queue.Queue()
+
+    def _progress(done: int, total: int, topic: str, added: int):
+        events.put({"type": "progress", "done": done, "total": total, "topic": topic, "added": added})
+
+    def _run():
+        try:
+            results = dt.extend_pools_for_new_files(
+                clean_module, roadmap_data, new_files, rag_fn=rag_fn, progress_cb=_progress
+            )
+            events.put({
+                "type": "done",
+                "topics_extended": sum(1 for v in results.values() if v > 0),
+                "tasks_added": sum(results.values()),
+            })
+        except Exception as exc:
+            traceback.print_exc()
+            events.put({"type": "error", "detail": str(exc)})
+
+    # Snapshot the request context so the worker (and its pool workers) stay
+    # scoped to this Supabase user and storage RLS still applies.
+    _ctx = _contextvars.copy_context()
+
+    def event_gen():
+        worker = _threading.Thread(target=_ctx.run, args=(_run,), daemon=True)
+        worker.start()
+        while True:
+            evt = events.get()
+            yield f"data: {json.dumps(evt)}\n\n"
+            if evt.get("type") in ("done", "error"):
+                break
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
 @app.post("/roadmap/{module_name}/reject")
@@ -1706,8 +1852,6 @@ def roadmap_get(module_name: str):
     if not md:
         return {"exists": False}
     parsed = rm.parse_md(md)
-    if parsed.get("exam_date"):
-        rm.scale_hours_to_exam_date(parsed, parsed["exam_date"])
     return {"exists": True, **parsed}
 
 
@@ -1734,7 +1878,10 @@ def get_module_text(module_name: str, path: str):
     """Return extracted plain text (downloads from Supabase Storage, parses in temp file)."""
     uid = _supa_uid()
     slug = _slug(sanitize_module_name(module_name))
-    rel = path.replace("\\", "/")
+    # Sanitize the client-controlled path (defence-in-depth behind storage RLS),
+    # mirroring the upload/raw paths so `../`/absolute paths can't be concatenated
+    # into the storage key.
+    rel = str(_safe_rel_path(path)).replace("\\", "/")
     storage_path = f"{uid}/{slug}/{rel}"
     file_name = Path(rel).name
 
@@ -1892,6 +2039,7 @@ async def upload_module(
         "success": True,
         "module_name": clean_module,
         "files": list_module_files(clean_module),
+        "saved_files": [p.name for p in saved_paths],
         "saved_count": len(saved_paths),
         "processed_count": processed,
         "skipped_count": skipped,
@@ -2624,6 +2772,29 @@ def daily_get(module_name: str):
     return {"exists": True, **parsed}
 
 
+@app.get("/daily/{module_name}/pool/{topic_id}")
+def daily_pool_get(module_name: str, topic_id: str):
+    """Read-only view of a topic's task pool (used by the roadmap detail card).
+
+    Returns ``{exists: false}`` when no pool exists, otherwise the full task list
+    plus a progress summary. Purely reading — never generates.
+    """
+    clean = sanitize_module_name(module_name)
+    pool = tp.load_pool(clean, topic_id)
+    if not pool:
+        return {"exists": False}
+    tasks = [
+        {
+            "text": str(t.get("text", "")),
+            "done": bool(t.get("done")),
+            "minutes": t.get("minutes", 45),
+        }
+        for t in (pool.get("tasks") or [])
+    ]
+    done = sum(1 for t in tasks if t["done"])
+    return {"exists": True, "tasks": tasks, "progress": {"done": done, "total": len(tasks)}}
+
+
 @app.post("/daily/{module_name}/generate")
 @limiter.limit(RL_HEAVY)
 @_heavy_daily
@@ -2639,21 +2810,11 @@ async def daily_generate(request: Request, module_name: str, body: DailyGenerate
             raise HTTPException(status_code=404, detail="Keine Roadmap gefunden. Erst Roadmap generieren.")
         roadmap_data = rm.parse_md(roadmap_md)
 
-        def rag_fn(question: str, module: str = clean, top_k: int = 6) -> str:
-            from pathlib import Path as _Path
-            hits = rag.retrieve(question, top_k=top_k, module_name=module)
-            if not hits:
-                return ""
-            return "\n\n".join(
-                f"[{_Path(h['source']).name}]\n{h['text'].strip()}"
-                for h in hits
-            )
-
         new_md = dt.generate(
             clean,
             daily_hours=body.daily_hours,
             roadmap_data=roadmap_data,
-            rag_fn=rag_fn,
+            rag_fn=_pool_rag_fn(clean),
         )
         parsed = dt.parse_plan(new_md)
         return {"success": True, **parsed}

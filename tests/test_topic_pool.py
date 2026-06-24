@@ -10,17 +10,23 @@ from app.lecture import topic_pool as tp
 # ─────────────────────────── Pool size formula ──────────────────────────────
 
 def test_pool_size_example_from_spec():
-    # 4h, 3 files, 4 subtopics → 8 + 4.5 + 2 = 14.5 → 14
-    assert dt._pool_size(4, 3, 4) == 14
+    # 4h, 3 files, 4 subtopics → 4*1.5 + 3 + 4*0.5 = 11
+    assert dt._pool_size(4, 3, 4) == 11
 
 
 def test_pool_size_minimum_is_four():
     assert dt._pool_size(0, 0, 0) == 4
 
 
-def test_pool_size_maximum_is_twenty():
-    # 20*2 + 10*1.5 + 10*0.5 = 60 → capped at 20
-    assert dt._pool_size(20, 10, 10) == 20
+def test_pool_size_maximum_is_sixteen():
+    # 20*1.5 + 10 + 10*0.5 = 45 → capped at 16
+    assert dt._pool_size(20, 10, 10) == 16
+
+
+def test_pool_size_exercises_raise_count():
+    # Exercises weigh 1.5 each: 2h, 0 files, 0 subtopics, 3 exercises
+    # → 2*1.5 + 0 + 0 + 3*1.5 = 7.5 → 8 (vs. 3 without exercises)
+    assert dt._pool_size(2, 0, 0, 3) == 8
 
 
 # ─────────────────────────── Fixtures ───────────────────────────────────────

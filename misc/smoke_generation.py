@@ -128,8 +128,14 @@ def main():
         return f"steps={len([e for e in evs if e.get('type')=='step'])}"
     step("roadmap/generate/stream", roadmap)
 
-    # 4. accept roadmap
-    step("roadmap accept", lambda: jpost(c, f"{BASE}/roadmap/{MODULE}/accept", {}) and "ok")
+    # 4. accept roadmap (streaming variant — the one the UI uses; pre-generates all pools)
+    def accept():
+        evs = sse(c, f"{BASE}/roadmap/{MODULE}/accept/stream", {})
+        prog = [e for e in evs if e.get("type") == "progress"]
+        if not any(e.get("type") == "done" for e in evs):
+            raise RuntimeError(f"no done event; events={[e.get('type') for e in evs]}")
+        return f"pools={prog[-1]['done']}/{prog[-1]['total']}" if prog else "no topics"
+    step("roadmap accept/stream", accept)
 
     # 5. read roadmap -> topic id
     topic_id = {}
@@ -146,6 +152,22 @@ def main():
         topic_id["name"] = topics[0]["name"]
         return f"{len(topics)} topics, first={topic_id['id']}"
     step("roadmap read", get_roadmap)
+
+    # 5b. pool read (read-only task list shown in the topic card) — pre-generated at accept
+    def pool_read():
+        if "id" not in topic_id:
+            raise RuntimeError("skipped: no topic id")
+        r = c.get(f"{BASE}/daily/{MODULE}/pool/{topic_id['id']}", headers=H, timeout=60)
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+        d = r.json()
+        if not d.get("exists"):
+            raise RuntimeError("pool not pre-generated at accept")
+        tasks = d.get("tasks") or []
+        if not tasks:
+            raise RuntimeError(f"empty pool: {json.dumps(d)[:200]}")
+        return f"{d['progress']['done']}/{d['progress']['total']} tasks"
+    step("daily pool read", pool_read)
 
     # 6. daily plan
     def daily():

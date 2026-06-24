@@ -15,26 +15,33 @@ Format:
 """
 from __future__ import annotations
 
+import contextvars
 import json
+import os
 import random
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from anthropic import Anthropic
+import openai
 
 from . import module_profile as mp
+from ..llm_clients import make_gemini_client
 
-MODEL = "claude-haiku-4-5-20251001"
+# Pool generation runs on Gemini 2.5 Flash Lite via the OpenAI-compatible endpoint
+# (see app/llm_clients.py). Roadmap/exam/worksheet generation are unaffected.
+MODEL = os.getenv("POOL_MODEL", "gemini-2.5-flash-lite")
 
-_client: Optional[Anthropic] = None
+_client: Optional[openai.OpenAI] = None
 
 
-def _get_client() -> Anthropic:
+def _get_client() -> openai.OpenAI:
     global _client
     if _client is None:
-        _client = Anthropic()
+        _client = make_gemini_client()
     return _client
 
 
@@ -556,9 +563,16 @@ def _task_count_for_hours(hours: float) -> int:
         return min(6, 4 + round(hours - 3.5))
 
 
-def _pool_size(hours: float, n_files: int, n_subtopics: int) -> int:
-    """Total number of tasks the pool should hold for a topic. Clamped to [4, 20]."""
-    return max(4, min(12, round(hours * 1.5 + n_files * 1.0 + n_subtopics * 0.5)))
+def _pool_size(hours: float, n_files: int, n_subtopics: int, n_exercises: int = 0) -> int:
+    """Total number of tasks the pool should hold for a topic. Clamped to [4, 16].
+
+    Exercise sheets get the heaviest weight: when worksheets are available we want
+    enough pool slots that the actual exercises can be worked through over the
+    roadmap (see _POOL_PROMPT), so the cap rises above the no-exercise case.
+    """
+    return max(4, min(16, round(
+        hours * 1.5 + n_files * 1.0 + n_subtopics * 0.5 + n_exercises * 1.5
+    )))
 
 
 _POOL_PROMPT = """\
@@ -581,6 +595,13 @@ ANZAHL AUFGABEN: genau {n}
 Richtlinien:
 - Decke das gesamte Thema und alle Subtopics ab — vom Verstehen der Grundlagen
   bis zum prüfungsnahen Anwenden.
+- WICHTIG — Übungsblätter/Skript abarbeiten: Wenn Übungsblätter oder Skript-/Vorlesungsdateien
+  verfügbar sind, ist es zentral, dass am Ende des Pools die meisten konkreten Aufgaben daraus
+  tatsächlich bearbeitet wurden. Priorisiere echte Aufgaben aus dem vorhandenen Material
+  (einzelne Aufgaben eines Blattes, Abschnitte des Skripts) gegenüber generischen
+  Verständnis-Aufgaben. Verteile die verfügbaren Aufgaben so über den Pool, dass keine wichtige
+  Übungsaufgabe ausgelassen wird — generische Aufgaben (zusammenfassen, erklären) nur ergänzend,
+  wenn das konkrete Material erschöpft ist.
 - Datei-Referenzen: Bevorzuge Dateien aus "INHALTLICH VERIFIZIERTE DATEIEN" — diese enthalten
   nachweislich Inhalt zu diesem Thema. Nutze Dateien aus "DATEIEN (aus Roadmap-Zuweisung)" nur
   wenn sie inhaltlich zum Thema passen (Dateiname ist ein Hinweis, kein Beweis).
@@ -657,6 +678,109 @@ def _fallback_pool_tasks(
     return tasks[:n]
 
 
+def _fetch_topic_rag(
+    name: str,
+    subtopics: List[str],
+    module_name: str,
+    rag_fn: Optional[Callable],
+    *,
+    include_exercises: bool = True,
+) -> str:
+    """Retrieve RAG content for a topic (topic query + optional exercise query).
+
+    Shared by pool generation, topic matching, and pool extension so they all see
+    the same retrieval. Returns "" when no ``rag_fn`` is supplied or nothing hits.
+    """
+    if not rag_fn:
+        return ""
+    rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
+    rag_content = rag_fn(rag_query, module_name, 8) or ""
+    # Second pass: exercise-specific chunks so the LLM reads actual exercise
+    # numbers instead of guessing them.
+    if include_exercises:
+        ex_content = rag_fn(f"Aufgabe Übung {name}", module_name, 6) or ""
+        if ex_content:
+            existing_chunks = set(rag_content.split("\n\n"))
+            new_chunks = [c for c in ex_content.split("\n\n") if c not in existing_chunks]
+            if new_chunks:
+                rag_content = (
+                    rag_content + "\n\n" + "\n\n".join(new_chunks) if rag_content else ex_content
+                )
+    return rag_content
+
+
+def _extract_rag_verified_files(rag_content: str) -> List[str]:
+    """Extract source filenames referenced in RAG hits (e.g. ``[lecture.pdf]``).
+
+    These files provably contain content for the query, unlike roadmap
+    assignments which are based only on filenames and can be wrong.
+    """
+    if not rag_content:
+        return []
+    matches = re.findall(r"\[([^\[\]\n]+\.\w+)\]", rag_content)
+    return list(dict.fromkeys(
+        m.split(":", 1)[-1].strip() if ":" in m else m
+        for m in matches
+    ))
+
+
+def _parse_task_array(raw: str, cap: int) -> List[Dict[str, Any]]:
+    """Parse the LLM's JSON task array, tolerating code fences / surrounding chatter.
+
+    Returns up to ``cap`` task dicts (``text``/``done``/``minutes``), deduped by
+    exact text. Raises if no JSON array can be recovered so the caller can fall back.
+    """
+    raw = (raw or "").strip()
+    # Gemini (no assistant prefill) may wrap the array in code fences or chatter.
+    raw = re.sub(r"^```(?:json)?\s*\n?", "", raw)
+    raw = re.sub(r"\n?```\s*$", "", raw).strip()
+    first_bracket = raw.find("[")
+    last_bracket = raw.rfind("]")
+    if first_bracket == -1 or last_bracket == -1 or last_bracket < first_bracket:
+        raise ValueError("No JSON array in response")
+    parsed = json.loads(raw[first_bracket : last_bracket + 1])
+    if not isinstance(parsed, list):
+        raise ValueError("Expected list")
+    tasks: List[Dict[str, Any]] = []
+    seen: set = set()
+    for t in parsed:
+        if isinstance(t, dict):
+            text = str(t.get("text", "")).strip()
+            try:
+                minutes = max(5, int(t.get("minutes", 45)))
+            except (TypeError, ValueError):
+                minutes = 45
+        else:
+            text = str(t).strip()
+            minutes = 45
+        if text and text not in seen:
+            seen.add(text)
+            tasks.append({"text": text, "done": False, "minutes": minutes})
+        if len(tasks) >= cap:
+            break
+    return tasks
+
+
+def _dedup_similar(
+    tasks: List[Dict[str, Any]],
+    existing_texts: Optional[List[str]] = None,
+    threshold: float = 0.75,
+) -> List[Dict[str, Any]]:
+    """Drop tasks that are near-duplicates (SequenceMatcher ratio > threshold) of
+    ``existing_texts`` or of an earlier task in the list."""
+    from difflib import SequenceMatcher
+    existing_lower = [e.lower() for e in (existing_texts or [])]
+    deduped: List[Dict[str, Any]] = []
+    for task in tasks:
+        txt = task["text"].lower()
+        if any(SequenceMatcher(None, txt, e).ratio() > threshold for e in existing_lower):
+            continue
+        if any(SequenceMatcher(None, txt, d["text"].lower()).ratio() > threshold for d in deduped):
+            continue
+        deduped.append(task)
+    return deduped
+
+
 def _generate_pool(
     topic: Dict[str, Any],
     module_name: str,
@@ -685,32 +809,15 @@ def _generate_pool(
     except (TypeError, ValueError):
         hours = 2.0
 
-    n = _pool_size(hours, len(files), len(subtopics))
+    n = _pool_size(hours, len(files), len(subtopics), len(exercises))
 
-    rag_query = name + ((" — " + ", ".join(subtopics[:4])) if subtopics else "")
-    rag_content = rag_fn(rag_query, module_name, 8) if rag_fn else ""
+    rag_content = _fetch_topic_rag(
+        name, subtopics, module_name, rag_fn, include_exercises=bool(exercises)
+    )
 
-    # Second pass: retrieve exercise-specific chunks so the LLM can read actual
-    # exercise numbers instead of guessing them.
-    if rag_fn and exercises:
-        ex_query = f"Aufgabe Übung {name}"
-        ex_content = rag_fn(ex_query, module_name, 6)
-        if ex_content:
-            existing_chunks = set(rag_content.split("\n\n"))
-            new_chunks = [c for c in ex_content.split("\n\n") if c not in existing_chunks]
-            if new_chunks:
-                rag_content = rag_content + "\n\n" + "\n\n".join(new_chunks) if rag_content else ex_content
-
-    # Extract source filenames from RAG hits — these files provably contain
-    # content relevant to this topic, unlike roadmap assignments which are
-    # based only on filenames and can be wrong.
-    rag_verified_files: List[str] = []
-    if rag_content:
-        _raw_matches = re.findall(r"\[([^\[\]\n]+\.\w+)\]", rag_content)
-        rag_verified_files = list(dict.fromkeys(
-            m.split(":", 1)[-1].strip() if ":" in m else m
-            for m in _raw_matches
-        ))
+    # Source filenames from RAG hits provably contain content for this topic,
+    # unlike roadmap assignments which are based only on filenames.
+    rag_verified_files = _extract_rag_verified_files(rag_content)
 
     rag_section = f"INHALT AUS DEM LERNMATERIAL:\n{rag_content[:4500]}\n\n" if rag_content else ""
     rag_files_section = (
@@ -731,41 +838,12 @@ def _generate_pool(
 
     tasks: List[Dict[str, Any]] = []
     try:
-        resp = _get_client().messages.create(
+        resp = _get_client().chat.completions.create(
             model=MODEL,
             max_tokens=2000,
-            messages=[
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": "["},
-            ],
+            messages=[{"role": "user", "content": prompt}],
         )
-        text_block = next((b for b in resp.content if getattr(b, "type", None) == "text"), None)
-        if not text_block:
-            raise ValueError("No text block in response")
-        raw = "[" + text_block.text.strip()
-        raw = re.sub(r"\n?```\s*$", "", raw).strip()
-        last_bracket = raw.rfind("]")
-        if last_bracket != -1:
-            raw = raw[: last_bracket + 1]
-        task_texts = json.loads(raw)
-        if not isinstance(task_texts, list):
-            raise ValueError("Expected list")
-        seen: set = set()
-        for t in task_texts:
-            if isinstance(t, dict):
-                text = str(t.get("text", "")).strip()
-                try:
-                    minutes = max(5, int(t.get("minutes", 45)))
-                except (TypeError, ValueError):
-                    minutes = 45
-            else:
-                text = str(t).strip()
-                minutes = 45
-            if text and text not in seen:
-                seen.add(text)
-                tasks.append({"text": text, "done": False, "minutes": minutes})
-            if len(tasks) >= n:
-                break
+        tasks = _parse_task_array(resp.choices[0].message.content or "", n)
     except Exception as exc:
         print(f"[daily_tasks] pool gen failed for {name}: {exc}")
 
@@ -773,13 +851,7 @@ def _generate_pool(
         tasks = _fallback_pool_tasks(files, exercises, subtopics, name, n)
 
     # Remove near-duplicate tasks (similarity > 75%)
-    from difflib import SequenceMatcher
-    deduped: List[Dict[str, Any]] = []
-    for task in tasks:
-        txt = task["text"].lower()
-        if not any(SequenceMatcher(None, txt, k["text"].lower()).ratio() > 0.75 for k in deduped):
-            deduped.append(task)
-    tasks = deduped
+    tasks = _dedup_similar(tasks)
 
     # Cap total minutes at hours * 60
     budget = hours * 60
@@ -797,6 +869,347 @@ def _generate_pool(
         "tasks": tasks,
     }
     tp.save_pool(module_name, topic_id, pool)
+
+
+# ─────────────────────── Pool extension (new uploads) ───────────────────────
+
+_POOL_EXTEND_PROMPT = """\
+Du bist ein AI Lerncoach. Zu einem bestehenden Aufgaben-Pool für EIN Thema wurde
+neues Lernmaterial hochgeladen. Erzeuge NUR zusätzliche Aufgaben, die sich aus dem
+NEUEN Material ergeben — die bestehenden Aufgaben bleiben unverändert.
+
+THEMA: {topic_name}
+SUBTOPICS: {subtopics}
+NEUE DATEIEN: {new_files}
+
+BEREITS VORHANDENE AUFGABEN (NICHT wiederholen, nichts inhaltlich Ähnliches erneut erzeugen):
+{existing_tasks}
+
+INHALT AUS DEN NEUEN DATEIEN (Hauptquelle für die neuen Aufgaben):
+{new_content}
+{context_section}
+Richtlinien:
+- Erzeuge bis zu {max_new} neue, konkrete Aufgaben — aber NUR so viele, wie das neue
+  Material wirklich hergibt. Lieber wenige gute als generische Fülltasks. Bietet das
+  neue Material kaum Substanz, gib weniger (oder ein leeres Array) zurück.
+- Beziehe dich konkret auf das neue Material (einzelne Aufgaben eines neuen Blattes,
+  Abschnitte eines neuen Skripts).
+- Aufgaben-Nummern: Nutze eine Nummer (z.B. "Aufgabe 3") NUR wenn du sie explizit im
+  INHALT gelesen hast. Sonst beschreibe den Inhalt.
+- Referenziere ausschließlich Dateinamen, kopiere KEINEN Text aus dem Material.
+- Keine Dopplungen mit den bereits vorhandenen Aufgaben.
+- Vermeide vage Formulierungen wie "Lerne Thema X". Sei konkret und handlungsorientiert.
+
+Antworte NUR als JSON-Array (höchstens {max_new} Objekte, weniger ist ausdrücklich erlaubt):
+[{{"text": "Aufgabenbeschreibung", "minutes": 30}}, ...]
+
+Schätze "minutes" konservativ (10–90 min je nach Aufwand)."""
+
+
+def _topic_affected_by_new_files(
+    topic: Dict[str, Any],
+    module_name: str,
+    new_files: List[str],
+    rag_fn: Optional[Callable],
+) -> Tuple[List[str], str]:
+    """Decide which of the newly uploaded files are relevant to ``topic``.
+
+    Runs the same RAG retrieval as pool generation, then keeps any new file whose
+    basename shows up in the RAG-verified source files. Falls back to a
+    filename-containment check against the topic's roadmap assignments. Returns
+    ``(matched_files, rag_content)`` so the content can be reused by ``extend_pool``.
+    """
+    name = str(topic.get("name") or "")
+    subtopics = [
+        str(s).strip()
+        for s in (topic.get("subtopics") or topic.get("untergruppen") or [])
+        if str(s).strip()
+    ]
+    rag_content = _fetch_topic_rag(name, subtopics, module_name, rag_fn)
+
+    verified = {Path(v).name for v in _extract_rag_verified_files(rag_content)}
+    matched = [f for f in new_files if f and Path(f).name in verified]
+    if matched:
+        return matched, rag_content
+
+    # Fallback: the new file is named in the topic's roadmap assignments.
+    assigned_blob = " ".join(
+        str(a) for a in (
+            (topic.get("dateien") or topic.get("files") or [])
+            + (topic.get("aufgaben") or topic.get("exercises") or [])
+        )
+    )
+    matched = [f for f in new_files if f and Path(f).name in assigned_blob]
+    return matched, rag_content
+
+
+def extend_pool(
+    topic: Dict[str, Any],
+    module_name: str,
+    new_files: List[str],
+    rag_fn: Optional[Callable] = None,
+    *,
+    max_new: int = 8,
+    rag_content: Optional[str] = None,
+) -> int:
+    """Append new tasks derived from newly uploaded files to a topic's pool.
+
+    Existing tasks (done and open) are preserved. Returns the number of tasks
+    actually added. If no pool exists yet, falls back to first-time generation via
+    ``_generate_pool`` and returns the resulting pool size.
+    """
+    from . import topic_pool as tp
+
+    topic_id = str(topic.get("id") or "")
+    name = str(topic.get("name") or "")
+
+    pool = tp.load_pool(module_name, topic_id)
+    if not pool:
+        _generate_pool(topic, module_name, rag_fn)
+        fresh = tp.load_pool(module_name, topic_id)
+        return len((fresh or {}).get("tasks") or [])
+
+    existing_tasks = pool.get("tasks") or []
+    existing_texts = [str(t.get("text", "")) for t in existing_tasks]
+
+    subtopics = [
+        str(s).strip()
+        for s in (topic.get("subtopics") or topic.get("untergruppen") or [])
+        if str(s).strip()
+    ]
+    if rag_content is None:
+        rag_content = _fetch_topic_rag(name, subtopics, module_name, rag_fn)
+
+    # Split retrieved chunks into those sourced from the new files (primary
+    # signal) and everything else (context).
+    new_basenames = {Path(f).name for f in new_files if f}
+    focused: List[str] = []
+    context: List[str] = []
+    for chunk in (rag_content.split("\n\n") if rag_content else []):
+        m = re.match(r"\s*\[([^\[\]\n]+)\]", chunk)
+        src = Path(m.group(1).split(":", 1)[-1].strip()).name if m else ""
+        (focused if src in new_basenames else context).append(chunk)
+    new_content = ("\n\n".join(focused)[:4500] if focused else (rag_content or "")[:2000]) or "—"
+    context_blob = "\n\n".join(context)[:2000]
+    context_section = (
+        f"\nWEITERER KONTEXT (bestehendes Material, nur zur Orientierung):\n{context_blob}\n"
+        if context_blob else ""
+    )
+
+    prompt = _POOL_EXTEND_PROMPT.format(
+        topic_name=name,
+        subtopics=", ".join(subtopics) if subtopics else "—",
+        new_files=", ".join(Path(f).name for f in new_files if f) if new_basenames else "—",
+        existing_tasks="\n".join(f"- {txt}" for txt in existing_texts) if existing_texts else "—",
+        new_content=new_content,
+        context_section=context_section,
+        max_new=max_new,
+    )
+
+    new_tasks: List[Dict[str, Any]] = []
+    try:
+        resp = _get_client().chat.completions.create(
+            model=MODEL,
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        new_tasks = _parse_task_array(resp.choices[0].message.content or "", max_new)
+    except Exception as exc:
+        print(f"[daily_tasks] pool extend failed for {name}: {exc}")
+
+    # No fallback padding on extension — we never append generic filler tasks.
+    if not new_tasks:
+        return 0
+
+    # Dedup against existing pool tasks (incl. done) and among the new ones.
+    new_tasks = _dedup_similar(new_tasks, existing_texts)
+    if not new_tasks:
+        return 0
+
+    pool["tasks"] = existing_tasks + new_tasks
+    pool["pool_size"] = len(pool["tasks"])
+    pool["extended_at"] = date.today().isoformat()  # generated_at stays untouched
+    tp.save_pool(module_name, topic_id, pool)
+    return len(new_tasks)
+
+
+def _sync_roadmap_assignments(
+    module_name: str, topics: List[Dict[str, Any]], new_files: List[str]
+) -> None:
+    """Add the new files to the matched topics' assignments in the saved roadmap so
+    a later full regeneration keeps the association."""
+    from . import roadmap as rm
+
+    md = rm.load_roadmap_md(module_name)
+    if not md:
+        return
+    profile = mp.load(module_name)
+    file_types: Dict[str, str] = (profile.get("file_types") or {}) if profile else {}
+    changed = False
+    for topic in topics:
+        tid = str(topic.get("id") or "")
+        files = [f for f in (topic.get("_matched_files") or []) if f] or new_files
+        basenames = [Path(f).name for f in files if f]
+        lecture_files, exercise_files = _split_files(basenames, [], file_types)
+        if not tid:
+            continue
+        md, did = rm.add_files_to_topic(md, tid, lecture_files, exercise_files)
+        changed = changed or did
+    if changed:
+        rm.save_roadmap_md(module_name, md)
+
+
+def extend_pools_for_new_files(
+    module_name: str,
+    roadmap_data: Dict[str, Any],
+    new_files: List[str],
+    rag_fn: Optional[Callable] = None,
+    *,
+    concurrency: int = 6,
+    progress_cb: Optional[Callable[[int, int, str, int], None]] = None,
+) -> Dict[str, int]:
+    """Extend the pools of every topic affected by the newly uploaded files.
+
+    Determines affected topics via RAG matching (in parallel), then extends those
+    pools in parallel and keeps the saved roadmap's file/exercise assignments in
+    sync. ``progress_cb(done, total, topic_name, added)`` fires once per affected
+    topic, where ``total`` is the number of affected topics. Returns
+    ``{topic_name: added_count}`` for the affected topics. Individual failures are
+    non-fatal. Request context (Supabase auth ContextVars) is replayed into the
+    worker threads so storage RLS still applies.
+    """
+    topics = [
+        topic
+        for phase in (roadmap_data.get("phases") or [])
+        for topic in (phase.get("topics") or [])
+        if str(topic.get("id") or "")
+    ]
+    new_files = [f for f in (new_files or []) if f]
+    if not topics or not new_files:
+        return {}
+
+    parent_ctx = contextvars.copy_context()
+
+    # Stage 1 — determine affected topics (RAG calls) in parallel.
+    def _match(topic: Dict[str, Any]):
+        for _var, _val in parent_ctx.items():
+            _var.set(_val)
+        try:
+            matched_files, content = _topic_affected_by_new_files(
+                topic, module_name, new_files, rag_fn
+            )
+        except Exception as exc:
+            print(f"[daily_tasks] extend match failed for {topic.get('name')}: {exc}")
+            return None
+        if not matched_files:
+            return None
+        topic["_matched_files"] = matched_files
+        return (topic, content, matched_files)
+
+    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
+        matched = [r for r in pool.map(_match, topics) if r]
+
+    total = len(matched)
+    if total == 0:
+        return {}
+
+    # Stage 2 — extend the affected pools in parallel.
+    results: Dict[str, int] = {}
+    lock = threading.Lock()
+    counter = {"done": 0}
+
+    def _extend(item) -> None:
+        topic, content, matched_files = item
+        for _var, _val in parent_ctx.items():
+            _var.set(_val)
+        name = str(topic.get("name") or "")
+        try:
+            added = extend_pool(
+                topic, module_name, matched_files, rag_fn, rag_content=content
+            )
+        except Exception as exc:
+            print(f"[daily_tasks] extend_pool failed for {name}: {exc}")
+            added = 0
+        with lock:
+            counter["done"] += 1
+            done = counter["done"]
+            results[name] = added
+        if progress_cb:
+            progress_cb(done, total, name, added)
+
+    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
+        list(pool.map(_extend, matched))
+
+    # Keep the saved roadmap's assignments in sync (one write).
+    try:
+        _sync_roadmap_assignments(module_name, [t for t, _c, _f in matched], new_files)
+    except Exception as exc:
+        print(f"[daily_tasks] roadmap assignment sync failed: {exc}")
+
+    return results
+
+
+def generate_all_pools(
+    module_name: str,
+    roadmap_data: Dict[str, Any],
+    rag_fn: Optional[Callable] = None,
+    *,
+    concurrency: int = 6,
+    progress_cb: Optional[Callable[[int, int, str], None]] = None,
+) -> int:
+    """Generate a task pool for EVERY topic in the roadmap, in parallel.
+
+    Iterates all topics across all phases and calls ``_generate_pool`` per topic via a
+    bounded ``ThreadPoolExecutor``. Calls ``progress_cb(done_count, total, topic_name)``
+    after each completed topic if provided. Returns the number of pools generated.
+    Individual failures are non-fatal (``_generate_pool`` already falls back to
+    metadata tasks); a topic that still raises is skipped without aborting the batch.
+
+    Runs synchronously (blocks until all topics are done) so it is usable from a
+    plain ``/accept`` handler as well as from a background thread feeding an SSE
+    stream.
+    """
+    topics = [
+        topic
+        for phase in (roadmap_data.get("phases") or [])
+        for topic in (phase.get("topics") or [])
+        if str(topic.get("id") or "")
+    ]
+    total = len(topics)
+    if total == 0:
+        return 0
+
+    # Worker threads start with an empty contextvars context, but storage access
+    # is scoped to the per-request Supabase user (JWT / user_id stashed in
+    # ContextVars by the auth middleware). Snapshot the caller's context and
+    # replay it inside each worker so RLS still applies and writes don't fail closed.
+    parent_ctx = contextvars.copy_context()
+
+    lock = threading.Lock()
+    counter = {"done": 0, "ok": 0}
+
+    def _work(topic: Dict[str, Any]) -> None:
+        for _var, _val in parent_ctx.items():
+            _var.set(_val)
+        name = str(topic.get("name") or "")
+        try:
+            _generate_pool(topic, module_name, rag_fn)
+            ok = True
+        except Exception as exc:  # _generate_pool already self-heals; guard anyway
+            print(f"[daily_tasks] generate_all_pools failed for {name}: {exc}")
+            ok = False
+        with lock:
+            counter["done"] += 1
+            if ok:
+                counter["ok"] += 1
+            done = counter["done"]
+        if progress_cb:
+            progress_cb(done, total, name)
+
+    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
+        list(pool.map(_work, topics))
+
+    return counter["ok"]
 
 
 # ─────────────────────────── Main generate ──────────────────────────────────
